@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Momentum</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#f2f2f7;font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:#E6E6F0;}
+input,select,button{font-family:inherit;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#272840;border-radius:2px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const STORAGE_OK = typeof window.storage !== 'undefined';
+async function sg(k,sh=true){try{if(STORAGE_OK){const r=await window.storage.get(k,sh);return r?JSON.parse(r.value):null;}else{const v=localStorage.getItem((sh?'sh_':'pr_')+k);return v?JSON.parse(v):null;}}catch(e){return null;}}
+async function ss(k,v,sh=true){try{if(STORAGE_OK){await window.storage.set(k,JSON.stringify(v),sh);}else{localStorage.setItem((sh?'sh_':'pr_')+k,JSON.stringify(v));}}catch(e){}}
+</script>
+<script type="text/babel">
+const {useState,useEffect,useMemo}=React;
+
+const T={bg:"#f2f2f7",surface:"#ffffff",card:"#ffffff",border:"rgba(0,0,0,0.09)",text:"#1c1c1e",muted:"#8e8e93",faint:"#d1d1d6",accent:"#007aff",green:"#30d158",amber:"#ff9500",red:"#ff3b30"};
+const shadow="0 2px 14px rgba(0,0,0,0.07)";
+function barColor(s){if(s>=85)return"rgba(0,122,255,1.0)";if(s>=75)return"rgba(0,122,255,0.70)";if(s>=60)return"rgba(0,122,255,0.45)";return"rgba(0,122,255,0.22)";}
+const ADMIN_EMAILS=["manu.manubens@gmail.com"];
+
+const CATS=[
+  {id:"health", name:"Health", color:"#F05A5A", subs:["Sport","Sleep","Nutrition","Mental Health"], mandatory:true,
+   desc:"Your physical and mental foundation. Bryan Johnson's rule #1: fix sleep first — without it everything else collapses. This category covers movement, rest, nutrition, and inner wellbeing."},
+  {id:"growth", name:"Growth", color:"#7B72F0",
+   desc:"Skills, knowledge and intellectual development. The habits that compound into expertise over years — reading, learning, practising, creating."},
+  {id:"career", name:"Career", color:"#4DA8D8",
+   desc:"Professional performance and impact. How effectively you show up, focus, deliver and grow your professional leverage."},
+  {id:"finance", name:"Finance", color:"#F0A429",
+   desc:"Building wealth through discipline. Saving, investing, tracking and avoiding impulse decisions that erode your financial future."},
+  {id:"social", name:"Social", color:"#1FD89A",
+   desc:"The quality of your relationships. Deep connection with people you love, and generosity toward your community."},
+  {id:"fun", name:"Fun", color:"#F07850",
+   desc:"Joy, play and new experiences. A balanced life needs recovery and delight — this is your licence to enjoy it."},
+];
+
+const MTYPES=[{id:"boolean",label:"Done / Not done"},{id:"numeric",label:"Number"},{id:"duration",label:"Duration (hrs)"},{id:"rating",label:"Rating 1–5"}];
+
+const WISDOM=[
+  ["The first thing to fix is sleep. Without it there is no motivation or discipline.","Bryan Johnson"],
+  ["Don't die. Your most important project is your own life.","Bryan Johnson"],
+  ["You don't rise to the level of your goals, you fall to the level of your systems.","James Clear"],
+  ["We are what we repeatedly do. Excellence is not an act but a habit.","Aristotle"],
+  ["Habits don't add up — they compound.","James Clear"],
+  ["Sleep is the single most effective thing we can do to reset brain and body health.","Matthew Walker"],
+  ["What gets measured gets managed.","Peter Drucker"],
+  ["Every action is a vote for the person you wish to become.","James Clear"],
+  ["Discipline is choosing what you want most over what you want now.","Abraham Lincoln"],
+  ["Take care of your body. It's the only place you have to live.","Jim Rohn"],
+  ["The chains of habit are too light to be felt until they are too heavy to be broken.","Warren Buffett"],
+  ["Small disciplines repeated with consistency every day lead to great achievements.","Jim Rohn"],
+];
+
+const TEMPLATES={
+  health:[
+    // Sport
+    {name:"Sport sessions",subCat:"Sport",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:10},
+    {name:"Steps",subCat:"Sport",type:"numeric",targetType:"min",target:"70000",unit:"steps",weight:5},
+    {name:"Running",subCat:"Sport",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:8},
+    {name:"Yoga / stretching",subCat:"Sport",type:"duration",targetType:"min",target:"1.5",unit:"hrs",weight:5},
+    {name:"Cycling",subCat:"Sport",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:5},
+    {name:"Swimming",subCat:"Sport",type:"numeric",targetType:"min",target:"2",unit:"sessions",weight:5},
+    {name:"Cold shower",subCat:"Sport",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+    {name:"Sauna sessions",subCat:"Sport",type:"numeric",targetType:"min",target:"2",unit:"sessions",weight:3},
+    // Sleep
+    {name:"Sleep hours",subCat:"Sleep",type:"duration",targetType:"min",target:"7.5",unit:"hrs",weight:10},
+    {name:"Sleep before midnight",subCat:"Sleep",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Sleep quality",subCat:"Sleep",type:"rating",targetType:"min",target:"4",unit:"",weight:5},
+    {name:"No screens 1h before bed",subCat:"Sleep",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+    // Nutrition
+    {name:"Water glasses",subCat:"Nutrition",type:"numeric",targetType:"min",target:"14",unit:"glasses",weight:5},
+    {name:"Alcohol drinks",subCat:"Nutrition",type:"numeric",targetType:"max",target:"3",unit:"drinks",weight:5},
+    {name:"No processed food",subCat:"Nutrition",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Protein target",subCat:"Nutrition",type:"numeric",targetType:"min",target:"140",unit:"g",weight:5},
+    {name:"Vegetable portions",subCat:"Nutrition",type:"numeric",targetType:"min",target:"21",unit:"portions",weight:3},
+    {name:"Intermittent fasting",subCat:"Nutrition",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+    // Mental Health
+    {name:"Meditation",subCat:"Mental Health",type:"duration",targetType:"min",target:"1.5",unit:"hrs",weight:5},
+    {name:"Journaling",subCat:"Mental Health",type:"boolean",targetType:"min",target:"1",unit:"",weight:4},
+    {name:"Gratitude practice",subCat:"Mental Health",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+    {name:"Mood score",subCat:"Mental Health",type:"rating",targetType:"min",target:"4",unit:"",weight:5},
+    {name:"No doom-scrolling",subCat:"Mental Health",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+  ],
+  growth:[
+    {name:"Learning hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:20},
+    {name:"Reading",type:"duration",targetType:"min",target:"3.5",unit:"hrs",weight:10},
+    {name:"Language practice",type:"duration",targetType:"min",target:"1.5",unit:"hrs",weight:8},
+    {name:"Online course",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Podcast (educational)",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:5},
+    {name:"Writing / articles",type:"duration",targetType:"min",target:"1",unit:"hrs",weight:8},
+    {name:"Side project",type:"duration",targetType:"min",target:"3",unit:"hrs",weight:10},
+    {name:"Flashcard practice",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Public speaking",type:"numeric",targetType:"min",target:"1",unit:"sessions",weight:5},
+    {name:"Skill practice",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:8},
+  ],
+  career:[
+    {name:"Hours at work",type:"duration",targetType:"min",target:"55",unit:"hrs",weight:15},
+    {name:"Deep work blocks",type:"duration",targetType:"min",target:"10",unit:"hrs",weight:12},
+    {name:"Impact delivered",type:"boolean",targetType:"min",target:"1",unit:"",weight:10},
+    {name:"Networking",type:"numeric",targetType:"min",target:"1",unit:"meetings",weight:5},
+    {name:"Inbox zero",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+    {name:"Strategic thinking time",type:"duration",targetType:"min",target:"1",unit:"hrs",weight:5},
+    {name:"One big thing done",type:"boolean",targetType:"min",target:"1",unit:"",weight:8},
+    {name:"Team feedback given",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Presentations / demos",type:"numeric",targetType:"min",target:"1",unit:"",weight:5},
+  ],
+  finance:[
+    {name:"Save & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:10},
+    {name:"No impulse buy",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Budget reviewed",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Expenses tracked",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Net worth tracked",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+    {name:"Investment review",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Financial learning",type:"duration",targetType:"min",target:"1",unit:"hrs",weight:5},
+  ],
+  social:[
+    {name:"Friends & family time",type:"numeric",targetType:"min",target:"2",unit:"moments",weight:5},
+    {name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:10},
+    {name:"Date night",type:"boolean",targetType:"min",target:"1",unit:"",weight:8},
+    {name:"Called parents",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Random act of kindness",type:"boolean",targetType:"min",target:"1",unit:"",weight:4},
+    {name:"New person met",type:"numeric",targetType:"min",target:"1",unit:"person",weight:5},
+    {name:"Volunteer hours",type:"duration",targetType:"min",target:"1",unit:"hrs",weight:5},
+    {name:"Thank someone",type:"boolean",targetType:"min",target:"1",unit:"",weight:3},
+  ],
+  fun:[
+    {name:"Hobby hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:8},
+    {name:"New experience",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Outdoor time",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:5},
+    {name:"Music / instrument",type:"duration",targetType:"min",target:"1",unit:"hrs",weight:5},
+    {name:"Cook new recipe",type:"boolean",targetType:"min",target:"1",unit:"",weight:4},
+    {name:"Creative time",type:"duration",targetType:"min",target:"1",unit:"hrs",weight:5},
+    {name:"Travel / explore",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
+    {name:"Screen-free evening",type:"boolean",targetType:"min",target:"1",unit:"",weight:4},
+  ],
+};
+
+const ONBOARDING=[
+  {emoji:"🚀",title:"Welcome to Momentum",body:"Momentum is built around 12-week sprints — focused bursts of intentional living across every dimension of your life. Not a to-do list. A system.",sub:"Used by people who want to build the life they design, not the one that happens to them.",cta:"Let's go →"},
+  {emoji:"😴",title:"Sleep comes first",body:"Bryan Johnson is clear: fix sleep before anything else. Without quality sleep there is no willpower, no motivation, no discipline.",sub:"Every other habit depends on it. We'll remind you when configuring your sprint.",cta:"Got it →"},
+  {emoji:"📈",title:"Habits compound",body:"James Clear's insight: habits don't add up — they multiply. A 1% daily improvement yields 37× growth over a year. Consistency beats intensity.",sub:"That's why we track weekly, not daily. Sustainable rhythms over heroic one-offs.",cta:"Makes sense →"},
+  {emoji:"⚖️",title:"How scoring works",body:"Each habit has a weight and a target. Your weekly score is a weighted average. Categories you care most about carry the most weight. A bonus habit per category can push you above — but the score caps at 100%.",sub:"Category scores are shared socially. Individual habit details stay private.",cta:"Set up my first sprint →"},
+];
+
+const AV_COLORS=["#7B72F0","#1FD89A","#F0A429","#F05A5A","#4DA8D8","#F07850","#C47DD8"];
+
+// ── UTILS ──
+function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);return(h>>>0).toString(16);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function weekNum(sd){
+  // Count calendar weeks (Mon–Sun) elapsed since sprint start
+  const start=new Date(sd);
+  // Normalize both dates to the Monday of their respective week
+  const toMonday=d=>{const day=d.getDay()===0?6:d.getDay()-1;return new Date(d.getFullYear(),d.getMonth(),d.getDate()-day);};
+  const startMon=toMonday(start);
+  const nowMon=toMonday(new Date());
+  const weeks=Math.round((nowMon-startMon)/(7*24*60*60*1000))+1;
+  return Math.min(Math.max(weeks,1),12);
+}
+function scoreOne(raw,h){
+  if(raw===null||raw===undefined||raw==="")return 0;
+  const v=h.type==="boolean"?(raw?1:0):Math.max(parseFloat(raw)||0,0);
+  const t=Math.max(parseFloat(h.target)||1,0.001);
+  return h.targetType==="max"?Math.min(t/Math.max(v,0.001),1):Math.min(v/t,1);
+}
+function calcScores(habits,logs){
+  const reg=(habits||[]).filter(h=>!h.isBonus);
+  const bon=(habits||[]).filter(h=>h.isBonus);
+  let tW=0,tS=0;const byCat={};
+  CATS.forEach(({id})=>{
+    const ch=reg.filter(h=>h.catId===id&&(parseFloat(h.weight)||0)>0);
+    if(!ch.length){byCat[id]=null;return;}
+    let cW=0,cS=0;
+    ch.forEach(h=>{const w=parseFloat(h.weight)||0,s=scoreOne((logs||{})[h.id],h);cW+=w;cS+=w*s;tW+=w;tS+=w*s;});
+    byCat[id]=cW>0?Math.round((cS/cW)*100):0;
+  });
+  const regScore=tW>0?Math.round((tS/tW)*100):0;
+  let bonusScore=0;
+  bon.forEach(h=>{bonusScore+=scoreOne((logs||{})[h.id],h)*5;});
+  return{overall:Math.min(regScore+Math.round(bonusScore),100),byCat,regScore,bonusScore:Math.round(bonusScore)};
+}
+function scoreColor(s){return s>=80?T.green:s>=50?T.amber:T.red;}
+function avCol(id){let n=0;for(let i=0;i<(id||"").length;i++)n=(n+id.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[n];}
+function initials(n){return(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();}
+function fmtDate(iso){return new Date(iso).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});}
+function catAvgsFromWeeks(habits,weekLogs,upToWk,pausedWeeks=[]){
+  const sums={};const counts={};
+  for(let w=1;w<=upToWk;w++){
+    if(pausedWeeks.includes(w))continue;
+    const ll=weekLogs[w]||{};
+    const has=habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+    if(!has)continue;
+    const{byCat}=calcScores(habits,ll);
+    CATS.forEach(c=>{if(byCat[c.id]!==null&&byCat[c.id]!==undefined){sums[c.id]=(sums[c.id]||0)+byCat[c.id];counts[c.id]=(counts[c.id]||0)+1;}});
+  }
+  const res={};
+  CATS.forEach(c=>{res[c.id]=counts[c.id]?Math.round(sums[c.id]/counts[c.id]):null;});
+  return res;
+}
+function sprintAvgFromLogs(habits,weekLogs,upToWk,pausedWeeks=[]){
+  let sum=0;let count=0;
+  for(let w=1;w<=upToWk;w++){
+    if(pausedWeeks.includes(w))continue;
+    const ll=weekLogs[w]||{};
+    const has=habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+    if(!has)continue;
+    const{overall}=calcScores(habits,ll);sum+=overall;count++;
+  }
+  return count?Math.round(sum/count):0;
+}
+
+// ── STORAGE ──
+const iSx={background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:10,color:"#1c1c1e",fontSize:16,padding:"10px 14px",width:"100%",boxSizing:"border-box"};
+
+// ── UI ATOMS ──
+function Inp({label,hint,...p}){return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>{label}{hint&&<span style={{marginLeft:6,textTransform:"none",color:T.faint,fontSize:10}}>{hint}</span>}</label>}<input {...p} style={{...iSx,...p.style}}/></div>;}
+function Sel({label,options,...p}){return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>{label}</label>}<select {...p} style={{...iSx,...p.style}}>{options.map(o=><option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}</select></div>;}
+function Btn({onClick,children,variant="primary",small,full,disabled,style:xs={}}){
+  const v={primary:{background:T.accent,color:"#fff",border:"none"},secondary:{background:"rgba(0,0,0,0.06)",color:T.text,border:"none"},ghost:{background:"transparent",color:T.muted,border:"none"},danger:{background:T.red+"15",color:T.red,border:"none"},success:{background:T.green+"22",color:T.green,border:`1px solid ${T.green}44`},amber:{background:T.amber+"22",color:T.amber,border:`1px solid ${T.amber}44`}}[variant]||{};
+  return <button onClick={onClick} disabled={disabled} style={{...v,borderRadius:10,fontWeight:600,cursor:disabled?"not-allowed":"pointer",fontSize:small?13:15,padding:small?"8px 14px":"11px 22px",width:full?"100%":undefined,opacity:disabled?0.5:1,...xs}}>{children}</button>;
+}
+function Notice({children,color}){return <div style={{background:color+"15",border:`1px solid ${color}33`,borderRadius:12,padding:"12px 16px",marginBottom:16,boxShadow:shadow}}><p style={{margin:0,fontSize:13,color,lineHeight:1.55,fontWeight:500}}>{children}</p></div>;}
+function Scroll({children}){return <div style={{padding:"16px 16px 96px",maxWidth:560,margin:"0 auto"}}>{children}</div>;}
+function SH({children}){return <h2 style={{color:T.text,fontSize:20,fontWeight:800,margin:"0 0 4px",letterSpacing:-0.3}}>{children}</h2>;}
+function Sub({children}){return <p style={{color:T.muted,fontSize:13,margin:"4px 0 20px"}}>{children}</p>;}
+function Avatar({name,userId,size=36}){return <div style={{width:size,height:size,borderRadius:size*0.35,background:avCol(userId||"x"),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.38,fontWeight:700,color:"#fff"}}>{initials(name)}</div>;}
+function Ring({score=0,size=96,color,label}){
+  const col=color||scoreColor(score);const r=(size-9)/2,circ=2*Math.PI*r,fill=(Math.min(score,100)/100)*circ;
+  return <div style={{position:"relative",width:size,height:size,flexShrink:0}}><svg width={size} height={size} style={{transform:"rotate(-90deg)",display:"block"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={5}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={5} strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} style={{transition:"stroke-dasharray 0.9s"}}/></svg><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1}}><span style={{fontSize:size*0.2,fontWeight:700,color:T.text,lineHeight:1}}>{score}%</span>{label&&<span style={{fontSize:Math.max(size*0.11,9),color:T.muted,textAlign:"center",padding:"0 4px"}}>{label}</span>}</div></div>;
+}
+
+// ── RADAR CHART ──
+function RadarChart({cats,datasets,size}){
+  const s=size||(typeof window!=="undefined"?Math.min(Math.max(window.innerWidth-140,160),220):200);
+  const n=cats.length;if(n<3)return null;
+  const cx=s/2,cy=s/2,R=s*0.34;
+  const angles=cats.map((_,i)=>(i/n)*2*Math.PI-Math.PI/2);
+  const pt=(a,v)=>[cx+R*Math.cos(a)*v/100,cy+R*Math.sin(a)*v/100];
+  const labelPt=(a)=>[cx+(R+18)*Math.cos(a),cy+(R+18)*Math.sin(a)];
+  const gridLevels=[25,50,75,100];
+  return(
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
+      {gridLevels.map(lv=>{
+        const pts=angles.map(a=>pt(a,lv));
+        return <polygon key={lv} points={pts.map(p=>p.join(",")).join(" ")} fill="none" stroke={T.border} strokeWidth={lv===100?1:0.5}/>;
+      })}
+      {angles.map((a,i)=>{const[x,y]=pt(a,100);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={T.border} strokeWidth={0.5}/>;})}
+      {datasets.map((ds,di)=>{
+        const pts=angles.map((a,i)=>pt(a,ds.values[i]||0));
+        const poly=pts.map(p=>p.join(",")).join(" ");
+        return <g key={di}><polygon points={poly} fill={ds.color+"2A"} stroke={ds.color} strokeWidth={1.5}/>{pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={3} fill={ds.color}/>)}</g>;
+      })}
+      {angles.map((a,i)=>{
+        const[x,y]=labelPt(a);
+        const anchor=Math.cos(a)>0.2?"start":Math.cos(a)<-0.2?"end":"middle";
+        return <text key={i} x={x} y={y} textAnchor={anchor} fontSize={Math.max(s*0.038,8)} fill={cats[i].color} dominantBaseline="middle" fontWeight="700">{cats[i].name.toUpperCase()}</text>;
+      })}
+    </svg>
+  );
+}
+
+// ── ONBOARDING ──
+function OnboardingView({name,onDone}){
+  const [slide,setSlide]=useState(0);const s=ONBOARDING[slide];const isLast=slide===ONBOARDING.length-1;
+  return <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
+    <div style={{display:"flex",gap:6,marginBottom:40}}>{ONBOARDING.map((_,i)=><div key={i} style={{width:i===slide?20:6,height:6,borderRadius:3,background:i===slide?T.accent:i<slide?T.accent+"55":T.border,transition:"all 0.3s"}}/>)}</div>
+    <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+      <div style={{fontSize:64,marginBottom:24}}>{s.emoji}</div>
+      <h1 style={{color:T.text,fontSize:24,fontWeight:800,margin:"0 0 16px",lineHeight:1.2}}>{s.title}</h1>
+      <p style={{color:T.text,fontSize:14,lineHeight:1.75,margin:"0 0 12px",opacity:0.9}}>{s.body}</p>
+      <p style={{color:T.muted,fontSize:13,lineHeight:1.65,margin:"0 0 36px"}}>{s.sub}</p>
+      <Btn full onClick={()=>isLast?onDone():setSlide(i=>i+1)}>{slide===0?`Hey ${name.split(" ")[0]}, ${s.cta}`:s.cta}</Btn>
+      {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:14,background:"none",border:"none",color:T.faint,fontSize:13,cursor:"pointer"}}>← Back</button>}
+    </div>
+  </div>;
+}
+
+// ── AUTH ──
+function AuthView({onAuth}){
+  const [mode,setMode]=useState("login");
+  const [name,setName]=useState("");const [email,setEmail]=useState("");const [password,setPassword]=useState("");
+  const [err,setErr]=useState("");const [busy,setBusy]=useState(false);const [dbg,setDbg]=useState("");
+  async function go(){
+    if(busy)return;setErr("");setDbg("");
+    if(mode==="register"&&!name.trim()){setErr("Please enter your full name.");return;}
+    if(!email.trim()){setErr("Please enter your email.");return;}
+    if(!password){setErr("Please enter a password.");return;}
+    if(mode==="register"&&password.length<6){setErr("Password must be at least 6 characters.");return;}
+    setBusy(true);setDbg("Connecting…");
+    try{
+      const em=email.trim().toLowerCase();
+      if(mode==="register"){
+        setDbg("Checking email…");
+        const idx=await sg("userIndex",true)||[];
+        if(idx.find(u=>u.email===em)){setErr("Email already registered. Try signing in.");return;}
+        const user={id:uid(),name:name.trim(),email:em,passwordHash:hashStr(password),createdAt:Date.now(),isNew:true};
+        setDbg("Creating account…");
+        await ss(`user_${user.id}`,user,true);
+        await ss("userIndex",[...idx,{id:user.id,email:user.email,name:user.name}],true);
+        setDbg("");onAuth(user);
+      }else{
+        setDbg("Looking up account…");
+        const idx=await sg("userIndex",true)||[];
+        const found=idx.find(u=>u.email===em);
+        if(!found){setErr("No account found with this email.");return;}
+        const user=await sg(`user_${found.id}`,true);
+        if(!user||user.passwordHash!==hashStr(password)){setErr("Incorrect password.");return;}
+        setDbg("");onAuth(user);
+      }
+    }catch(e){setErr("Error: "+e.message);}finally{setBusy(false);}
+  }
+  return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 20px"}}>
+    <div style={{width:"100%",maxWidth:400}}>
+      <div style={{textAlign:"center",marginBottom:40}}>
+        <div style={{width:64,height:64,borderRadius:20,background:T.accent,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:26,fontWeight:800,color:"#fff"}}>M</div>
+        <h1 style={{color:T.text,margin:0,fontSize:28,fontWeight:800}}>Momentum</h1>
+        <p style={{color:T.muted,margin:"8px 0 0",fontSize:14}}>Build the life you want, one sprint at a time.</p>
+      </div>
+      <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:4,marginBottom:28}}>
+        {[["login","Sign in"],["register","Create account"]].map(([m,l])=>(
+          <button key={m} onClick={()=>{setMode(m);setErr("");setDbg("");}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:9,cursor:"pointer",background:mode===m?T.accent:"transparent",color:mode===m?"#fff":T.muted,fontSize:14,fontWeight:600,transition:"all 0.2s"}}>{l}</button>
+        ))}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {mode==="register"&&<Inp label="Full name" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>}
+        <Inp label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/>
+        <Inp label="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/>
+        {err&&<div style={{background:T.red+"18",border:`1px solid ${T.red}44`,borderRadius:8,padding:"10px 12px"}}><p style={{margin:0,fontSize:13,color:T.red}}>{err}</p></div>}
+        {dbg&&<p style={{color:T.muted,fontSize:12,textAlign:"center",margin:0}}>{dbg}</p>}
+        <button onClick={go} disabled={busy} style={{background:busy?T.faint:T.accent,color:"#fff",border:"none",borderRadius:10,fontWeight:600,fontSize:15,padding:"13px",cursor:busy?"not-allowed":"pointer",opacity:busy?0.7:1}}>
+          {busy?"Please wait…":mode==="login"?"Sign in":"Create account"}
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── HABIT FORM ──
+function HabitForm({habit,cat,remaining,onChange,onSave,onCancel,saveLabel="Save habit"}){
+  const set=(k,v)=>onChange(h=>({...h,[k]:v}));
+  const isBool=habit.type==="boolean";
+  const canSave=habit.name.trim()&&(isBool||habit.target!=="")&&(parseFloat(habit.weight)||0)>0;
+  return <div style={{background:T.surface,border:`1px solid ${T.accent}55`,borderRadius:12,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+    <div style={{display:"grid",gridTemplateColumns:cat.subs?"1fr 1fr":"1fr",gap:10}}>
+      <Inp label="Habit name" value={habit.name} placeholder="e.g. Sport sessions" onChange={e=>set("name",e.target.value)}/>
+      {cat.subs&&<Sel label="Sub-category" value={habit.subCat||cat.subs[0]} onChange={e=>set("subCat",e.target.value)} options={cat.subs.map(s=>({value:s,label:s}))}/>}
+    </div>
+    <Sel label="Metric type" value={habit.type} onChange={e=>set("type",e.target.value)} options={MTYPES.map(t=>({value:t.id,label:t.label}))}/>
+    {!isBool&&<>
+      <Sel label="Target direction" value={habit.targetType} onChange={e=>set("targetType",e.target.value)} options={[{value:"min",label:"At least (minimum)"},{value:"max",label:"At most (maximum)"}]}/>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+        <Inp label="Target value" type="number" value={habit.target} placeholder="e.g. 4" onChange={e=>set("target",e.target.value)}/>
+        <Inp label="Unit" value={habit.unit} placeholder="hrs" onChange={e=>set("unit",e.target.value)}/>
+      </div>
+    </>}
+    <div>
+      <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6,display:"block",marginBottom:5}}>
+        Weight % <span style={{textTransform:"none",letterSpacing:0,color:T.faint,fontSize:10}}>(budget remaining: {Math.max(0,remaining).toFixed(0)}%)</span>
+      </label>
+      <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} style={{...iSx}}/>
+    </div>
+    <div style={{display:"flex",gap:8}}>
+      <Btn variant="ghost" small onClick={onCancel}>Cancel</Btn>
+      <Btn small full disabled={!canSave} onClick={onSave}>{saveLabel}</Btn>
+    </div>
+  </div>;
+}
+
+// ── SPRINT SETUP ──
+function SprintSetupView({user,onDone}){
+  const [step,setStep]=useState(0);
+  const [catW,setCatW]=useState({health:25,growth:20,career:20,finance:15,social:10,fun:10});
+  const [habits,setHabits]=useState({});
+  const [catIdx,setCatIdx]=useState(0);
+  const [formOpen,setFormOpen]=useState(false);
+  const [draft,setDraft]=useState(null);
+  const [editingId,setEditingId]=useState(null);
+  const [saving,setSaving]=useState(false);
+
+  const activeCats=CATS.filter(c=>(parseFloat(catW[c.id])||0)>0);
+  const totalW=Object.values(catW).reduce((a,v)=>a+(parseFloat(v)||0),0);
+  const weightOk=Math.abs(totalW-100)<0.6;
+  const usedW=catId=>(habits[catId]||[]).filter(h=>!h.isBonus).reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+
+  function openNew(cat,remaining){
+    setDraft({id:uid(),catId:cat.id,subCat:cat.subs?.[0]||"",name:"",type:"numeric",targetType:"min",target:"",unit:"",weight:Math.max(0,remaining).toFixed(0)});
+    setFormOpen(true);setEditingId(null);
+  }
+  function openTemplate(cat,t,remaining){
+    setDraft({...t,id:uid(),catId:cat.id,subCat:t.subCat||cat.subs?.[0]||"",weight:Math.max(0,remaining).toFixed(0)===t.weight.toString()?t.weight:Math.max(0,remaining).toFixed(0)});
+    setFormOpen(true);setEditingId(null);
+  }
+  function openEdit(h,remaining){
+    setDraft({...h});setFormOpen(true);setEditingId(h.id);
+  }
+  function saveForm(cat){
+    if(editingId){
+      setHabits(p=>({...p,[cat.id]:p[cat.id].map(h=>h.id===editingId?{...draft,weight:parseFloat(draft.weight)||0}:h)}));
+    }else{
+      setHabits(p=>({...p,[cat.id]:[...(p[cat.id]||[]),{...draft,id:uid()}]}));
+    }
+    setDraft(null);setFormOpen(false);setEditingId(null);
+  }
+  const [bonus,setBonus]=useState(null); // one global bonus habit
+  const [bonusFormOpen,setBonusFormOpen]=useState(false);
+  const [bonusDraft,setBonusDraft]=useState(null);
+
+  function openBonusNew(){
+    setBonusDraft({id:uid(),catId:"health",subCat:"",name:"",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true});
+    setBonusFormOpen(true);
+  }
+  function saveBonus(){
+    setBonus({...bonusDraft,weight:5,isBonus:true});
+    setBonusDraft(null);setBonusFormOpen(false);
+  }
+
+  function addBonus(cat){
+    const bh={id:uid(),catId:cat.id,subCat:"",name:"Bonus habit",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true};
+    setHabits(p=>({...p,[cat.id]:[...(p[cat.id]||[]),bh]}));
+  }
+  async function launch(){
+    setSaving(true);
+    const allH=CATS.flatMap(c=>habits[c.id]||[]);
+    if(bonus)allH.push(bonus);
+    const sprint={id:uid(),userId:user.id,startDate:new Date().toISOString().split("T")[0],habits:allH,catWeights:catW,createdAt:Date.now()};
+    await ss(`sprint_${user.id}`,sprint,true);setSaving(false);onDone(sprint);
+  }
+
+  // Step 0 — weights
+  if(step===0)return <Scroll>
+    <SH>Sprint setup</SH>
+    <Sub>Step 1 of 3 — distribute your focus across life categories</Sub>
+    <div style={{background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
+      <p style={{color:T.text,fontSize:13,lineHeight:1.65,margin:0}}>
+        Assign a <strong style={{color:T.accent}}>percentage weight</strong> to each category. This controls how much each area counts toward your weekly score.
+        All weights must <strong style={{color:T.green}}>add up to exactly 100%</strong>. Set a category to <strong>0%</strong> to skip it this sprint.
+      </p>
+    </div>
+    {(parseFloat(catW.health)||0)<20&&(parseFloat(catW.health)||0)>0&&<Notice color={T.amber}>Bryan Johnson's rule #1: fix sleep first. We recommend at least 20% for Health — it powers everything else.</Notice>}
+    <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+      {CATS.map(cat=>(
+        <div key={cat.id} style={{background:T.card,borderRadius:16,boxShadow:shadow,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:10,height:10,borderRadius:3,background:cat.color,flexShrink:0}}/>
+          <div style={{flex:1}}>
+            <div style={{color:T.text,fontSize:14,fontWeight:500}}>{cat.name}{cat.mandatory&&<span style={{marginLeft:6,fontSize:10,color:T.amber,fontWeight:600}}>foundation</span>}</div>
+            <div style={{color:T.muted,fontSize:11,marginTop:2,lineHeight:1.4}}>{cat.desc.slice(0,70)}…</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:5}}>
+            <input type="number" min={0} max={100} step={1} value={catW[cat.id]??0}
+              onChange={e=>setCatW(p=>({...p,[cat.id]:Math.min(100,Math.max(0,parseFloat(e.target.value)||0))}))}
+              style={{...iSx,width:58,textAlign:"center",fontWeight:700,padding:"6px"}}/>
+            <span style={{color:T.muted,fontSize:13}}>%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <span style={{color:T.muted}}>Total:</span>
+      <span style={{fontSize:20,fontWeight:800,color:weightOk?T.green:T.red}}>{totalW.toFixed(0)}%</span>
+    </div>
+    <Btn full disabled={!weightOk} onClick={()=>setStep(1)}>Define habits →</Btn>
+    {!weightOk&&<p style={{textAlign:"center",color:T.muted,fontSize:12,marginTop:8}}>{totalW<100?`${(100-totalW).toFixed(0)}% left to allocate`:`${(totalW-100).toFixed(0)}% over budget`}</p>}
+  </Scroll>;
+
+  // Step 1 — habits
+  if(step===1){
+    const cat=activeCats[catIdx];if(!cat){setStep(2);return null;}
+    const catH=habits[cat.id]||[];
+    const regH=catH.filter(h=>!h.isBonus);
+    const used=usedW(cat.id);
+    const budget=parseFloat(catW[cat.id])||0;
+    const remaining=budget-used;
+    const pct=budget>0?Math.min((used/budget)*100,100):0;
+    const usedNames=new Set(regH.map(h=>h.name));
+    const tpls=(TEMPLATES[cat.id]||[]).filter(t=>!usedNames.has(t.name));
+    return <Scroll>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><SH>{cat.name}</SH></div>
+      {/* Category description */}
+      <div style={{background:cat.color+"12",border:`1px solid ${cat.color}33`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+        <p style={{margin:0,fontSize:13,color:T.text,lineHeight:1.6}}>{cat.desc}</p>
+      </div>
+      {/* Weight guidance */}
+      <div style={{background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
+        <p style={{margin:0,fontSize:12,color:T.muted,lineHeight:1.6}}>
+          <strong style={{color:T.text}}>How weights work:</strong> Each habit's weight is its share of this category's {budget}% budget.
+          All habit weights in this category must add up to <strong style={{color:cat.color}}>{budget}%</strong>.
+          The suggested weight below is automatically set to the remaining budget.
+        </p>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <span style={{color:T.muted,fontSize:12}}>Budget: <strong style={{color:cat.color}}>{budget}%</strong> · Used: <strong style={{color:remaining<0?T.red:T.text}}>{used.toFixed(0)}%</strong> · Remaining: <strong style={{color:remaining<0?T.red:T.green}}>{remaining.toFixed(0)}%</strong></span>
+      </div>
+      <div style={{height:4,background:T.border,borderRadius:2,margin:"0 0 20px"}}>
+        <div style={{height:"100%",borderRadius:2,background:remaining<0?T.red:cat.color,width:`${Math.min(pct,100)}%`,transition:"width 0.3s"}}/>
+      </div>
+
+      {/* Templates */}
+      {tpls.length>0&&<div style={{marginBottom:16}}>
+        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px"}}>Quick add from library — click to customise before adding</p>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {tpls.map(t=><button key={t.name} onClick={()=>openTemplate(cat,t,remaining)} style={{background:cat.color+"15",border:`1px solid ${cat.color}44`,color:cat.color,borderRadius:8,fontSize:12,padding:"6px 11px",cursor:"pointer",fontWeight:500}}>+ {t.name} <span style={{opacity:0.6,fontSize:10}}>{t.weight}%</span></button>)}
+        </div>
+      </div>}
+
+      {/* Habit list */}
+      {regH.map(h=>{
+        if(editingId===h.id&&formOpen)return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Update habit" onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setEditingId(null);setDraft(null);}}/></div>;
+        return <div key={h.id} style={{background:T.card,borderRadius:14,boxShadow:shadow,padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{color:T.text,fontSize:14,fontWeight:500}}>{h.name}</div>
+            <div style={{color:T.muted,fontSize:12,marginTop:2}}>{h.subCat&&`${h.subCat} · `}{h.type}{h.target?` · ${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""}`:""} · <strong style={{color:cat.color}}>{h.weight}%</strong></div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>openEdit(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Edit</button>
+            <button onClick={()=>setHabits(p=>({...p,[cat.id]:p[cat.id].filter(x=>x.id!==h.id)}))} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 4px"}}>×</button>
+          </div>
+        </div>;
+      })}
+
+      {/* Add custom */}
+      {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:`1.5px dashed ${T.faint}`,borderRadius:10,color:T.muted,fontSize:14,cursor:"pointer",marginTop:4}}>+ Add custom habit</button>}
+      {formOpen&&!editingId&&<HabitForm habit={draft} cat={cat} remaining={remaining} onChange={setDraft} onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setDraft(null);}}/>}
+
+      <div style={{display:"flex",gap:10,marginTop:24}}>
+        <Btn variant="secondary" onClick={()=>catIdx===0?setStep(0):setCatIdx(i=>i-1)}>← Back</Btn>
+        <Btn full onClick={()=>catIdx<activeCats.length-1?setCatIdx(i=>i+1):setStep(2)}>{catIdx<activeCats.length-1?`Next: ${activeCats[catIdx+1].name} →`:"Review →"}</Btn>
+      </div>
+      <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:14}}>
+        {activeCats.map((c,i)=><div key={c.id} style={{width:6,height:6,borderRadius:3,background:i===catIdx?c.color:i<catIdx?T.green:T.border,transition:"background 0.3s"}}/>)}
+      </div>
+    </Scroll>;
+  }
+
+  // Step 2 — review
+  const allH=CATS.flatMap(c=>habits[c.id]||[]);
+  const totalHW=allH.filter(h=>!h.isBonus).reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+  // Bonus cat options for the form (all active cats)
+  const bonusCatOptions=activeCats.map(c=>({value:c.id,label:c.name}));
+  const bonusCat=bonus?CATS.find(c=>c.id===bonus.catId)||CATS[0]:CATS[0];
+  return <Scroll>
+    <SH>Review sprint</SH><Sub>Step 3 of 3 — confirm your 12-week plan</Sub>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:T.card,borderRadius:14,boxShadow:shadow,padding:"12px 16px",marginBottom:20}}>
+      <span style={{color:T.muted,fontSize:13}}>Regular habit weight:</span>
+      <span style={{fontWeight:700,fontSize:18,color:Math.abs(totalHW-100)<2?T.green:T.amber}}>{totalHW.toFixed(0)}%</span>
+    </div>
+    {CATS.filter(c=>(habits[c.id]||[]).length>0).map(cat=>{
+      const reg=(habits[cat.id]||[]).filter(h=>!h.isBonus);
+      return <div key={cat.id} style={{marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <div style={{width:8,height:8,borderRadius:2,background:cat.color}}/>
+          <span style={{color:cat.color,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span>
+        </div>
+        {reg.map(h=><div key={h.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",marginBottom:4,display:"flex",justifyContent:"space-between"}}>
+          <span style={{color:T.text,fontSize:13}}>{h.name}{h.subCat&&<span style={{color:T.muted}}> · {h.subCat}</span>}</span>
+          <span style={{color:T.muted,fontSize:12}}>{h.weight}%</span>
+        </div>)}
+      </div>;
+    })}
+
+    {/* Global bonus habit */}
+    <div style={{borderTop:`1px solid ${T.border}`,paddingTop:16,marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <span style={{fontSize:14}}>⭐</span>
+        <span style={{color:T.amber,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Bonus habit</span>
+        <span style={{color:T.faint,fontSize:11}}>— one per sprint, worth +5% if achieved</span>
+      </div>
+      {!bonus&&!bonusFormOpen&&(
+        <button onClick={openBonusNew} style={{width:"100%",padding:12,background:T.amber+"10",border:`1.5px dashed ${T.amber}55`,borderRadius:10,color:T.amber,fontSize:13,cursor:"pointer",fontWeight:500}}>
+          + Define your bonus habit
+        </button>
+      )}
+      {bonusFormOpen&&bonusDraft&&(
+        <div style={{background:T.amber+"0A",border:`1px solid ${T.amber}44`,borderRadius:12,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <Inp label="Habit name" value={bonusDraft.name} placeholder="e.g. Run a 10k" onChange={e=>setBonusDraft(p=>({...p,name:e.target.value}))}/>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Category</label>
+              <select value={bonusDraft.catId} onChange={e=>setBonusDraft(p=>({...p,catId:e.target.value}))} style={{...iSx}}>
+                {bonusCatOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Metric type</label>
+            <select value={bonusDraft.type} onChange={e=>setBonusDraft(p=>({...p,type:e.target.value}))} style={{...iSx}}>
+              {MTYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </div>
+          {bonusDraft.type!=="boolean"&&<>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Target direction</label>
+              <select value={bonusDraft.targetType} onChange={e=>setBonusDraft(p=>({...p,targetType:e.target.value}))} style={{...iSx}}>
+                <option value="min">At least (minimum)</option><option value="max">At most (maximum)</option>
+              </select>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+              <Inp label="Target value" type="number" value={bonusDraft.target} placeholder="e.g. 10" onChange={e=>setBonusDraft(p=>({...p,target:e.target.value}))}/>
+              <Inp label="Unit" value={bonusDraft.unit} placeholder="km" onChange={e=>setBonusDraft(p=>({...p,unit:e.target.value}))}/>
+            </div>
+          </>}
+          <div style={{display:"flex",gap:8}}>
+            <Btn variant="ghost" small onClick={()=>{setBonusFormOpen(false);setBonusDraft(null);}}>Cancel</Btn>
+            <Btn small full disabled={!bonusDraft.name.trim()} onClick={saveBonus} style={{background:T.amber,border:"none",color:"#fff"}}>Save bonus habit</Btn>
+          </div>
+        </div>
+      )}
+      {bonus&&!bonusFormOpen&&(
+        <div style={{background:T.amber+"12",border:`1px solid ${T.amber}44`,borderRadius:10,padding:"11px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{color:T.amber,fontSize:14,fontWeight:600}}>⭐ {bonus.name}</div>
+            <div style={{color:T.muted,fontSize:11,marginTop:2}}>
+              {CATS.find(c=>c.id===bonus.catId)?.name} · {bonus.type}
+              {bonus.type!=="boolean"?` · ${bonus.targetType==="min"?"≥":"≤"} ${bonus.target}${bonus.unit?` ${bonus.unit}`:""}`:""}
+              {" · +5% bonus"}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>{setBonusDraft({...bonus});setBonusFormOpen(true);}} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Edit</button>
+            <button onClick={()=>setBonus(null)} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 2px"}}>×</button>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {allH.length===0&&<Notice color={T.amber}>No habits added yet. Go back and add some.</Notice>}
+    <div style={{display:"flex",gap:10,marginTop:24}}>
+      <Btn variant="secondary" onClick={()=>{setStep(1);setCatIdx(activeCats.length-1);}}>← Edit</Btn>
+      <Btn full disabled={allH.length===0||saving} onClick={launch}>{saving?"Launching…":"Launch sprint"}</Btn>
+    </div>
+  </Scroll>;
+}
+
+// ── HOME ──
+function HomeView({sprint,weekLogs,quote,userId}){
+  const wk=weekNum(sprint.startDate);
+  const logs=weekLogs[wk]||{};
+  const {overall:wkScore,byCat:wkByCat,bonusScore}=calcScores(sprint.habits,logs);
+  const [detailMode,setDetailMode]=useState("%");
+  const [history,setHistory]=useState(null);
+  const pausedWeeks=sprint.pausedWeeks||[];
+
+  useEffect(()=>{sg(`sprint_history_${userId}`,true).then(h=>setHistory(h||[]));},[userId]);
+
+  const sprintAvg=sprintAvgFromLogs(sprint.habits,weekLogs,wk,pausedWeeks);
+  const sprintByCatAvg=catAvgsFromWeeks(sprint.habits,weekLogs,wk,pausedWeeks);
+  const prevSprint=history&&history.length>0?history[history.length-1]:null;
+  const last3Avg=history&&history.length>0?Math.round(history.slice(-3).reduce((a,s)=>a+(s.avgScore||0),0)/Math.min(history.length,3)):null;
+  const activeCats=CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
+  const radarCatVals=(byCatObj)=>activeCats.map(c=>byCatObj[c.id]??0);
+  const logged=sprint.habits.filter(h=>!h.isBonus).filter(h=>{const v=logs[h.id];return v!==undefined&&v!==null&&v!=="";}).length;
+
+  const now=new Date();
+  const dayOfWeek=now.getDay()===0?7:now.getDay();
+  const weekPct=Math.round((dayOfWeek/7)*100);
+  const sprintPct=Math.round((wk/12)*100);
+
+  const weekStatus=wkScore>=85?"Great":wkScore>=75?"Good":wkScore>=60?"OK":"Behind";
+  const weekStatusColor=wkScore>=85?T.green:wkScore>=75?T.accent:wkScore>=60?T.amber:T.red;
+  const sprintStatus=sprintAvg>=85?"Great":sprintAvg>=75?"Good":sprintAvg>=60?"OK":"Behind";
+  const sprintStatusColor=sprintAvg>=85?T.green:sprintAvg>=75?T.accent:sprintAvg>=60?T.amber:T.red;
+
+  // 12-week bar data
+  const bars=Array.from({length:12},(_,i)=>{
+    const w=i+1;
+    if(pausedWeeks.includes(w))return{w,score:null,paused:true,logged:false};
+    if(w>wk)return{w,score:null,paused:false,logged:false};
+    const ll=weekLogs[w]||{};
+    const has=sprint.habits.filter(h=>!h.isBonus).some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+    if(!has)return{w,score:null,paused:false,logged:false};
+    const{overall}=calcScores(sprint.habits,ll);
+    return{w,score:overall,paused:false,logged:true};
+  });
+  const chartH=76;
+  const benchScore=prevSprint?prevSprint.avgScore:80;
+  const benchLabel=prevSprint?`Q1-26 · ${benchScore}%`:"Target · 80%";
+  const benchDashed=!prevSprint;
+  const benchBottom=(benchScore/100)*chartH;
+
+  return <Scroll>
+    {/* Progress bars */}
+    <div style={{background:T.card,borderRadius:18,padding:"16px 18px",marginBottom:12,boxShadow:shadow}}>
+      <div style={{marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+          <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.muted}}>Week {wk} · {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][dayOfWeek-1]}</span>
+          <span style={{fontSize:10,fontWeight:600,color:T.text}}>{weekPct}%</span>
+        </div>
+        <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:3}}>
+          <div style={{height:"100%",borderRadius:3,background:T.text,width:`${weekPct}%`}}/>
+        </div>
+      </div>
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+          <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.muted}}>Sprint · Week {wk} of 12</span>
+          <span style={{fontSize:10,fontWeight:600,color:T.muted}}>{sprintPct}%</span>
+        </div>
+        <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:3,position:"relative"}}>
+          <div style={{height:"100%",borderRadius:3,background:T.muted,width:`${sprintPct}%`}}/>
+          {Array.from({length:11},(_,i)=>(
+            <div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:T.bg,opacity:0.8}}/>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Two score cards */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+      <div style={{background:T.card,borderRadius:20,padding:"18px 16px",boxShadow:shadow}}>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>This week</div>
+        <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>
+          {wkScore}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span>
+        </div>
+        <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>{logged}/{sprint.habits.filter(h=>!h.isBonus).length} habits logged{bonusScore>0?` +${bonusScore}%`:""}</div>
+        <div style={{display:"inline-flex",alignItems:"center",background:weekStatusColor+"18",borderRadius:20,padding:"3px 10px"}}>
+          <span style={{fontSize:10,fontWeight:600,color:weekStatusColor}}>{weekStatus}</span>
+        </div>
+      </div>
+      <div style={{background:T.card,borderRadius:20,padding:"18px 16px",boxShadow:shadow}}>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>Sprint avg</div>
+        <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>
+          {sprintAvg}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span>
+        </div>
+        <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>
+          {prevSprint?<span>vs <strong style={{color:T.text}}>{prevSprint.avgScore}%</strong> last sprint</span>:`Week ${wk} of 12`}
+        </div>
+        <div style={{display:"inline-flex",alignItems:"center",background:sprintStatusColor+"18",borderRadius:20,padding:"3px 10px"}}>
+          <span style={{fontSize:10,fontWeight:600,color:sprintStatusColor}}>{sprintStatus}</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Bar chart — 12 weeks */}
+    <div style={{background:T.card,borderRadius:20,padding:"18px 18px 14px",marginBottom:12,boxShadow:shadow}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <span style={{fontSize:12,fontWeight:600,color:T.text,letterSpacing:-0.2}}>Weekly performance</span>
+        <div style={{display:"flex",gap:8}}>
+          {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["rgba(0,122,255,0.70)","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
+            <div key={l} style={{display:"flex",alignItems:"center",gap:3}}>
+              <div style={{width:7,height:7,borderRadius:2,background:c}}/>
+              <span style={{fontSize:8,color:T.muted,fontWeight:500}}>{l}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{position:"relative",paddingBottom:20}}>
+        {/* Benchmark line */}
+        <div style={{position:"absolute",left:0,right:0,bottom:20+benchBottom,borderTop:`1.5px ${benchDashed?"dashed":"solid"} ${T.amber}`,pointerEvents:"none",zIndex:1}}>
+          <span style={{position:"absolute",right:0,top:-17,fontSize:8,fontWeight:600,color:T.amber,background:T.card,padding:"1px 5px",borderRadius:4}}>{benchLabel}</span>
+        </div>
+        {/* Bars */}
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
+          {bars.map(({w,score,paused,logged})=>{
+            const isCur=w===wk;
+            const h=logged&&score!==null?(score/100)*chartH+4:4;
+            const bg=logged&&score!==null?barColor(score):"rgba(0,0,0,0.06)";
+            return(
+              <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
+                <div style={{
+                  width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,
+                  boxShadow:isCur&&logged?`0 0 0 1.5px ${T.accent}`:"none",
+                  transition:"height 0.4s",
+                }}/>
+                <span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:isCur?700:400,color:isCur?T.text:T.muted}}>
+                  {paused?"OFF":`W${w}`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+
+    {/* Radar charts */}
+    {activeCats.length>=3&&<>
+      <div style={{background:T.card,borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:shadow}}>
+        <div style={{fontSize:11,fontWeight:600,color:T.text,letterSpacing:-0.2,marginBottom:14}}>Week {wk} vs sprint average</div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+          <RadarChart cats={activeCats} datasets={[
+            {label:`Week ${wk}`,color:T.accent,values:radarCatVals(wkByCat)},
+            {label:"Sprint avg",color:T.green,values:radarCatVals(sprintByCatAvg)},
+          ]}/>
+          <div style={{display:"flex",gap:16,justifyContent:"center"}}>
+            {[{l:`Week ${wk}`,c:T.accent},{l:"Sprint avg",c:T.green}].map(({l,c})=>(
+              <div key={l} style={{display:"flex",alignItems:"center",gap:5}}>
+                <div style={{width:8,height:8,borderRadius:2,background:c}}/>
+                <span style={{fontSize:10,color:T.muted,fontWeight:500}}>{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {prevSprint&&prevSprint.catAvgs&&<div style={{background:T.card,borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:shadow}}>
+        <div style={{fontSize:11,fontWeight:600,color:T.text,letterSpacing:-0.2,marginBottom:14}}>Current sprint vs Q1-26</div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+          <RadarChart cats={activeCats} datasets={[
+            {label:"This sprint",color:T.accent,values:radarCatVals(sprintByCatAvg)},
+            {label:"Q1-26",color:T.amber,values:activeCats.map(c=>prevSprint.catAvgs[c.id]??0)},
+          ]}/>
+          <div style={{display:"flex",gap:16,justifyContent:"center"}}>
+            {[{l:"This sprint",c:T.accent},{l:"Q1-26",c:T.amber}].map(({l,c})=>(
+              <div key={l} style={{display:"flex",alignItems:"center",gap:5}}>
+                <div style={{width:8,height:8,borderRadius:2,background:c}}/>
+                <span style={{fontSize:10,color:T.muted,fontWeight:500}}>{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>}
+    </>}
+
+    {/* Toggle */}
+    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:12}}>
+      {[["%","% Score"],["#","Raw values"]].map(([m,l])=>(
+        <button key={m} onClick={()=>setDetailMode(m)} style={{flex:1,padding:"8px 0",border:"none",borderRadius:10,cursor:"pointer",background:detailMode===m?T.card:"transparent",color:detailMode===m?T.text:T.muted,fontSize:13,fontWeight:600,boxShadow:detailMode===m?shadow:"none",transition:"all 0.2s"}}>{l}</button>
+      ))}
+    </div>
+
+    {/* Category detail */}
+    {detailMode==="%"
+      ?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
+          {activeCats.map(cat=>(
+            <div key={cat.id} style={{background:T.card,borderRadius:16,padding:"14px 10px",textAlign:"center",boxShadow:shadow}}>
+              <div style={{fontSize:9,fontWeight:700,color:cat.color,textTransform:"uppercase",letterSpacing:0.5,marginBottom:10}}>{cat.name}</div>
+              <Ring score={wkByCat[cat.id]??0} size={54} color={cat.color}/>
+              <div style={{color:T.muted,fontSize:9,marginTop:6}}>{(sprint.catWeights||{})[cat.id]||0}% weight</div>
+            </div>
+          ))}
+        </div>
+      :<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:8}}>
+          {activeCats.map(cat=>{
+            const catHabits=sprint.habits.filter(h=>h.catId===cat.id&&!h.isBonus);
+            return <div key={cat.id} style={{background:T.card,borderRadius:16,padding:"14px 16px",boxShadow:shadow}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <div style={{width:7,height:7,borderRadius:50,background:cat.color}}/>
+                <span style={{color:T.text,fontSize:12,fontWeight:600}}>{cat.name}</span>
+                <span style={{color:T.muted,fontSize:11,marginLeft:"auto"}}>{wkByCat[cat.id]??0}%</span>
+              </div>
+              {catHabits.map(h=>{
+                const val=logs[h.id];const hasVal=val!==undefined&&val!==null&&val!=="";
+                const s=scoreOne(h.type==="boolean"?(val?1:0):val,h);
+                return <div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:`1px solid ${T.border}`}}>
+                  <span style={{flex:1,color:T.text,fontSize:12}}>{h.name}</span>
+                  <span style={{color:T.muted,fontSize:11}}>{hasVal?(h.type==="boolean"?(val?"✓":"✗"):`${val}${h.unit?` ${h.unit}`:""} / ${h.target}`):"—"}</span>
+                  {hasVal&&<span style={{color:barColor(Math.round(s*100)),fontSize:11,fontWeight:700,minWidth:32,textAlign:"right"}}>{Math.round(s*100)}%</span>}
+                </div>;
+              })}
+            </div>;
+          })}
+        </div>
+    }
+
+    {/* Quote */}
+    <div style={{borderLeft:`3px solid ${T.accent}`,background:T.card,borderRadius:"0 14px 14px 0",padding:"14px 16px",boxShadow:shadow}}>
+      <p style={{color:T.muted,fontSize:12,lineHeight:1.65,margin:"0 0 6px",fontStyle:"italic"}}>"{quote[0]}"</p>
+      <span style={{color:T.accent,fontSize:10,fontWeight:600}}>— {quote[1]}</span>
+    </div>
+  </Scroll>;
+}
+
+// ── LOG ──
+function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
+  const currentWk=useMemo(()=>weekNum(sprint.startDate),[sprint.startDate]);
+  const [selWk,setSelWk]=useState(currentWk);
+  const [local,setLocal]=useState(weekLogs[currentWk]||{});
+  const [saved,setSaved]=useState(false);
+  useEffect(()=>setLocal(weekLogs[selWk]||{}),[weekLogs,selWk]);
+  const {overall,bonusScore}=useMemo(()=>calcScores(sprint.habits,local),[sprint.habits,local]);
+  const pausedWeeks=sprint.pausedWeeks||[];
+  const isSelWkPaused=pausedWeeks.includes(selWk);
+
+  async function togglePause(){
+    const newPaused=isSelWkPaused?pausedWeeks.filter(w=>w!==selWk):[...pausedWeeks,selWk];
+    const updated={...sprint,pausedWeeks:newPaused};
+    await ss(`sprint_${userId}`,updated,true);
+    onUpdateSprint(updated);
+  }
+
+  async function save(){
+    if(isSelWkPaused)return;
+    // Save logs and update UI immediately — don't wait on social writes
+    await ss(`logs_${userId}_${sprint.id}_w${selWk}`,local,true);
+    onSave(selWk,local);
+    setSaved(true);
+    setTimeout(()=>setSaved(false),2000);
+    // Push social data in background (non-blocking)
+    const {overall:ov,byCat}=calcScores(sprint.habits,local);
+    sg(`user_${userId}`,true).then(u=>{
+      const uname=u?.name||"User";
+      const wsk=`social_${sprint.id}_w${selWk}`;
+      sg(wsk,true).then(we=>{
+        ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,overall:ov,byCat}],true);
+      });
+      const allSaved={...weekLogs,[selWk]:local};
+      const curPaused=sprint.pausedWeeks||[];
+      const entries=Object.entries(allSaved).map(([w,lg])=>{
+        if(curPaused.includes(parseInt(w)))return null;
+        const has=sprint.habits.some(h=>lg[h.id]!==undefined&&lg[h.id]!==null&&lg[h.id]!=="");
+        const{overall:s}=calcScores(sprint.habits,lg);return has?{w:parseInt(w),s}:null;
+      }).filter(Boolean);
+      const spAvg=entries.length?Math.round(entries.reduce((a,e)=>a+e.s,0)/entries.length):0;
+      const ssk=`social_sprint_${sprint.id}`;
+      sg(ssk,true).then(se=>{
+        ss(ssk,[...(se||[]).filter(e=>e.userId!==userId),{userId,name:uname,sprintAvg:spAvg,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.s]))}],true);
+      });
+    });
+  }
+
+  const catGroups=CATS.map(c=>({...c,habits:sprint.habits.filter(h=>h.catId===c.id)})).filter(c=>c.habits.length>0);
+  const regHabits=sprint.habits.filter(h=>!h.isBonus);
+  return <Scroll>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+      <div>
+        <SH>Log</SH>
+        <p style={{color:T.muted,fontSize:13,margin:"4px 0 0"}}>
+          {isSelWkPaused
+            ?<span style={{color:T.amber,fontWeight:600}}>Week {selWk} marked as OFF — not counted in averages</span>
+            :<><strong style={{color:scoreColor(overall)}}>{overall}%</strong>{bonusScore>0&&<span style={{color:T.amber,marginLeft:6,fontSize:11}}>+{bonusScore}% bonus</span>}{selWk!==currentWk&&<span style={{color:T.amber,marginLeft:8,fontSize:11}}>← past week</span>}</>
+          }
+        </p>
+      </div>
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={togglePause}
+          style={{background:isSelWkPaused?T.amber+"22":"transparent",border:`1px solid ${isSelWkPaused?T.amber:T.border}`,
+            color:isSelWkPaused?T.amber:T.muted,borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer",fontWeight:600}}>
+          {isSelWkPaused?"▶ Resume":"⏸ Days off"}
+        </button>
+        {!isSelWkPaused&&<Btn onClick={save} variant={saved?"success":"primary"}>{saved?"Saved ✓":"Save"}</Btn>}
+      </div>
+    </div>
+    <div style={{display:"flex",gap:4,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
+      {Array.from({length:currentWk},(_,i)=>{
+        const w=i+1;const ll=weekLogs[w]||{};
+        const isPaused=pausedWeeks.includes(w);
+        const hasLog=!isPaused&&regHabits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+        const{overall:ws}=calcScores(sprint.habits,ll);const isSel=selWk===w;
+        return <button key={w} onClick={()=>setSelWk(w)} style={{flexShrink:0,padding:"8px 12px",borderRadius:8,
+          border:`1px solid ${isSel?(isPaused?T.amber:T.accent):T.border}`,
+          background:isSel?(isPaused?T.amber+"22":T.accent+"22"):"transparent",
+          cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:44,minHeight:44,justifyContent:"center"}}>
+          <span style={{fontSize:10,color:isSel?(isPaused?T.amber:T.accent):T.muted,fontWeight:isSel?700:400}}>W{w}</span>
+          {isPaused
+            ?<span style={{fontSize:8,color:T.amber,fontWeight:700}}>OFF</span>
+            :<div style={{width:6,height:6,borderRadius:3,background:hasLog?scoreColor(ws):T.faint}}/>
+          }
+        </button>;
+      })}
+    </div>
+    {isSelWkPaused&&<div style={{background:T.amber+"12",border:`1px solid ${T.amber}33`,borderRadius:12,padding:"20px 16px",textAlign:"center",marginBottom:16}}>
+      <div style={{fontSize:28,marginBottom:8}}>🏖️</div>
+      <p style={{color:T.amber,fontSize:14,fontWeight:600,margin:"0 0 4px"}}>This week is marked as OFF</p>
+      <p style={{color:T.muted,fontSize:12,margin:0}}>Days off, holiday or sick leave — this week won't count toward your sprint average. You can still log if you want.</p>
+    </div>}
+    {catGroups.map(cat=>{
+      const reg=cat.habits.filter(h=>!h.isBonus);const bon=cat.habits.filter(h=>h.isBonus);
+      return <div key={cat.id} style={{marginBottom:20,opacity:isSelWkPaused?0.5:1,transition:"opacity 0.2s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><div style={{width:8,height:8,borderRadius:2,background:cat.color}}/><span style={{color:cat.color,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span></div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {reg.map(h=><HabitRow key={h.id} habit={h} value={local[h.id]} onChange={v=>setLocal(p=>({...p,[h.id]:v}))}/>)}
+          {bon.map(h=><HabitRow key={h.id} habit={h} value={local[h.id]} onChange={v=>setLocal(p=>({...p,[h.id]:v}))} isBonus/>)}
+        </div>
+      </div>;
+    })}
+  </Scroll>;
+}
+
+function HabitRow({habit,value,onChange,isBonus=false}){
+  const isBool=habit.type==="boolean";const s=scoreOne(isBool?(value?1:0):value,habit);
+  const hasVal=value!==undefined&&value!==null&&value!=="";const col=hasVal?scoreColor(Math.round(s*100)):T.border;
+  return <div style={{background:isBonus?"rgba(255,149,0,0.07)":T.card,border:"none",borderRadius:14,boxShadow:shadow,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+    <div style={{width:4,height:38,borderRadius:2,background:isBonus?T.amber:col,flexShrink:0,transition:"background 0.3s"}}/>
+    <div style={{flex:1}}>
+      <div style={{color:isBonus?T.amber:T.text,fontSize:14,fontWeight:500}}>{isBonus?"⭐ ":""}{habit.name}</div>
+      <div style={{color:T.muted,fontSize:11,marginTop:2}}>
+        {habit.subCat&&`${habit.subCat} · `}
+        {habit.type!=="boolean"&&`${habit.targetType==="min"?"≥":"≤"} ${habit.target}${habit.unit?` ${habit.unit}`:""} · `}
+        {isBonus?"+5% bonus":habit.weight+"%"}
+        {hasVal&&<span style={{marginLeft:6,color:isBonus?T.amber:col,fontWeight:700}}>{Math.round(s*100)}%</span>}
+      </div>
+    </div>
+    {isBool
+      ?<button onClick={()=>onChange(!value)} style={{width:52,height:32,borderRadius:16,border:"none",cursor:"pointer",flexShrink:0,background:value?(isBonus?T.amber:T.green):T.border,transition:"background 0.2s",position:"relative"}}>
+          <div style={{width:26,height:26,borderRadius:13,background:"#fff",position:"absolute",top:3,left:value?23:3,transition:"left 0.2s"}}/>
+        </button>
+      :<input type="number" step={habit.type==="duration"?0.5:1} min={habit.type==="rating"?1:0} max={habit.type==="rating"?5:undefined} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={habit.type==="rating"?"1–5":"0"} style={{...iSx,width:80,textAlign:"center",fontWeight:700,flexShrink:0,padding:"9px 6px",fontSize:16}}/>
+    }
+  </div>;
+}
+
+// ── SPRINT TAB ──
+function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated}){
+  const [reconfigure,setReconfigure]=useState(false);
+  const [editingId,setEditingId]=useState(null);const [editDraft,setEditDraft]=useState(null);const [saving,setSaving]=useState(false);
+  if(!sprint||reconfigure)return <SprintSetupView user={user} onDone={s=>{setReconfigure(false);onSprintCreated(s);}}/>;
+  const wk=weekNum(sprint.startDate);
+  async function saveEdit(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp,true);onHabitsUpdated(sp);setEditingId(null);setEditDraft(null);setSaving(false);}
+  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp,true);onHabitsUpdated(sp);}
+  const catGroups=CATS.map(c=>({...c,habits:sprint.habits.filter(h=>h.catId===c.id),weight:(sprint.catWeights||{})[c.id]||0})).filter(c=>c.habits.length>0);
+  return <Scroll>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><SH>Current sprint</SH><Btn small variant="secondary" onClick={()=>setReconfigure(true)}>New sprint</Btn></div>
+    <Sub>Week {wk} of 12 · started {fmtDate(sprint.startDate)}</Sub>
+    <Notice color={T.accent}>Tap Edit on any habit to update it. Past logs are not affected.</Notice>
+    {catGroups.map(cat=>{
+      const reg=cat.habits.filter(h=>!h.isBonus);const bon=cat.habits.filter(h=>h.isBonus);
+      const totW=reg.reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+      return <div key={cat.id} style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"14px 16px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <div style={{width:8,height:8,borderRadius:2,background:cat.color}}/>
+          <span style={{color:cat.color,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span>
+          <span style={{color:T.muted,fontSize:11,marginLeft:"auto"}}>{totW.toFixed(0)}% / {cat.weight}%</span>
+        </div>
+        {[...reg,...bon].map(h=>{
+          const isBonus=h.isBonus;
+          if(editingId===h.id&&editDraft){
+            const otherW=reg.filter(x=>x.id!==h.id).reduce((a,x)=>a+(parseFloat(x.weight)||0),0);
+            return <div key={h.id} style={{marginTop:4}}><HabitForm habit={editDraft} cat={cat} remaining={(cat.weight||0)-otherW} onChange={setEditDraft} saveLabel={saving?"Saving…":"Update"} onSave={saveEdit} onCancel={()=>{setEditingId(null);setEditDraft(null);}}/></div>;
+          }
+          return <div key={h.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isBonus?T.amber+"10":T.surface,borderRadius:10,marginBottom:6,border:isBonus?`1px solid ${T.amber}22`:"none"}}>
+            <div style={{flex:1}}>
+              <div style={{color:isBonus?T.amber:T.text,fontSize:13,fontWeight:500}}>{isBonus?"⭐ ":""}{h.name}{h.subCat&&<span style={{color:T.muted,fontSize:11}}> · {h.subCat}</span>}</div>
+              <div style={{color:T.muted,fontSize:11,marginTop:3}}>{h.type!=="boolean"&&`${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""} · `}<strong style={{color:isBonus?T.amber:cat.color}}>{isBonus?"+5% bonus":h.weight+"%"}</strong></div>
+            </div>
+            <button onClick={()=>{setEditingId(h.id);setEditDraft({...h});}} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",flexShrink:0,minHeight:36}}>Edit</button>
+            <button onClick={()=>delHabit(h.id)} style={{background:"none",border:"none",color:T.red+"88",fontSize:18,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>×</button>
+          </div>;
+        })}
+      </div>;
+    })}
+  </Scroll>;
+}
+
+// ── SOCIAL ──
+function SocialView({user,sprint}){
+  const [tab,setTab]=useState("sprint");const [spData,setSpData]=useState([]);const [wkData,setWkData]=useState([]);const [loading,setLoading]=useState(true);
+  const wk=useMemo(()=>weekNum(sprint.startDate),[sprint.startDate]);
+  const activeCats=CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
+  useEffect(()=>{(async()=>{setLoading(true);const [sd,wd]=await Promise.all([sg(`social_sprint_${sprint.id}`,true),sg(`social_${sprint.id}_w${wk}`,true)]);setSpData((sd||[]).sort((a,b)=>b.sprintAvg-a.sprintAvg));setWkData((wd||[]).sort((a,b)=>b.overall-a.overall));setLoading(false);})();},[sprint,wk]);
+  const entries=tab==="sprint"?spData:wkData;const ranks=["🥇","🥈","🥉"];
+  return <Scroll>
+    <SH>Community</SH><Sub>Week {wk} · compare progress with others</Sub>
+
+    {/* How to invite friends */}
+    <div style={{background:T.card,borderRadius:16,boxShadow:shadow,padding:"13px 16px",marginBottom:16}}>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px"}}>Invite friends</p>
+      <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>
+        To invite friends, copy the URL from your <strong style={{color:T.text}}>browser address bar</strong> (starts with <span style={{color:T.accent}}>claude.ai/chat/…</span>) and send it to them.
+      </p>
+      <div style={{background:T.surface,border:`1px solid ${T.accent}33`,borderRadius:8,padding:"12px 14px"}}>
+        <p style={{margin:0,fontSize:12,color:T.muted,lineHeight:1.6}}>
+          Once they open the link they can <strong style={{color:T.text}}>create an account</strong>, set up their sprint, log a week and hit Save — they appear on the leaderboard automatically. No invite code needed.
+        </p>
+      </div>
+    </div>
+    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:20}}>
+      {[["sprint","Sprint avg"],["week","This week"]].map(([t,l])=>(
+        <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"8px 0",border:"none",borderRadius:8,cursor:"pointer",background:tab===t?T.accent:"transparent",color:tab===t?"#fff":T.muted,fontSize:13,fontWeight:600,transition:"all 0.2s"}}>{l}</button>
+      ))}
+    </div>
+    {loading&&<div style={{textAlign:"center",padding:48,color:T.muted}}>Loading…</div>}
+    {!loading&&entries.length===0&&<div style={{textAlign:"center",padding:48}}><p style={{color:T.muted}}>No scores yet — log and save to appear here.</p></div>}
+    {entries.map((entry,i)=>{
+      const score=tab==="sprint"?entry.sprintAvg:entry.overall;const isMe=entry.userId===user.id;
+      return <div key={entry.userId} style={{background:T.card,borderRadius:14,padding:"16px 18px",marginBottom:10,border:`1px solid ${isMe?T.accent:T.border}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:tab==="week"?10:0}}>
+          <div style={{width:32,height:32,borderRadius:10,background:T.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:i<3?16:13,flexShrink:0}}>{i<3?ranks[i]:<span style={{color:T.muted,fontWeight:700}}>{i+1}</span>}</div>
+          <Avatar name={entry.name} userId={entry.userId} size={32}/>
+          <div style={{flex:1}}>
+            <span style={{color:T.text,fontSize:15,fontWeight:600}}>{entry.name}</span>
+            {isMe&&<span style={{marginLeft:8,fontSize:10,color:T.accent,background:T.accent+"22",padding:"2px 7px",borderRadius:5,fontWeight:700}}>you</span>}
+            {tab==="sprint"&&<div style={{color:T.muted,fontSize:11,marginTop:2}}>{entry.weeksLogged} week{entry.weeksLogged!==1?"s":""} logged</div>}
+          </div>
+          <div style={{fontSize:22,fontWeight:800,color:scoreColor(score)}}>{score}%</div>
+        </div>
+        {tab==="week"&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {activeCats.map(cat=>{const s=entry.byCat?.[cat.id];if(s===null||s===undefined)return null;
+            return <div key={cat.id} style={{display:"flex",alignItems:"center",gap:4,background:T.surface,borderRadius:6,padding:"4px 8px"}}><div style={{width:5,height:5,borderRadius:2,background:cat.color}}/><span style={{color:T.muted,fontSize:11}}>{cat.name}</span><span style={{color:scoreColor(s),fontSize:11,fontWeight:700}}>{s}%</span></div>;
+          })}
+        </div>}
+      </div>;
+    })}
+  </Scroll>;
+}
+
+// ── PROFILE ──
+function ProfileView({user,sprint,weekLogs,onLogout}){
+  const [history,setHistory]=useState([]);
+  useEffect(()=>{(async()=>{const h=await sg(`sprint_history_${user.id}`,true)||[];setHistory(h.reverse());})();},[user.id]);
+  const wk=sprint?weekNum(sprint.startDate):0;
+  const{overall}=sprint?calcScores(sprint.habits,weekLogs[wk]||{}):{overall:0};
+  const memberSince=new Date(user.createdAt).toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+  const allAvgs=history.map(s=>s.avgScore).filter(Boolean);
+  const lifetimeAvg=allAvgs.length?Math.round(allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length):null;
+  return <Scroll>
+    <div style={{background:T.card,borderRadius:22,boxShadow:shadow,padding:"24px 20px",marginBottom:16,textAlign:"center"}}>
+      <div style={{width:80,height:80,borderRadius:24,background:avCol(user.id),display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:800,color:"#fff",margin:"0 auto 16px"}}>{initials(user.name)}</div>
+      <h2 style={{color:T.text,fontSize:20,fontWeight:800,margin:"0 0 4px"}}>{user.name}</h2>
+      <p style={{color:T.muted,fontSize:13,margin:"0 0 8px"}}>{user.email}</p>
+      <div style={{color:T.faint,fontSize:12}}>Member since {memberSince}</div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+      {[{label:"Sprints done",val:history.length},{label:"Weeks logged",val:history.reduce((a,s)=>a+(s.weeksLogged||0),0)},{label:"Lifetime avg",val:lifetimeAvg!==null?`${lifetimeAvg}%`:"—"}].map(({label,val})=>(
+        <div key={label} style={{background:T.card,borderRadius:16,boxShadow:shadow,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{color:T.muted,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>{label}</div>
+          <div style={{color:T.text,fontSize:20,fontWeight:800}}>{val}</div>
+        </div>
+      ))}
+    </div>
+    {sprint&&<div style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"16px 18px",marginBottom:16}}>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px"}}>Current sprint</p>
+      <div style={{display:"flex",alignItems:"center",gap:16}}><Ring score={overall} size={64}/><div><div style={{color:T.text,fontSize:14,fontWeight:600}}>Week {wk} of 12</div><div style={{color:T.muted,fontSize:12,marginTop:4}}>Started {fmtDate(sprint.startDate)}</div><div style={{color:T.muted,fontSize:12,marginTop:2}}>{sprint.habits.length} habits tracked</div></div></div>
+    </div>}
+    {history.length>0&&<div style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"16px 18px",marginBottom:16}}>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px"}}>Sprint history</p>
+      {history.map((sp,i)=>(
+        <div key={sp.sprintId} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
+          <div style={{flex:1}}><div style={{color:T.text,fontSize:13,fontWeight:500}}>Sprint {history.length-i}</div><div style={{color:T.muted,fontSize:11,marginTop:2}}>{fmtDate(sp.startDate)} · {sp.weeksLogged} weeks logged</div></div>
+          <div style={{fontSize:16,fontWeight:800,color:scoreColor(sp.avgScore),minWidth:40,textAlign:"right"}}>{sp.avgScore}%</div>
+        </div>
+      ))}
+    </div>}
+    <Btn full variant="danger" onClick={onLogout}>Sign out</Btn>
+  </Scroll>;
+}
+
+// ── ADMIN ──
+const HIST_Q1={
+  sprintId:"q1_2026",startDate:"2026-01-05",endDate:"2026-03-30",
+  catWeights:{health:15,finance:5,social:15,growth:35,fun:5,career:25},
+  weekScores:[{w:1,score:56},{w:2,score:95},{w:3,score:81},{w:4,score:70},{w:5,score:71},{w:6,score:74},{w:7,score:84},{w:8,score:75},{w:9,score:85},{w:10,score:75},{w:11,score:82},{w:12,score:82},{w:13,score:30}],
+  avgScore:73,weeksLogged:13,
+  catAvgs:{health:60,finance:79,social:95,growth:45,fun:100,career:94},
+  habits:[
+    {id:"q1h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:5},
+    {id:"q1h2",catId:"health",subCat:"Nutrition",name:"Alcohol drinks",type:"numeric",targetType:"max",target:"3",unit:"drinks",weight:5},
+    {id:"q1h3",catId:"health",subCat:"Mental Health",name:"Meditation session",type:"numeric",targetType:"min",target:"3",unit:"sessions",weight:5},
+    {id:"q1h4",catId:"finance",name:"Save & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:5},
+    {id:"q1h5",catId:"social",name:"Friends & family time",type:"numeric",targetType:"min",target:"2",unit:"moments",weight:5},
+    {id:"q1h6",catId:"social",name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:10},
+    {id:"q1h7",catId:"growth",name:"Learning hours (data)",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:30},
+    {id:"q1h8",catId:"growth",name:"Language practice (Russian)",type:"duration",targetType:"min",target:"1.5",unit:"hrs",weight:5},
+    {id:"q1h9",catId:"fun",name:"Hobby hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:5},
+    {id:"q1h10",catId:"career",name:"Hours at work",type:"duration",targetType:"min",target:"55",unit:"hrs",weight:15},
+    {id:"q1h11",catId:"career",name:"Impact delivered",type:"boolean",targetType:"min",target:"1",unit:"",weight:10},
+  ],
+};
+const HIST_Q3={
+  sprintId:"q3_2025",startDate:"2025-07-07",endDate:"2025-09-29",
+  catWeights:{health:28,finance:5,social:12,growth:30,fun:3,career:22},
+  weekScores:[{w:1,score:92},{w:2,score:80},{w:3,score:90},{w:4,score:20},{w:5,score:89},{w:6,score:90},{w:7,score:77},{w:8,score:88},{w:9,score:85},{w:10,score:81},{w:11,score:82},{w:12,score:87}],
+  avgScore:80,weeksLogged:12,
+  catAvgs:{health:70,finance:75,social:90,growth:75,fun:100,career:85},
+  habits:[
+    {id:"q3h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:15},
+    {id:"q3h2",catId:"health",subCat:"Nutrition",name:"Junk food",type:"numeric",targetType:"max",target:"2",unit:"times",weight:8},
+    {id:"q3h3",catId:"health",subCat:"Mental Health",name:"Meditation session",type:"numeric",targetType:"min",target:"3",unit:"sessions",weight:5},
+    {id:"q3h4",catId:"finance",name:"Restaurants limit",type:"numeric",targetType:"max",target:"1",unit:"",weight:5},
+    {id:"q3h5",catId:"social",name:"Friends & family time",type:"numeric",targetType:"min",target:"2",unit:"moments",weight:5},
+    {id:"q3h6",catId:"social",name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:7},
+    {id:"q3h7",catId:"growth",name:"Learning hours",type:"duration",targetType:"min",target:"5",unit:"hrs",weight:25},
+    {id:"q3h8",catId:"growth",name:"Language practice (Russian)",type:"duration",targetType:"min",target:"5",unit:"hrs",weight:5},
+    {id:"q3h9",catId:"fun",name:"Hobby hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:3},
+    {id:"q3h10",catId:"career",name:"Hours at work",type:"duration",targetType:"min",target:"37",unit:"hrs",weight:18},
+    {id:"q3h11",catId:"career",name:"SQL / Data skills",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:4},
+  ],
+};
+const HIST_Q4={
+  sprintId:"q4_2025",startDate:"2025-10-06",endDate:"2025-12-30",
+  catWeights:{health:28,finance:5,social:12,growth:30,fun:3,career:22},
+  weekScores:[{w:1,score:80},{w:2,score:80},{w:3,score:80},{w:4,score:80},{w:5,score:80},{w:6,score:80},{w:7,score:80},{w:8,score:80},{w:9,score:84},{w:10,score:80},{w:11,score:67},{w:12,score:null},{w:13,score:null}],
+  avgScore:79,weeksLogged:11,
+  catAvgs:{health:68,finance:72,social:88,growth:72,fun:95,career:82},
+  habits:[
+    {id:"q4h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:15},
+    {id:"q4h2",catId:"health",subCat:"Nutrition",name:"Junk food",type:"numeric",targetType:"max",target:"2",unit:"times",weight:8},
+    {id:"q4h3",catId:"health",subCat:"Mental Health",name:"Meditation session",type:"numeric",targetType:"min",target:"3",unit:"sessions",weight:5},
+    {id:"q4h4",catId:"finance",name:"Restaurants limit",type:"numeric",targetType:"max",target:"1",unit:"",weight:5},
+    {id:"q4h5",catId:"social",name:"Friends & family time",type:"numeric",targetType:"min",target:"2",unit:"moments",weight:5},
+    {id:"q4h6",catId:"social",name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:7},
+    {id:"q4h7",catId:"growth",name:"Learning hours",type:"duration",targetType:"min",target:"5",unit:"hrs",weight:25},
+    {id:"q4h8",catId:"growth",name:"Language practice (Russian)",type:"duration",targetType:"min",target:"5",unit:"hrs",weight:5},
+    {id:"q4h9",catId:"fun",name:"Hobby hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:3},
+    {id:"q4h10",catId:"career",name:"Hours at work",type:"duration",targetType:"min",target:"37",unit:"hrs",weight:18},
+    {id:"q4h11",catId:"career",name:"SQL / Data skills",type:"duration",targetType:"min",target:"2",unit:"hrs",weight:4},
+  ],
+};
+
+function AdminView({currentUser,onHistoryUpdated}){
+  const [users,setUsers]=useState([]);const [loading,setLoading]=useState(true);
+  const [expanded,setExpanded]=useState(null);const [details,setDetails]=useState({});
+  const [msg,setMsg]=useState(null);const [newPwds,setNewPwds]=useState({});
+  const [importing,setImporting]=useState(false);
+  useEffect(()=>{(async()=>{setLoading(true);const idx=await sg("userIndex",true)||[];setUsers(idx);setLoading(false);})();},[]);
+  async function loadDetails(uid){
+    if(details[uid])return setExpanded(expanded===uid?null:uid);
+    const [u,sp,hist]=await Promise.all([sg(`user_${uid}`,true),sg(`sprint_${uid}`,true),sg(`sprint_history_${uid}`,true)]);
+    const wk=sp?weekNum(sp.startDate):0;let cs=null;
+    if(sp){const logs=await sg(`logs_${uid}_${sp.id}_w${wk}`,true)||{};const{overall}=calcScores(sp.habits,logs);cs=overall;}
+    setDetails(p=>({...p,[uid]:{user:u,sprint:sp,history:hist||[],wk,cs}}));setExpanded(expanded===uid?null:uid);
+  }
+  async function resetPwd(uid,pwd){const u=await sg(`user_${uid}`,true);if(!u)return;await ss(`user_${uid}`,{...u,passwordHash:hashStr(pwd)},true);setMsg(`Password reset for ${u.name}`);setTimeout(()=>setMsg(null),3000);setNewPwds(p=>({...p,[uid]:""}));}
+  async function clearSprint(uid){await ss(`sprint_${uid}`,null,true);setDetails(p=>({...p,[uid]:{...p[uid],sprint:null,cs:null,wk:0}}));setMsg("Sprint cleared.");setTimeout(()=>setMsg(null),3000);}
+
+  async function importCurrentSprint(){
+    setImporting(true);
+    const existing=await sg(`sprint_${currentUser.id}`,true);
+    if(existing){setMsg("Sprint already exists — clear it first if you want to reimport.");setImporting(false);setTimeout(()=>setMsg(null),4000);return;}
+    const sprintId="q2_2026_import";
+    const sprint={
+      id:sprintId,
+      userId:currentUser.id,
+      startDate:"2026-03-30",
+      createdAt:Date.now(),
+      catWeights:{health:30,growth:35,career:15,finance:5,social:10,fun:5},
+      pausedWeeks:[],
+      habits:[
+        {id:"s1h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:20},
+        {id:"s1h2",catId:"health",subCat:"Nutrition",name:"Alcohol drinks",type:"numeric",targetType:"max",target:"3",unit:"drinks",weight:10},
+        {id:"s1h3",catId:"growth",name:"Russian",type:"duration",targetType:"min",target:"1.5",unit:"hrs",weight:5},
+        {id:"s1h4",catId:"growth",name:"Data learning and practice",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:30},
+        {id:"s1h5",catId:"career",name:"Hours at work",type:"duration",targetType:"min",target:"55",unit:"hrs",weight:5},
+        {id:"s1h6",catId:"career",name:"Impact delivered",type:"boolean",targetType:"min",target:"1",unit:"",weight:10},
+        {id:"s1h7",catId:"finance",name:"Save & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:5},
+        {id:"s1h8",catId:"social",name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:10},
+        {id:"s1h9",catId:"fun",name:"Hobby hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:5},
+        {id:"s1bonus",catId:"health",name:"Bonus habit",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true},
+      ],
+    };
+    await ss(`sprint_${currentUser.id}`,sprint,true);
+    setMsg("Sprint imported — start date 30 Mar 2026, 9 habits + bonus. Reload the app to see it.");
+    setImporting(false);setTimeout(()=>setMsg(null),6000);
+    if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
+  }
+
+  async function importMyHistory(){
+    setImporting(true);
+    const existing=await sg(`sprint_history_${currentUser.id}`,true)||[];
+    const existingIds=new Set(existing.map(s=>s.sprintId));
+    const toAdd=[HIST_Q3,HIST_Q4,HIST_Q1].filter(s=>!existingIds.has(s.sprintId));
+    if(toAdd.length===0){setMsg("History already imported — nothing to add.");setImporting(false);setTimeout(()=>setMsg(null),3000);return;}
+    await ss(`sprint_history_${currentUser.id}`,[...existing,...toAdd],true);
+    setMsg(`Imported ${toAdd.length} sprint${toAdd.length!==1?"s":""}: Q1-26 (73%), Q3-25 (80%), Q4-25 (79%)`);
+    setImporting(false);setTimeout(()=>setMsg(null),5000);
+    if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
+  }
+
+  return <Scroll>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}><div style={{width:8,height:8,borderRadius:2,background:T.amber}}/><SH>Admin panel</SH></div>
+    <Sub>{users.length} registered user{users.length!==1?"s":""}</Sub>
+    {msg&&<Notice color={T.green}>{msg}</Notice>}
+
+    {/* History import for Manu */}
+    <div style={{background:T.card,border:`1px solid ${T.accent}44`,borderRadius:14,padding:"16px 18px",marginBottom:16}}>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 10px"}}>Import historical data</p>
+      <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>
+        Import your Q1 (73%), Q3 (80%) and Q4 (79%) 2025 sprint history from your spreadsheet. This will populate the sprint comparison and home page trend charts.
+      </p>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+        {[{l:"Q1-26",v:"73%",wk:13},{l:"Q3-25",v:"80%",wk:12},{l:"Q4-25",v:"79%",wk:11}].map(({l,v,wk})=>(
+          <div key={l} style={{background:T.surface,borderRadius:10,padding:"10px",textAlign:"center"}}>
+            <div style={{color:T.muted,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div>
+            <div style={{color:T.green,fontSize:18,fontWeight:800}}>{v}</div>
+            <div style={{color:T.faint,fontSize:10}}>{wk} weeks</div>
+          </div>
+        ))}
+      </div>
+      {/* Current sprint import */}
+      <div style={{background:T.card,border:"1px solid rgba(0,122,255,0.2)",borderRadius:14,padding:"16px 18px",marginBottom:16,boxShadow:shadow}}>
+        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 10px"}}>Import current sprint</p>
+        <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>
+          Recreates your Q2-26 sprint (started 30 Mar) with all 9 habits — Health, Growth, Career, Finance, Social, Fun + bonus.
+        </p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+          {[{l:"Start",v:"30 Mar"},{l:"Habits",v:"9 + bonus"},{l:"Week",v:"W2/12"}].map(({l,v})=>(
+            <div key={l} style={{background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px",textAlign:"center"}}>
+              <div style={{color:T.muted,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div>
+              <div style={{color:T.accent,fontSize:16,fontWeight:800}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <Btn full variant="secondary" disabled={importing} onClick={importCurrentSprint}>
+          {importing?"Importing…":"Import current sprint →"}
+        </Btn>
+      </div>
+
+      <Btn full variant="amber" disabled={importing} onClick={importMyHistory}>
+        {importing?"Importing…":"Import my 2025 sprint history →"}
+      </Btn>
+    </div>
+    <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:16,boxShadow:shadow}}>
+      {loading&&<div style={{padding:24,textAlign:"center",color:T.muted}}>Loading…</div>}
+      {users.map((u,i)=>{
+        const det=details[u.id];const isOpen=expanded===u.id;
+        return <div key={u.id}>
+          <div onClick={()=>loadDetails(u.id)} style={{display:"grid",gridTemplateColumns:"1fr 80px 24px",padding:"12px 16px",borderTop:i>0?`1px solid ${T.border}`:"none",cursor:"pointer",background:isOpen?T.surface:"transparent",transition:"background 0.15s"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><Avatar name={u.name} userId={u.id} size={28}/><div><div style={{color:T.text,fontSize:13,fontWeight:500}}>{u.name}</div><div style={{color:T.muted,fontSize:11}}>{u.email}</div></div>{ADMIN_EMAILS.includes(u.email)&&<span style={{fontSize:9,color:T.amber,background:T.amber+"22",padding:"2px 6px",borderRadius:4,fontWeight:700,marginLeft:4}}>ADMIN</span>}</div>
+            <div style={{display:"flex",alignItems:"center"}}>{det?.sprint?<span style={{fontSize:11,color:T.green,fontWeight:600}}>W{det.wk}/12</span>:det?.sprint===null?<span style={{fontSize:11,color:T.muted}}>No sprint</span>:<span style={{fontSize:11,color:T.faint}}>—</span>}</div>
+            <span style={{color:T.muted,fontSize:18,transform:isOpen?"rotate(90deg)":"rotate(0)",transition:"transform 0.2s",display:"inline-block",alignSelf:"center"}}>›</span>
+          </div>
+          {isOpen&&det&&<div style={{background:T.bg,borderTop:`1px solid ${T.border}`,padding:"16px 16px 20px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+              {[{l:"Sprints",v:det.history.length},{l:"Current score",v:det.sprint&&det.cs!==null?`${det.cs}%`:"—"},{l:"Weeks logged",v:det.history.reduce((a,s)=>a+(s.weeksLogged||0),0)}].map(({l,v})=>(
+                <div key={l} style={{background:T.card,borderRadius:10,padding:"10px 12px",textAlign:"center"}}><div style={{color:T.muted,fontSize:9,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div><div style={{color:T.text,fontSize:16,fontWeight:700}}>{v}</div></div>
+              ))}
+            </div>
+            <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
+              <p style={{color:T.muted,fontSize:11,margin:"0 0 10px",textTransform:"uppercase",letterSpacing:0.5}}>Admin actions</p>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {det.sprint&&<div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:T.muted,fontSize:12,flex:1}}>Clear active sprint</span><Btn small variant="danger" onClick={()=>clearSprint(u.id)}>Clear</Btn></div>}
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <input placeholder="New password" type="password" value={newPwds[u.id]||""} onChange={e=>setNewPwds(p=>({...p,[u.id]:e.target.value}))} style={{...iSx,flex:1,fontSize:12,padding:"7px 10px"}}/>
+                  <Btn small variant="amber" disabled={!newPwds[u.id]} onClick={()=>resetPwd(u.id,newPwds[u.id])}>Reset pwd</Btn>
+                </div>
+              </div>
+            </div>
+          </div>}
+        </div>;
+      })}
+    </div>
+  </Scroll>;
+}
+
+// ── RECAP ──
+function RecapView({user,sprint,weekLogs,onArchive}){
+  const [archiving,setArchiving]=useState(false);
+  const wk=weekNum(sprint.startDate);
+  const weekScores=useMemo(()=>{const out=[];for(let w=1;w<=12;w++){const logs=weekLogs[w]||{};const logged=sprint.habits.some(h=>logs[h.id]!==undefined&&logs[h.id]!==null&&logs[h.id]!=="");const{overall}=calcScores(sprint.habits,logs);out.push({w,overall:logged?overall:null,logged});}return out;},[sprint,weekLogs]);
+  const lw=weekScores.filter(w=>w.logged);
+  const avg=lw.length?Math.round(lw.reduce((a,w)=>a+w.overall,0)/lw.length):0;
+  const catAvgs=catAvgsFromWeeks(sprint.habits,weekLogs,wk);
+  async function doArchive(){
+    setArchiving(true);
+    const record={sprintId:sprint.id,startDate:sprint.startDate,endDate:new Date().toISOString().split("T")[0],habits:sprint.habits,catWeights:sprint.catWeights,weekScores:weekScores.map(w=>({w:w.w,score:w.overall})),avgScore:avg,weeksLogged:lw.length,catAvgs};
+    const hist=await sg(`sprint_history_${user.id}`,true)||[];
+    await ss(`sprint_history_${user.id}`,[...hist,record],true);
+    await ss(`sprint_${user.id}`,null,true);setArchiving(false);onArchive();
+  }
+  return <Scroll>
+    <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:40,marginBottom:8}}>🏁</div><h2 style={{color:T.text,fontSize:24,fontWeight:800,margin:0}}>Sprint complete!</h2><p style={{color:T.muted,fontSize:14,margin:"8px 0 0"}}>{fmtDate(sprint.startDate)} — {fmtDate(new Date().toISOString().split("T")[0])}</p></div>
+    <div style={{background:T.card,borderRadius:22,boxShadow:shadow,padding:"24px 20px",marginBottom:16,display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
+      <Ring score={avg} size={120}/>
+      <div style={{textAlign:"center"}}><div style={{color:T.text,fontSize:18,fontWeight:800}}>{avg>=80?"Excellent sprint":avg>=60?"Solid effort":"Room to grow"}</div><div style={{color:T.muted,fontSize:13,marginTop:4}}>{lw.length} / 12 weeks logged · avg {avg}%</div></div>
+    </div>
+    <div style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"16px 18px",marginBottom:16}}>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>12-week journey</p>
+      <div style={{display:"flex",alignItems:"flex-end",gap:3,height:72}}>
+        {weekScores.map(({w,overall,logged})=>(
+          <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+            <div style={{width:"100%",height:logged&&overall!==null?`${(overall/100)*60+4}px`:"2px",background:logged?scoreColor(overall):T.faint,borderRadius:"3px 3px 0 0",minHeight:2}}/>
+            <span style={{fontSize:7,color:T.muted}}>W{w}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+    <Btn full disabled={archiving} onClick={doArchive}>{archiving?"Archiving…":"Archive & start new sprint →"}</Btn>
+  </Scroll>;
+}
+
+// ── MAIN APP ──
+function App(){
+  const [user,setUser]=useState(null);const [sprint,setSprint]=useState(null);const [weekLogs,setWL]=useState({});
+  const [view,setView]=useState("home");const [booting,setBooting]=useState(true);
+  const [showOnboarding,setShowOnboarding]=useState(false);const [showRecap,setShowRecap]=useState(false);
+  const [history,setHistory]=useState([]);
+  const [quote]=useState(WISDOM[new Date().getDay()%WISDOM.length]);
+  const wk=sprint?weekNum(sprint.startDate):0;
+  const userIsAdmin=user&&ADMIN_EMAILS.includes(user.email);
+  const NAV=useMemo(()=>[{id:"home",label:"Home"},{id:"log",label:"Log"},{id:"sprint",label:"Sprint"},{id:"social",label:"Social"},{id:"profile",label:"Profile"},...(userIsAdmin?[{id:"admin",label:"Admin"}]:[])]  ,[userIsAdmin]);
+
+  async function loadHistory(userId){const h=await sg(`sprint_history_${userId}`,true)||[];setHistory(h);}
+  async function loadLogs(userId,sp){
+    const out={};for(let w=1;w<=weekNum(sp.startDate);w++){const d=await sg(`logs_${userId}_${sp.id}_w${w}`,true);if(d)out[w]=d;}setWL(out);
+  }
+
+  useEffect(()=>{
+    (async()=>{
+      const session=await sg("session",true);if(!session?.userId){setBooting(false);return;}
+      const u=await sg(`user_${session.userId}`,true);if(!u){setBooting(false);return;}
+      setUser(u);
+      await loadHistory(u.id);
+      const sp=await sg(`sprint_${u.id}`,true);
+      if(sp){setSprint(sp);await loadLogs(u.id,sp);}
+      setBooting(false);
+    })();
+  },[]);
+
+  useEffect(()=>{if(sprint&&weekNum(sprint.startDate)>=12)setShowRecap(true);},[sprint]);
+
+  async function onAuth(u){
+    await ss("session",{userId:u.id},true);
+    if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated,true);setUser(updated);setShowOnboarding(true);return;}
+    setUser(u);await loadHistory(u.id);
+    const sp=await sg(`sprint_${u.id}`,true);if(sp){setSprint(sp);await loadLogs(u.id,sp);}
+  }
+  async function onLogout(){await ss("session",null,true);setUser(null);setSprint(null);setWL({});setHistory([]);setView("home");setShowOnboarding(false);setShowRecap(false);}
+  function onSprintCreated(sp){setSprint(sp);setWL({});setView("home");setShowRecap(false);}
+  function onSaveLogs(w,logs){setWL(p=>({...p,[w]:logs}));}
+  async function onArchive(){setSprint(null);setWL({});setShowRecap(false);setView("sprint");if(user)await loadHistory(user.id);}
+
+  if(booting)return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:T.muted,fontSize:14}}>Loading…</span></div>;
+  if(!user)return <AuthView onAuth={onAuth}/>;
+  if(showOnboarding)return <OnboardingView name={user.name} onDone={()=>{setShowOnboarding(false);setView("sprint");}}/>;
+  if(showRecap&&sprint)return <div style={{minHeight:"100vh",background:T.bg,color:T.text}}>
+    <div style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:"11px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:9}}><div style={{width:28,height:28,borderRadius:8,background:T.text,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff"}}>M</div><span style={{fontWeight:800,fontSize:15}}>Momentum</span></div>
+      <span style={{color:T.amber,fontSize:12,fontWeight:600}}>Sprint complete</span>
+    </div>
+    <RecapView user={user} sprint={sprint} weekLogs={weekLogs} onArchive={onArchive}/>
+  </div>;
+
+  return <div style={{minHeight:"100vh",background:T.bg,color:T.text}}>
+    <div style={{background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:"1px solid rgba(0,0,0,0.1)",padding:"11px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+      <div style={{display:"flex",alignItems:"center",gap:9}}><div style={{width:28,height:28,borderRadius:8,background:T.text,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff"}}>M</div><span style={{fontWeight:800,fontSize:15}}>Momentum</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        {sprint&&<span style={{color:T.muted,fontSize:11}}>W{wk}/12</span>}
+        {userIsAdmin&&<span style={{fontSize:9,color:T.amber,background:T.amber+"22",padding:"2px 7px",borderRadius:4,fontWeight:700}}>ADMIN</span>}
+        <Avatar name={user.name} userId={user.id} size={28}/>
+      </div>
+    </div>
+    {!sprint&&view!=="sprint"&&<div style={{background:"rgba(0,122,255,0.08)",borderBottom:"1px solid rgba(0,122,255,0.15)",padding:"10px 20px",textAlign:"center"}}><span style={{color:T.text,fontSize:13}}>No active sprint.{" "}<button onClick={()=>setView("sprint")} style={{background:"none",border:"none",color:T.accent,fontWeight:700,fontSize:13,cursor:"pointer",padding:0}}>Set one up →</button></span></div>}
+    <div style={{paddingTop:4}}>
+      {view==="home"&&(sprint?<HomeView sprint={sprint} weekLogs={weekLogs} quote={quote} userId={user.id}/>:<div style={{textAlign:"center",padding:64}}><p style={{color:T.muted,fontSize:15,marginBottom:20}}>Set up a sprint to start.</p><Btn onClick={()=>setView("sprint")}>Set up sprint →</Btn></div>)}
+      {view==="log"&&(sprint?<LogView sprint={sprint} weekLogs={weekLogs} onSave={onSaveLogs} userId={user.id} onUpdateSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Set up a sprint first.</div>)}
+      {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsUpdated={sp=>setSprint(sp)}/>}
+      {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Set up a sprint first.</div>)}
+      {view==="profile"&&<ProfileView user={user} sprint={sprint} weekLogs={weekLogs} onLogout={onLogout}/>}
+      {view==="admin"&&userIsAdmin&&<AdminView currentUser={user} onHistoryUpdated={loadHistory}/>}
+    </div>
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(0,0,0,0.1)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
+      {NAV.map(item=>(
+        <button key={item.id} onClick={()=>setView(item.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"10px 4px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+          <div style={{width:20,height:2.5,borderRadius:2,background:view===item.id?(item.id==="admin"?T.amber:T.accent):"transparent",transition:"background 0.2s"}}/>
+          <span style={{fontSize:11,fontWeight:view===item.id?700:400,color:view===item.id?(item.id==="admin"?T.amber:T.text):T.muted,transition:"color 0.2s"}}>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
