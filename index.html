@@ -56,6 +56,30 @@ input,select,button{font-family:inherit;}
 </head>
 <body>
 <div id="root"></div>
+<div id="error-display" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;color:#d00;padding:20px;font-family:monospace;font-size:12px;z-index:99999;overflow:auto;white-space:pre-wrap;"></div>
+<script>
+window.onerror=function(msg,src,line,col,err){
+  var d=document.getElementById("error-display");
+  d.style.display="block";
+  d.textContent="CRASH:
+"+msg+"
+
+Line: "+line+"
+Col: "+col+"
+
+Source: "+src+"
+
+"+(err&&err.stack?err.stack:"");
+  return false;
+};
+window.addEventListener("unhandledrejection",function(e){
+  var d=document.getElementById("error-display");
+  d.style.display="block";
+  d.textContent=(d.textContent||"")+"PROMISE REJECTION:
+"+(e.reason&&e.reason.stack?e.reason.stack:e.reason)+"
+";
+});
+</script>
 
 <script type="text/babel">
 const {useState,useEffect,useMemo}=React;
