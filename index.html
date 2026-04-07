@@ -27,39 +27,39 @@ const {useState,useEffect,useMemo}=React;
 
 const T={bg:"#f2f2f7",surface:"#ffffff",card:"#ffffff",border:"rgba(0,0,0,0.09)",text:"#1c1c1e",muted:"#8e8e93",faint:"#d1d1d6",accent:"#007aff",green:"#30d158",amber:"#ff9500",red:"#ff3b30"};
 const shadow="0 2px 14px rgba(0,0,0,0.07)";
-function barColor(s){if(s>=85)return"rgba(0,122,255,1.0)";if(s>=75)return"rgba(0,122,255,0.70)";if(s>=60)return"rgba(0,122,255,0.45)";return"rgba(0,122,255,0.22)";}
+function barColor(s){if(s>=85)return"rgba(0,122,255,1.0)";if(s>=75)return"#5ac87a";if(s>=60)return"rgba(0,122,255,0.45)";return"rgba(0,122,255,0.22)";}
 const ADMIN_EMAILS=["manu.manubens@gmail.com"];
 
 const CATS=[
   {id:"health", name:"Health", color:"#F05A5A", subs:["Sport","Sleep","Nutrition","Mental Health"], mandatory:true,
-   desc:"Your physical and mental foundation. Bryan Johnson's rule #1: fix sleep first — without it everything else collapses. This category covers movement, rest, nutrition, and inner wellbeing."},
+   desc:"Ta fondation physique et mentale. La règle n°1 de Bryan Johnson : le sommeil d'abord — sans lui tout s'effondre. Cette catégorie couvre le mouvement, le repos, la nutrition et le bien-être intérieur."},
   {id:"growth", name:"Growth", color:"#7B72F0",
-   desc:"Skills, knowledge and intellectual development. The habits that compound into expertise over years — reading, learning, practising, creating."},
+   desc:"Compétences, connaissances et développement intellectuel. Les habitudes qui se transforment en expertise au fil des années — lire, apprendre, pratiquer, créer."},
   {id:"career", name:"Career", color:"#4DA8D8",
-   desc:"Professional performance and impact. How effectively you show up, focus, deliver and grow your professional leverage."},
+   desc:"Performance professionnelle et impact. Ta capacité à être présent, concentré, à livrer et à développer ton influence professionnelle."},
   {id:"finance", name:"Finance", color:"#F0A429",
-   desc:"Building wealth through discipline. Saving, investing, tracking and avoiding impulse decisions that erode your financial future."},
+   desc:"Construire sa richesse par la discipline. Épargner, investir, suivre ses finances et éviter les décisions impulsives qui érodent ton avenir financier."},
   {id:"social", name:"Social", color:"#1FD89A",
-   desc:"The quality of your relationships. Deep connection with people you love, and generosity toward your community."},
+   desc:"La qualité de tes relations. Une connexion profonde avec les personnes que tu aimes, et de la générosité envers ta communauté."},
   {id:"fun", name:"Fun", color:"#F07850",
-   desc:"Joy, play and new experiences. A balanced life needs recovery and delight — this is your licence to enjoy it."},
+   desc:"La joie, le jeu et les nouvelles expériences. Une vie équilibrée a besoin de récupération et de plaisir — c'est ta permission de savourer."},
 ];
 
-const MTYPES=[{id:"boolean",label:"Done / Not done"},{id:"numeric",label:"Number"},{id:"duration",label:"Duration (hrs)"},{id:"rating",label:"Rating 1–5"}];
+const MTYPES=[{id:"boolean",label:"Fait / Non fait"},{id:"numeric",label:"Nombre"},{id:"duration",label:"Durée (hrs)"},{id:"rating",label:"Note 1–5"}];
 
 const WISDOM=[
-  ["The first thing to fix is sleep. Without it there is no motivation or discipline.","Bryan Johnson"],
-  ["Don't die. Your most important project is your own life.","Bryan Johnson"],
-  ["You don't rise to the level of your goals, you fall to the level of your systems.","James Clear"],
-  ["We are what we repeatedly do. Excellence is not an act but a habit.","Aristotle"],
-  ["Habits don't add up — they compound.","James Clear"],
-  ["Sleep is the single most effective thing we can do to reset brain and body health.","Matthew Walker"],
-  ["What gets measured gets managed.","Peter Drucker"],
-  ["Every action is a vote for the person you wish to become.","James Clear"],
-  ["Discipline is choosing what you want most over what you want now.","Abraham Lincoln"],
-  ["Take care of your body. It's the only place you have to live.","Jim Rohn"],
-  ["The chains of habit are too light to be felt until they are too heavy to be broken.","Warren Buffett"],
-  ["Small disciplines repeated with consistency every day lead to great achievements.","Jim Rohn"],
+  ["La première chose à corriger, c'est le sommeil. Sans lui, il n'y a ni motivation ni discipline.","Bryan Johnson"],
+  ["Ne meurs pas. Ton projet le plus important, c'est ta propre vie.","Bryan Johnson"],
+  ["Tu ne t'élèves pas au niveau de tes objectifs — tu tombes au niveau de tes systèmes.","James Effacer"],
+  ["Nous sommes ce que nous faisons de manière répétée. L'excellence n'est pas un acte, c'est une habitude.","Aristote"],
+  ["Les habitudes ne s'additionnent pas — elles se multiplient.","James Effacer"],
+  ["Le sommeil est la chose la plus efficace que nous puissions faire pour régénérer le cerveau et le corps.","Matthew Walker"],
+  ["Ce qui se mesure s'améliore.","Peter Drucker"],
+  ["Chaque action est un vote pour la personne que tu veux devenir.","James Effacer"],
+  ["La discipline, c'est choisir ce que tu veux le plus plutôt que ce que tu veux maintenant.","Abraham Lincoln"],
+  ["Prends soin de ton corps. C'est le seul endroit où tu as à vivre.","Jim Rohn"],
+  ["Les chaînes de l'habitude sont trop légères pour être ressenties jusqu'à ce qu'elles soient trop lourdes à briser.","Warren Buffett"],
+  ["De petites disciplines répétées chaque jour mènent à de grandes réussites.","Jim Rohn"],
 ];
 
 const TEMPLATES={
@@ -116,7 +116,7 @@ const TEMPLATES={
     {name:"Presentations / demos",type:"numeric",targetType:"min",target:"1",unit:"",weight:5},
   ],
   finance:[
-    {name:"Save & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:10},
+    {name:"Enregistrer & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:10},
     {name:"No impulse buy",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
     {name:"Budget reviewed",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
     {name:"Expenses tracked",type:"boolean",targetType:"min",target:"1",unit:"",weight:5},
@@ -147,16 +147,19 @@ const TEMPLATES={
 };
 
 const ONBOARDING=[
-  {emoji:"🚀",title:"Welcome to Momentum",body:"Momentum is built around 12-week sprints — focused bursts of intentional living across every dimension of your life. Not a to-do list. A system.",sub:"Used by people who want to build the life they design, not the one that happens to them.",cta:"Let's go →"},
-  {emoji:"😴",title:"Sleep comes first",body:"Bryan Johnson is clear: fix sleep before anything else. Without quality sleep there is no willpower, no motivation, no discipline.",sub:"Every other habit depends on it. We'll remind you when configuring your sprint.",cta:"Got it →"},
-  {emoji:"📈",title:"Habits compound",body:"James Clear's insight: habits don't add up — they multiply. A 1% daily improvement yields 37× growth over a year. Consistency beats intensity.",sub:"That's why we track weekly, not daily. Sustainable rhythms over heroic one-offs.",cta:"Makes sense →"},
-  {emoji:"⚖️",title:"How scoring works",body:"Each habit has a weight and a target. Your weekly score is a weighted average. Categories you care most about carry the most weight. A bonus habit per category can push you above — but the score caps at 100%.",sub:"Category scores are shared socially. Individual habit details stay private.",cta:"Set up my first sprint →"},
+  {emoji:"🚀",title:"Bienvenue sur Momentum",body:"Momentum est construit autour de sprints de 12 semaines — des périodes d'intention intense couvrant chaque dimension de ta vie. Pas une to-do list. Un système.",sub:"Utilisé par des personnes qui veulent construire la vie qu'elles ont choisie, pas celle qui leur arrive.",cta:"C'est parti →"},
+  {emoji:"😴",title:"Le sommeil d'abord",body:"Bryan Johnson est formel : corrige le sommeil avant tout. Sans un sommeil de qualité, il n'y a ni volonté, ni motivation, ni discipline.",sub:"Toutes tes autres habitudes en dépendent. On te le rappellera au moment de configurer ton sprint.",cta:"Compris →"},
+  {emoji:"📈",title:"Les habitudes se multiplient",body:"L'insight de James Effacer : les habitudes ne s'additionnent pas — elles se multiplient. Une amélioration de 1% par jour donne une croissance de 37× sur un an.",sub:"C'est pourquoi on suit à la semaine, pas au jour. Des rythmes durables plutôt que des exploits ponctuels.",cta:"Journalique →"},
+  {emoji:"⚖️",title:"Comment fonctionne le score",body:"Chaque habitude a un poids et un objectif. Ton score hebdomadaire est une moyenne pondérée. Les catégories qui comptent le plus pour toi ont le plus de poids.",sub:"Tes scores par catégorie sont partagés socialement. Le détail de tes habitudes reste privé.",cta:"Configurer mon premier sprint →"},
 ];
 
 const AV_COLORS=["#7B72F0","#1FD89A","#F0A429","#F05A5A","#4DA8D8","#F07850","#C47DD8"];
 
 // ── UTILS ──
 function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);return(h>>>0).toString(16);}
+// MD5 for Gravatar
+function md5(s){function r(n,c){return(n<<c)|(n>>>(32-c));}function e(n,c){var t,r,e,u,o;e=2147483648&n;u=2147483648&c;o=1073741824&n;t=1073741824&c;r=(1073741823&n)+(1073741823&c);return o&t?2147483648^r^e^u:o|t?1073741824&r?3221225472^r^e^u:1073741824^r^e^u:r^e^u;}function t(n,t,r,e,u,o,c){return n=e(n,e(e(t&r|~t&e,u),c)),e(n<<o|n>>>(32-o),t);}function i(n,t,r,e,u,o,c){return n=e(n,e(e(t&e|r&~e,u),c)),e(n<<o|n>>>(32-o),t);}function a(n,t,r,e,u,o,c){return n=e(n,e(e(t^r^e,u),c)),e(n<<o|n>>>(32-o),t);}function d(n,t,r,e,u,o,c){return n=e(n,e(e(r^(t|~e),u),c)),e(n<<o|n>>>(32-o),t);}function f(n){var t="";for(let r=0;r<=3;r++){let e=n>>>(r*8)&255;t+=(e<16?"0":"")+e.toString(16);}return t;}let c,u,o,q,v,x=Array(),g=7,A=12,k=17,p=22,C=5,y=9,h=14,z=20,w=4,F=11,B=16,G=23,H=6,I=10,J=15,K=21,n=(s=function(n){for(var t=n.length,r=Array(),e=0;e<t-3;e+=4)r[e>>2]=n.charCodeAt(e)+(n.charCodeAt(e+1)<<8)+(n.charCodeAt(e+2)<<16)+(n.charCodeAt(e+3)<<24);switch(t%4){case 0:r[t>>2]=128;break;case 1:r[t>>2]=n.charCodeAt(t-1)+32768;break;case 2:r[t>>2]=n.charCodeAt(t-1)+(n.charCodeAt(t-2)<<8)+8388608;break;case 3:r[t>>2]=n.charCodeAt(t-1)+(n.charCodeAt(t-2)<<8)+(n.charCodeAt(t-3)<<16)+2147483648;}r[(r.length+(14-r.length%16)%16)+1]=t>>>29,r[(r.length+(14-r.length%16)%16)]=8*t;return r;}(s)),x=1732584193,X=4023233417,L=2562383102,M=271733878;for(let n=0;n<(s=n).length;n+=16){c=x,u=X,o=L,q=M;x=t(x,X,L,M,s[n+0],g,3614090360),M=t(M,x,X,L,s[n+1],A,3905402710),L=t(L,M,x,X,s[n+2],k,606105819),X=t(X,L,M,x,s[n+3],p,3250441966),x=t(x,X,L,M,s[n+4],g,4118548399),M=t(M,x,X,L,s[n+5],A,1200080426),L=t(L,M,x,X,s[n+6],k,2821735955),X=t(X,L,M,x,s[n+7],p,4249261313),x=t(x,X,L,M,s[n+8],g,1770035416),M=t(M,x,X,L,s[n+9],A,2336552879),L=t(L,M,x,X,s[n+10],k,4294925233),X=t(X,L,M,x,s[n+11],p,2304563134),x=t(x,X,L,M,s[n+12],g,1804603682),M=t(M,x,X,L,s[n+13],A,4254626195),L=t(L,M,x,X,s[n+14],k,2792965006),X=t(X,L,M,x,s[n+15],p,1236535329),x=i(x,X,L,M,s[n+1],C,4129170786),M=i(M,x,X,L,s[n+6],y,3225465664),L=i(L,M,x,X,s[n+11],h,643717713),X=i(X,L,M,x,s[n+0],z,3921069994),x=i(x,X,L,M,s[n+5],C,3593408605),M=i(M,x,X,L,s[n+10],y,38016083),L=i(L,M,x,X,s[n+15],h,3634488961),X=i(X,L,M,x,s[n+4],z,3889429448),x=i(x,X,L,M,s[n+9],C,568446438),M=i(M,x,X,L,s[n+14],y,3275163606),L=i(L,M,x,X,s[n+3],h,4107603335),X=i(X,L,M,x,s[n+8],z,1163531501),x=i(x,X,L,M,s[n+13],C,2850285829),M=i(M,x,X,L,s[n+2],y,4243563512),L=i(L,M,x,X,s[n+7],h,1735328473),X=i(X,L,M,x,s[n+12],z,2368359562),x=a(x,X,L,M,s[n+5],w,4294588738),M=a(M,x,X,L,s[n+8],F,2272392833),L=a(L,M,x,X,s[n+11],B,1839030562),X=a(X,L,M,x,s[n+14],G,4259657740),x=a(x,X,L,M,s[n+1],w,2763975236),M=a(M,x,X,L,s[n+4],F,1272893353),L=a(L,M,x,X,s[n+7],B,4139469664),X=a(X,L,M,x,s[n+10],G,3200236656),x=a(x,X,L,M,s[n+13],w,681279174),M=a(M,x,X,L,s[n+0],F,3936430074),L=a(L,M,x,X,s[n+3],B,3572445317),X=a(X,L,M,x,s[n+6],G,76029189),x=a(x,X,L,M,s[n+9],w,3654602809),M=a(M,x,X,L,s[n+12],F,3873151461),L=a(L,M,x,X,s[n+15],B,530742520),X=a(X,L,M,x,s[n+2],G,3299628645),x=d(x,X,L,M,s[n+0],H,4096336452),M=d(M,x,X,L,s[n+7],I,1126891415),L=d(L,M,x,X,s[n+14],J,2878612391),X=d(X,L,M,x,s[n+5],K,4237533241),x=d(x,X,L,M,s[n+12],H,1700485571),M=d(M,x,X,L,s[n+3],I,2399980690),L=d(L,M,x,X,s[n+10],J,4293915773),X=d(X,L,M,x,s[n+1],K,2240044497),x=d(x,X,L,M,s[n+8],H,1873313359),M=d(M,x,X,L,s[n+15],I,4264355552),L=d(L,M,x,X,s[n+6],J,2734768916),X=d(X,L,M,x,s[n+13],K,1309151649),x=d(x,X,L,M,s[n+4],H,4149444226),M=d(M,x,X,L,s[n+11],I,3174756917),L=d(L,M,x,X,s[n+2],J,718787259),X=d(X,L,M,x,s[n+9],K,3951481745),x=e(x,c),X=e(X,u),L=e(L,o),M=e(M,q);}return f(x)+f(X)+f(L)+f(M);}
+function gravatarUrl(email,size=80){const hash=md5(email.trim().toLowerCase());return`https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function weekNum(sd){
   // Count calendar weeks (Mon–Sun) elapsed since sprint start
@@ -194,11 +197,11 @@ function scoreColor(s){return s>=80?T.green:s>=50?T.amber:T.red;}
 function avCol(id){let n=0;for(let i=0;i<(id||"").length;i++)n=(n+id.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[n];}
 function initials(n){return(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();}
 function fmtDate(iso){return new Date(iso).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});}
-function catAvgsFromWeeks(habits,weekLogs,upToWk,pausedWeeks=[]){
+function catAvgsFromSemaines(habits,weekJournals,upToWk,pausedSemaines=[]){
   const sums={};const counts={};
   for(let w=1;w<=upToWk;w++){
-    if(pausedWeeks.includes(w))continue;
-    const ll=weekLogs[w]||{};
+    if(pausedSemaines.includes(w))continue;
+    const ll=weekJournals[w]||{};
     const has=habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
     if(!has)continue;
     const{byCat}=calcScores(habits,ll);
@@ -208,11 +211,11 @@ function catAvgsFromWeeks(habits,weekLogs,upToWk,pausedWeeks=[]){
   CATS.forEach(c=>{res[c.id]=counts[c.id]?Math.round(sums[c.id]/counts[c.id]):null;});
   return res;
 }
-function sprintAvgFromLogs(habits,weekLogs,upToWk,pausedWeeks=[]){
+function sprintAvgFromJournals(habits,weekJournals,upToWk,pausedSemaines=[]){
   let sum=0;let count=0;
   for(let w=1;w<=upToWk;w++){
-    if(pausedWeeks.includes(w))continue;
-    const ll=weekLogs[w]||{};
+    if(pausedSemaines.includes(w))continue;
+    const ll=weekJournals[w]||{};
     const has=habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
     if(!has)continue;
     const{overall}=calcScores(habits,ll);sum+=overall;count++;
@@ -234,7 +237,12 @@ function Notice({children,color}){return <div style={{background:color+"15",bord
 function Scroll({children}){return <div style={{padding:"16px 16px 96px",maxWidth:560,margin:"0 auto"}}>{children}</div>;}
 function SH({children}){return <h2 style={{color:T.text,fontSize:20,fontWeight:800,margin:"0 0 4px",letterSpacing:-0.3}}>{children}</h2>;}
 function Sub({children}){return <p style={{color:T.muted,fontSize:13,margin:"4px 0 20px"}}>{children}</p>;}
-function Avatar({name,userId,size=36}){return <div style={{width:size,height:size,borderRadius:size*0.35,background:avCol(userId||"x"),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.38,fontWeight:700,color:"#fff"}}>{initials(name)}</div>;}
+function Avatar({name,userId,email,size=36}){
+  const [imgErr,setImgErr]=useState(false);
+  const url=email?gravatarUrl(email,size*2):null;
+  if(url&&!imgErr)return <img src={url} onError={()=>setImgErr(true)} style={{width:size,height:size,borderRadius:size*0.35,flexShrink:0,objectFit:"cover"}} alt={name}/>;
+  return <div style={{width:size,height:size,borderRadius:size*0.35,background:avCol(userId||"x"),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.38,fontWeight:700,color:"#fff"}}>{initials(name)}</div>;
+}
 function Ring({score=0,size=96,color,label}){
   const col=color||scoreColor(score);const r=(size-9)/2,circ=2*Math.PI*r,fill=(Math.min(score,100)/100)*circ;
   return <div style={{position:"relative",width:size,height:size,flexShrink:0}}><svg width={size} height={size} style={{transform:"rotate(-90deg)",display:"block"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={5}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={5} strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} style={{transition:"stroke-dasharray 0.9s"}}/></svg><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1}}><span style={{fontSize:size*0.2,fontWeight:700,color:T.text,lineHeight:1}}>{score}%</span>{label&&<span style={{fontSize:Math.max(size*0.11,9),color:T.muted,textAlign:"center",padding:"0 4px"}}>{label}</span>}</div></div>;
@@ -281,7 +289,7 @@ function OnboardingView({name,onDone}){
       <p style={{color:T.text,fontSize:14,lineHeight:1.75,margin:"0 0 12px",opacity:0.9}}>{s.body}</p>
       <p style={{color:T.muted,fontSize:13,lineHeight:1.65,margin:"0 0 36px"}}>{s.sub}</p>
       <Btn full onClick={()=>isLast?onDone():setSlide(i=>i+1)}>{slide===0?`Hey ${name.split(" ")[0]}, ${s.cta}`:s.cta}</Btn>
-      {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:14,background:"none",border:"none",color:T.faint,fontSize:13,cursor:"pointer"}}>← Back</button>}
+      {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:14,background:"none",border:"none",color:T.faint,fontSize:13,cursor:"pointer"}}>← Retour</button>}
     </div>
   </div>;
 }
@@ -293,29 +301,29 @@ function AuthView({onAuth}){
   const [err,setErr]=useState("");const [busy,setBusy]=useState(false);const [dbg,setDbg]=useState("");
   async function go(){
     if(busy)return;setErr("");setDbg("");
-    if(mode==="register"&&!name.trim()){setErr("Please enter your full name.");return;}
-    if(!email.trim()){setErr("Please enter your email.");return;}
-    if(!password){setErr("Please enter a password.");return;}
-    if(mode==="register"&&password.length<6){setErr("Password must be at least 6 characters.");return;}
-    setBusy(true);setDbg("Connecting…");
+    if(mode==="register"&&!name.trim()){setErr("Merci d'entrer ton nom complet.");return;}
+    if(!email.trim()){setErr("Merci d'entrer ton email.");return;}
+    if(!password){setErr("Merci d'entrer un mot de passe.");return;}
+    if(mode==="register"&&password.length<6){setErr("Le mot de passe doit contenir au moins 6 caractères.");return;}
+    setBusy(true);setDbg("Connexion…");
     try{
       const em=email.trim().toLowerCase();
       if(mode==="register"){
-        setDbg("Checking email…");
+        setDbg("Vérification de l'email…");
         const idx=await sg("userIndex",true)||[];
-        if(idx.find(u=>u.email===em)){setErr("Email already registered. Try signing in.");return;}
+        if(idx.find(u=>u.email===em)){setErr("Email déjà enregistré. Essaie de te connecter.");return;}
         const user={id:uid(),name:name.trim(),email:em,passwordHash:hashStr(password),createdAt:Date.now(),isNew:true};
-        setDbg("Creating account…");
+        setDbg("Création du compte…");
         await ss(`user_${user.id}`,user,true);
         await ss("userIndex",[...idx,{id:user.id,email:user.email,name:user.name}],true);
         setDbg("");onAuth(user);
       }else{
-        setDbg("Looking up account…");
+        setDbg("Recherche du compte…");
         const idx=await sg("userIndex",true)||[];
         const found=idx.find(u=>u.email===em);
-        if(!found){setErr("No account found with this email.");return;}
+        if(!found){setErr("Aucun compte trouvé avec cet email.");return;}
         const user=await sg(`user_${found.id}`,true);
-        if(!user||user.passwordHash!==hashStr(password)){setErr("Incorrect password.");return;}
+        if(!user||user.passwordHash!==hashStr(password)){setErr("Mot de passe incorrect.");return;}
         setDbg("");onAuth(user);
       }
     }catch(e){setErr("Error: "+e.message);}finally{setBusy(false);}
@@ -325,21 +333,21 @@ function AuthView({onAuth}){
       <div style={{textAlign:"center",marginBottom:40}}>
         <div style={{width:64,height:64,borderRadius:20,background:T.accent,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:26,fontWeight:800,color:"#fff"}}>M</div>
         <h1 style={{color:T.text,margin:0,fontSize:28,fontWeight:800}}>Momentum</h1>
-        <p style={{color:T.muted,margin:"8px 0 0",fontSize:14}}>Build the life you want, one sprint at a time.</p>
+        <p style={{color:T.muted,margin:"8px 0 0",fontSize:14}}>Construis la vie que tu veux, un sprint à la fois.</p>
       </div>
       <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:4,marginBottom:28}}>
-        {[["login","Sign in"],["register","Create account"]].map(([m,l])=>(
+        {[["login","Se connecter"],["register","Créer un compte"]].map(([m,l])=>(
           <button key={m} onClick={()=>{setMode(m);setErr("");setDbg("");}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:9,cursor:"pointer",background:mode===m?T.accent:"transparent",color:mode===m?"#fff":T.muted,fontSize:14,fontWeight:600,transition:"all 0.2s"}}>{l}</button>
         ))}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        {mode==="register"&&<Inp label="Full name" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>}
+        {mode==="register"&&<Inp label="Nom complet" value={name} onChange={e=>setName(e.target.value)} placeholder="Ton prénom"/>}
         <Inp label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/>
         <Inp label="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/>
         {err&&<div style={{background:T.red+"18",border:`1px solid ${T.red}44`,borderRadius:8,padding:"10px 12px"}}><p style={{margin:0,fontSize:13,color:T.red}}>{err}</p></div>}
         {dbg&&<p style={{color:T.muted,fontSize:12,textAlign:"center",margin:0}}>{dbg}</p>}
         <button onClick={go} disabled={busy} style={{background:busy?T.faint:T.accent,color:"#fff",border:"none",borderRadius:10,fontWeight:600,fontSize:15,padding:"13px",cursor:busy?"not-allowed":"pointer",opacity:busy?0.7:1}}>
-          {busy?"Please wait…":mode==="login"?"Sign in":"Create account"}
+          {busy?"Patiente…":mode==="login"?"Se connecter":"Créer un compte"}
         </button>
       </div>
     </div>
@@ -347,20 +355,20 @@ function AuthView({onAuth}){
 }
 
 // ── HABIT FORM ──
-function HabitForm({habit,cat,remaining,onChange,onSave,onCancel,saveLabel="Save habit"}){
+function HabitForm({habit,cat,remaining,onChange,onEnregistrer,onAnnuler,saveLabel="Enregistrer"}){
   const set=(k,v)=>onChange(h=>({...h,[k]:v}));
   const isBool=habit.type==="boolean";
-  const canSave=habit.name.trim()&&(isBool||habit.target!=="")&&(parseFloat(habit.weight)||0)>0;
+  const canEnregistrer=habit.name.trim()&&(isBool||habit.target!=="")&&(parseFloat(habit.weight)||0)>0;
   return <div style={{background:T.surface,border:`1px solid ${T.accent}55`,borderRadius:12,padding:16,display:"flex",flexDirection:"column",gap:12}}>
     <div style={{display:"grid",gridTemplateColumns:cat.subs?"1fr 1fr":"1fr",gap:10}}>
-      <Inp label="Habit name" value={habit.name} placeholder="e.g. Sport sessions" onChange={e=>set("name",e.target.value)}/>
-      {cat.subs&&<Sel label="Sub-category" value={habit.subCat||cat.subs[0]} onChange={e=>set("subCat",e.target.value)} options={cat.subs.map(s=>({value:s,label:s}))}/>}
+      <Inp label="Nom de l'habitude" value={habit.name} placeholder="e.g. Sport sessions" onChange={e=>set("name",e.target.value)}/>
+      {cat.subs&&<Sel label="Sous-catégorie" value={habit.subCat||cat.subs[0]} onChange={e=>set("subCat",e.target.value)} options={cat.subs.map(s=>({value:s,label:s}))}/>}
     </div>
-    <Sel label="Metric type" value={habit.type} onChange={e=>set("type",e.target.value)} options={MTYPES.map(t=>({value:t.id,label:t.label}))}/>
+    <Sel label="Type de métrique" value={habit.type} onChange={e=>set("type",e.target.value)} options={MTYPES.map(t=>({value:t.id,label:t.label}))}/>
     {!isBool&&<>
-      <Sel label="Target direction" value={habit.targetType} onChange={e=>set("targetType",e.target.value)} options={[{value:"min",label:"At least (minimum)"},{value:"max",label:"At most (maximum)"}]}/>
+      <Sel label="Direction de l'objectif" value={habit.targetType} onChange={e=>set("targetType",e.target.value)} options={[{value:"min",label:"Au moins (minimum)"},{value:"max",label:"Au plus (maximum)"}]}/>
       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
-        <Inp label="Target value" type="number" value={habit.target} placeholder="e.g. 4" onChange={e=>set("target",e.target.value)}/>
+        <Inp label="Valeur cible" type="number" value={habit.target} placeholder="e.g. 4" onChange={e=>set("target",e.target.value)}/>
         <Inp label="Unit" value={habit.unit} placeholder="hrs" onChange={e=>set("unit",e.target.value)}/>
       </div>
     </>}
@@ -371,21 +379,21 @@ function HabitForm({habit,cat,remaining,onChange,onSave,onCancel,saveLabel="Save
       <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} style={{...iSx}}/>
     </div>
     <div style={{display:"flex",gap:8}}>
-      <Btn variant="ghost" small onClick={onCancel}>Cancel</Btn>
-      <Btn small full disabled={!canSave} onClick={onSave}>{saveLabel}</Btn>
+      <Btn variant="ghost" small onClick={onAnnuler}>Annuler</Btn>
+      <Btn small full disabled={!canEnregistrer} onClick={onEnregistrer}>{saveLabel}</Btn>
     </div>
   </div>;
 }
 
 // ── SPRINT SETUP ──
-function SprintSetupView({user,onDone}){
+function SprintSetupView({user,onDone,isFirstSprint=false}){
   const [step,setStep]=useState(0);
   const [catW,setCatW]=useState({health:25,growth:20,career:20,finance:15,social:10,fun:10});
   const [habits,setHabits]=useState({});
   const [catIdx,setCatIdx]=useState(0);
   const [formOpen,setFormOpen]=useState(false);
   const [draft,setDraft]=useState(null);
-  const [editingId,setEditingId]=useState(null);
+  const [editingId,setModifieringId]=useState(null);
   const [saving,setSaving]=useState(false);
 
   const activeCats=CATS.filter(c=>(parseFloat(catW[c.id])||0)>0);
@@ -395,14 +403,14 @@ function SprintSetupView({user,onDone}){
 
   function openNew(cat,remaining){
     setDraft({id:uid(),catId:cat.id,subCat:cat.subs?.[0]||"",name:"",type:"numeric",targetType:"min",target:"",unit:"",weight:Math.max(0,remaining).toFixed(0)});
-    setFormOpen(true);setEditingId(null);
+    setFormOpen(true);setModifieringId(null);
   }
   function openTemplate(cat,t,remaining){
     setDraft({...t,id:uid(),catId:cat.id,subCat:t.subCat||cat.subs?.[0]||"",weight:Math.max(0,remaining).toFixed(0)===t.weight.toString()?t.weight:Math.max(0,remaining).toFixed(0)});
-    setFormOpen(true);setEditingId(null);
+    setFormOpen(true);setModifieringId(null);
   }
-  function openEdit(h,remaining){
-    setDraft({...h});setFormOpen(true);setEditingId(h.id);
+  function openModifier(h,remaining){
+    setDraft({...h});setFormOpen(true);setModifieringId(h.id);
   }
   function saveForm(cat){
     if(editingId){
@@ -410,7 +418,7 @@ function SprintSetupView({user,onDone}){
     }else{
       setHabits(p=>({...p,[cat.id]:[...(p[cat.id]||[]),{...draft,id:uid()}]}));
     }
-    setDraft(null);setFormOpen(false);setEditingId(null);
+    setDraft(null);setFormOpen(false);setModifieringId(null);
   }
   const [bonus,setBonus]=useState(null); // one global bonus habit
   const [bonusFormOpen,setBonusFormOpen]=useState(false);
@@ -439,8 +447,8 @@ function SprintSetupView({user,onDone}){
 
   // Step 0 — weights
   if(step===0)return <Scroll>
-    <SH>Sprint setup</SH>
-    <Sub>Step 1 of 3 — distribute your focus across life categories</Sub>
+    <SH>Configuration du sprint</SH>
+    <Sub>Étape 1 sur 3 — répartis ton attention sur les catégories de vie</Sub>
     <div style={{background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
       <p style={{color:T.text,fontSize:13,lineHeight:1.65,margin:0}}>
         Assign a <strong style={{color:T.accent}}>percentage weight</strong> to each category. This controls how much each area counts toward your weekly score.
@@ -453,7 +461,7 @@ function SprintSetupView({user,onDone}){
         <div key={cat.id} style={{background:T.card,borderRadius:16,boxShadow:shadow,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:10,height:10,borderRadius:3,background:cat.color,flexShrink:0}}/>
           <div style={{flex:1}}>
-            <div style={{color:T.text,fontSize:14,fontWeight:500}}>{cat.name}{cat.mandatory&&<span style={{marginLeft:6,fontSize:10,color:T.amber,fontWeight:600}}>foundation</span>}</div>
+            <div style={{color:T.text,fontSize:14,fontWeight:500}}>{cat.name}{cat.mandatory&&<span style={{marginLeft:6,fontSize:10,color:T.amber,fontWeight:600}}>fondation</span>}</div>
             <div style={{color:T.muted,fontSize:11,marginTop:2,lineHeight:1.4}}>{cat.desc.slice(0,70)}…</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:5}}>
@@ -469,7 +477,7 @@ function SprintSetupView({user,onDone}){
       <span style={{color:T.muted}}>Total:</span>
       <span style={{fontSize:20,fontWeight:800,color:weightOk?T.green:T.red}}>{totalW.toFixed(0)}%</span>
     </div>
-    <Btn full disabled={!weightOk} onClick={()=>setStep(1)}>Define habits →</Btn>
+    <Btn full disabled={!weightOk} onClick={()=>setStep(1)}>Définir les habitudes →</Btn>
     {!weightOk&&<p style={{textAlign:"center",color:T.muted,fontSize:12,marginTop:8}}>{totalW<100?`${(100-totalW).toFixed(0)}% left to allocate`:`${(totalW-100).toFixed(0)}% over budget`}</p>}
   </Scroll>;
 
@@ -486,14 +494,14 @@ function SprintSetupView({user,onDone}){
     const tpls=(TEMPLATES[cat.id]||[]).filter(t=>!usedNames.has(t.name));
     return <Scroll>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><SH>{cat.name}</SH></div>
-      {/* Category description */}
+      {/* Catégorie description */}
       <div style={{background:cat.color+"12",border:`1px solid ${cat.color}33`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
         <p style={{margin:0,fontSize:13,color:T.text,lineHeight:1.6}}>{cat.desc}</p>
       </div>
       {/* Weight guidance */}
       <div style={{background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
         <p style={{margin:0,fontSize:12,color:T.muted,lineHeight:1.6}}>
-          <strong style={{color:T.text}}>How weights work:</strong> Each habit's weight is its share of this category's {budget}% budget.
+          <strong style={{color:T.text}}>Comment fonctionnent les poids :</strong> Each habit's weight is its share of this category's {budget}% budget.
           All habit weights in this category must add up to <strong style={{color:cat.color}}>{budget}%</strong>.
           The suggested weight below is automatically set to the remaining budget.
         </p>
@@ -507,7 +515,7 @@ function SprintSetupView({user,onDone}){
 
       {/* Templates */}
       {tpls.length>0&&<div style={{marginBottom:16}}>
-        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px"}}>Quick add from library — click to customise before adding</p>
+        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px"}}>Ajout rapide depuis la bibliothèque — clique pour personnaliser</p>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {tpls.map(t=><button key={t.name} onClick={()=>openTemplate(cat,t,remaining)} style={{background:cat.color+"15",border:`1px solid ${cat.color}44`,color:cat.color,borderRadius:8,fontSize:12,padding:"6px 11px",cursor:"pointer",fontWeight:500}}>+ {t.name} <span style={{opacity:0.6,fontSize:10}}>{t.weight}%</span></button>)}
         </div>
@@ -515,26 +523,26 @@ function SprintSetupView({user,onDone}){
 
       {/* Habit list */}
       {regH.map(h=>{
-        if(editingId===h.id&&formOpen)return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Update habit" onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setEditingId(null);setDraft(null);}}/></div>;
+        if(editingId===h.id&&formOpen)return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Mettre à jour" onEnregistrer={()=>saveForm(cat)} onAnnuler={()=>{setFormOpen(false);setModifieringId(null);setDraft(null);}}/></div>;
         return <div key={h.id} style={{background:T.card,borderRadius:14,boxShadow:shadow,padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{color:T.text,fontSize:14,fontWeight:500}}>{h.name}</div>
             <div style={{color:T.muted,fontSize:12,marginTop:2}}>{h.subCat&&`${h.subCat} · `}{h.type}{h.target?` · ${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""}`:""} · <strong style={{color:cat.color}}>{h.weight}%</strong></div>
           </div>
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>openEdit(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Edit</button>
+            <button onClick={()=>openModifier(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Modifier</button>
             <button onClick={()=>setHabits(p=>({...p,[cat.id]:p[cat.id].filter(x=>x.id!==h.id)}))} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 4px"}}>×</button>
           </div>
         </div>;
       })}
 
       {/* Add custom */}
-      {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:`1.5px dashed ${T.faint}`,borderRadius:10,color:T.muted,fontSize:14,cursor:"pointer",marginTop:4}}>+ Add custom habit</button>}
-      {formOpen&&!editingId&&<HabitForm habit={draft} cat={cat} remaining={remaining} onChange={setDraft} onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setDraft(null);}}/>}
+      {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:`1.5px dashed ${T.faint}`,borderRadius:10,color:T.muted,fontSize:14,cursor:"pointer",marginTop:4}}>+ Ajouter une habitude personnalisée</button>}
+      {formOpen&&!editingId&&<HabitForm habit={draft} cat={cat} remaining={remaining} onChange={setDraft} onEnregistrer={()=>saveForm(cat)} onAnnuler={()=>{setFormOpen(false);setDraft(null);}}/>}
 
       <div style={{display:"flex",gap:10,marginTop:24}}>
-        <Btn variant="secondary" onClick={()=>catIdx===0?setStep(0):setCatIdx(i=>i-1)}>← Back</Btn>
-        <Btn full onClick={()=>catIdx<activeCats.length-1?setCatIdx(i=>i+1):setStep(2)}>{catIdx<activeCats.length-1?`Next: ${activeCats[catIdx+1].name} →`:"Review →"}</Btn>
+        <Btn variant="secondary" onClick={()=>catIdx===0?setStep(0):setCatIdx(i=>i-1)}>← Retour</Btn>
+        <Btn full onClick={()=>catIdx<activeCats.length-1?setCatIdx(i=>i+1):setStep(2)}>{catIdx<activeCats.length-1?`Next: ${activeCats[catIdx+1].name} →`:"Révision →"}</Btn>
       </div>
       <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:14}}>
         {activeCats.map((c,i)=><div key={c.id} style={{width:6,height:6,borderRadius:3,background:i===catIdx?c.color:i<catIdx?T.green:T.border,transition:"background 0.3s"}}/>)}
@@ -549,9 +557,9 @@ function SprintSetupView({user,onDone}){
   const bonusCatOptions=activeCats.map(c=>({value:c.id,label:c.name}));
   const bonusCat=bonus?CATS.find(c=>c.id===bonus.catId)||CATS[0]:CATS[0];
   return <Scroll>
-    <SH>Review sprint</SH><Sub>Step 3 of 3 — confirm your 12-week plan</Sub>
+    <SH>Review sprint</SH><Sub>Étape 3 sur 3 — confirme ton plan de 12 semaines</Sub>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:T.card,borderRadius:14,boxShadow:shadow,padding:"12px 16px",marginBottom:20}}>
-      <span style={{color:T.muted,fontSize:13}}>Regular habit weight:</span>
+      <span style={{color:T.muted,fontSize:13}}>Poids des habitudes :</span>
       <span style={{fontWeight:700,fontSize:18,color:Math.abs(totalHW-100)<2?T.green:T.amber}}>{totalHW.toFixed(0)}%</span>
     </div>
     {CATS.filter(c=>(habits[c.id]||[]).length>0).map(cat=>{
@@ -577,41 +585,41 @@ function SprintSetupView({user,onDone}){
       </div>
       {!bonus&&!bonusFormOpen&&(
         <button onClick={openBonusNew} style={{width:"100%",padding:12,background:T.amber+"10",border:`1.5px dashed ${T.amber}55`,borderRadius:10,color:T.amber,fontSize:13,cursor:"pointer",fontWeight:500}}>
-          + Define your bonus habit
+          + Définir ton habitude bonus
         </button>
       )}
       {bonusFormOpen&&bonusDraft&&(
         <div style={{background:T.amber+"0A",border:`1px solid ${T.amber}44`,borderRadius:12,padding:16,display:"flex",flexDirection:"column",gap:12}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <Inp label="Habit name" value={bonusDraft.name} placeholder="e.g. Run a 10k" onChange={e=>setBonusDraft(p=>({...p,name:e.target.value}))}/>
+            <Inp label="Nom de l'habitude" value={bonusDraft.name} placeholder="e.g. Run a 10k" onChange={e=>setBonusDraft(p=>({...p,name:e.target.value}))}/>
             <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Category</label>
+              <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Catégorie</label>
               <select value={bonusDraft.catId} onChange={e=>setBonusDraft(p=>({...p,catId:e.target.value}))} style={{...iSx}}>
                 {bonusCatOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
-            <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Metric type</label>
+            <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Type de métrique</label>
             <select value={bonusDraft.type} onChange={e=>setBonusDraft(p=>({...p,type:e.target.value}))} style={{...iSx}}>
               {MTYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
             </select>
           </div>
           {bonusDraft.type!=="boolean"&&<>
             <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Target direction</label>
+              <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6}}>Direction de l'objectif</label>
               <select value={bonusDraft.targetType} onChange={e=>setBonusDraft(p=>({...p,targetType:e.target.value}))} style={{...iSx}}>
-                <option value="min">At least (minimum)</option><option value="max">At most (maximum)</option>
+                <option value="min">Au moins (minimum)</option><option value="max">Au plus (maximum)</option>
               </select>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
-              <Inp label="Target value" type="number" value={bonusDraft.target} placeholder="e.g. 10" onChange={e=>setBonusDraft(p=>({...p,target:e.target.value}))}/>
+              <Inp label="Valeur cible" type="number" value={bonusDraft.target} placeholder="e.g. 10" onChange={e=>setBonusDraft(p=>({...p,target:e.target.value}))}/>
               <Inp label="Unit" value={bonusDraft.unit} placeholder="km" onChange={e=>setBonusDraft(p=>({...p,unit:e.target.value}))}/>
             </div>
           </>}
           <div style={{display:"flex",gap:8}}>
-            <Btn variant="ghost" small onClick={()=>{setBonusFormOpen(false);setBonusDraft(null);}}>Cancel</Btn>
-            <Btn small full disabled={!bonusDraft.name.trim()} onClick={saveBonus} style={{background:T.amber,border:"none",color:"#fff"}}>Save bonus habit</Btn>
+            <Btn variant="ghost" small onClick={()=>{setBonusFormOpen(false);setBonusDraft(null);}}>Annuler</Btn>
+            <Btn small full disabled={!bonusDraft.name.trim()} onClick={saveBonus} style={{background:T.amber,border:"none",color:"#fff"}}>Enregistrer le bonus</Btn>
           </div>
         </div>
       )}
@@ -626,34 +634,34 @@ function SprintSetupView({user,onDone}){
             </div>
           </div>
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{setBonusDraft({...bonus});setBonusFormOpen(true);}} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Edit</button>
+            <button onClick={()=>{setBonusDraft({...bonus});setBonusFormOpen(true);}} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Modifier</button>
             <button onClick={()=>setBonus(null)} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 2px"}}>×</button>
           </div>
         </div>
       )}
     </div>
 
-    {allH.length===0&&<Notice color={T.amber}>No habits added yet. Go back and add some.</Notice>}
+    {allH.length===0&&<Notice color={T.amber}>Aucune habitude ajoutée. Reviens en arrière pour en ajouter.</Notice>}
     <div style={{display:"flex",gap:10,marginTop:24}}>
-      <Btn variant="secondary" onClick={()=>{setStep(1);setCatIdx(activeCats.length-1);}}>← Edit</Btn>
-      <Btn full disabled={allH.length===0||saving} onClick={launch}>{saving?"Launching…":"Launch sprint"}</Btn>
+      <Btn variant="secondary" onClick={()=>{setStep(1);setCatIdx(activeCats.length-1);}}>← Modifier</Btn>
+      <Btn full disabled={allH.length===0||saving} onClick={launch}>{saving?"Lancement…":"Lancer le sprint"}</Btn>
     </div>
   </Scroll>;
 }
 
 // ── HOME ──
-function HomeView({sprint,weekLogs,quote,userId}){
+function AccueilView({sprint,weekJournals,quote,userId}){
   const wk=weekNum(sprint.startDate);
-  const logs=weekLogs[wk]||{};
+  const logs=weekJournals[wk]||{};
   const {overall:wkScore,byCat:wkByCat,bonusScore}=calcScores(sprint.habits,logs);
   const [detailMode,setDetailMode]=useState("%");
   const [history,setHistory]=useState(null);
-  const pausedWeeks=sprint.pausedWeeks||[];
+  const pausedSemaines=sprint.pausedSemaines||[];
 
   useEffect(()=>{sg(`sprint_history_${userId}`,true).then(h=>setHistory(h||[]));},[userId]);
 
-  const sprintAvg=sprintAvgFromLogs(sprint.habits,weekLogs,wk,pausedWeeks);
-  const sprintByCatAvg=catAvgsFromWeeks(sprint.habits,weekLogs,wk,pausedWeeks);
+  const sprintAvg=sprintAvgFromJournals(sprint.habits,weekJournals,wk,pausedSemaines);
+  const sprintByCatAvg=catAvgsFromSemaines(sprint.habits,weekJournals,wk,pausedSemaines);
   const prevSprint=history&&history.length>0?history[history.length-1]:null;
   const last3Avg=history&&history.length>0?Math.round(history.slice(-3).reduce((a,s)=>a+(s.avgScore||0),0)/Math.min(history.length,3)):null;
   const activeCats=CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
@@ -661,21 +669,21 @@ function HomeView({sprint,weekLogs,quote,userId}){
   const logged=sprint.habits.filter(h=>!h.isBonus).filter(h=>{const v=logs[h.id];return v!==undefined&&v!==null&&v!=="";}).length;
 
   const now=new Date();
-  const dayOfWeek=now.getDay()===0?7:now.getDay();
-  const weekPct=Math.round((dayOfWeek/7)*100);
+  const dayOfSemaine=now.getDay()===0?7:now.getDay();
+  const weekPct=Math.round((dayOfSemaine/7)*100);
   const sprintPct=Math.round((wk/12)*100);
 
-  const weekStatus=wkScore>=85?"Great":wkScore>=75?"Good":wkScore>=60?"OK":"Behind";
-  const weekStatusColor=wkScore>=85?T.green:wkScore>=75?T.accent:wkScore>=60?T.amber:T.red;
-  const sprintStatus=sprintAvg>=85?"Great":sprintAvg>=75?"Good":sprintAvg>=60?"OK":"Behind";
-  const sprintStatusColor=sprintAvg>=85?T.green:sprintAvg>=75?T.accent:sprintAvg>=60?T.amber:T.red;
+  const weekStatus=wkScore>=85?"Excellent":wkScore>=75?"Bien":wkScore>=60?"OK":"En retard";
+  const weekStatusColor=wkScore>=85?T.green:wkScore>=75?"#5ac87a":wkScore>=60?T.amber:T.red;
+  const sprintStatus=sprintAvg>=85?"Excellent":sprintAvg>=75?"Bien":sprintAvg>=60?"OK":"En retard";
+  const sprintStatusColor=sprintAvg>=85?T.green:sprintAvg>=75?"#5ac87a":sprintAvg>=60?T.amber:T.red;
 
   // 12-week bar data
   const bars=Array.from({length:12},(_,i)=>{
     const w=i+1;
-    if(pausedWeeks.includes(w))return{w,score:null,paused:true,logged:false};
+    if(pausedSemaines.includes(w))return{w,score:null,paused:true,logged:false};
     if(w>wk)return{w,score:null,paused:false,logged:false};
-    const ll=weekLogs[w]||{};
+    const ll=weekJournals[w]||{};
     const has=sprint.habits.filter(h=>!h.isBonus).some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
     if(!has)return{w,score:null,paused:false,logged:false};
     const{overall}=calcScores(sprint.habits,ll);
@@ -683,29 +691,29 @@ function HomeView({sprint,weekLogs,quote,userId}){
   });
   const chartH=76;
   const benchScore=prevSprint?prevSprint.avgScore:80;
-  const benchLabel=prevSprint?`Q1-26 · ${benchScore}%`:"Target · 80%";
+  const benchLabel=prevSprint?`Q1-26 · ${benchScore}%`:"Objectif · 80%";
   const benchDashed=!prevSprint;
   const benchBottom=(benchScore/100)*chartH;
 
   return <Scroll>
     {/* Progress bars */}
-    <div style={{background:T.card,borderRadius:18,padding:"16px 18px",marginBottom:12,boxShadow:shadow}}>
+    <div style={{background:T.card,borderRadius:18,padding:"18px 20px",marginBottom:14,boxShadow:shadow}}>
       <div style={{marginBottom:10}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-          <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.muted}}>Week {wk} · {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][dayOfWeek-1]}</span>
-          <span style={{fontSize:10,fontWeight:600,color:T.text}}>{weekPct}%</span>
+          <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.muted}}>Semaine {wk} · {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][dayOfSemaine-1]}</span>
+          <span style={{fontSize:12,fontWeight:700,color:weekStatusColor}}>{weekPct}%</span>
         </div>
-        <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:3}}>
-          <div style={{height:"100%",borderRadius:3,background:T.text,width:`${weekPct}%`}}/>
+        <div style={{height:8,background:"rgba(0,0,0,0.07)",borderRadius:4}}>
+          <div style={{height:"100%",borderRadius:4,background:weekStatusColor,width:`${weekPct}%`,transition:"width 0.6s"}}/>
         </div>
       </div>
       <div>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-          <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.muted}}>Sprint · Week {wk} of 12</span>
-          <span style={{fontSize:10,fontWeight:600,color:T.muted}}>{sprintPct}%</span>
+          <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.muted}}>Sprint · Semaine {wk} sur 12</span>
+          <span style={{fontSize:12,fontWeight:700,color:sprintStatusColor}}>{sprintPct}%</span>
         </div>
-        <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:3,position:"relative"}}>
-          <div style={{height:"100%",borderRadius:3,background:T.muted,width:`${sprintPct}%`}}/>
+        <div style={{height:8,background:"rgba(0,0,0,0.07)",borderRadius:4,position:"relative"}}>
+          <div style={{height:"100%",borderRadius:4,background:sprintStatusColor,width:`${sprintPct}%`,transition:"width 0.6s"}}/>
           {Array.from({length:11},(_,i)=>(
             <div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:T.bg,opacity:0.8}}/>
           ))}
@@ -713,25 +721,31 @@ function HomeView({sprint,weekLogs,quote,userId}){
       </div>
     </div>
 
+    {/* 21-day first sprint banner */}
+    {history!==null&&history.length===0&&<div style={{background:"rgba(0,122,255,0.07)",borderRadius:16,padding:"14px 16px",marginBottom:12,borderLeft:`3px solid ${T.accent}`}}>
+      <div style={{fontSize:12,fontWeight:700,color:T.accent,marginBottom:4}}>🧠 Les 21 premiers jours sont décisifs</div>
+      <p style={{fontSize:12,color:T.muted,lineHeight:1.6,margin:0}}>Les neurosciences montrent que les habitudes se câblent dans le cerveau pendant les 3 premières semaines. La discipline que tu construis maintenant se multiplie sur tout le sprint — et au-delà. Sois là chaque jour.</p>
+    </div>}
+
     {/* Two score cards */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
       <div style={{background:T.card,borderRadius:20,padding:"18px 16px",boxShadow:shadow}}>
-        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>This week</div>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>Cette semaine</div>
         <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>
           {wkScore}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span>
         </div>
-        <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>{logged}/{sprint.habits.filter(h=>!h.isBonus).length} habits logged{bonusScore>0?` +${bonusScore}%`:""}</div>
+        <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>{logged}/{sprint.habits.filter(h=>!h.isBonus).length} habitudes saisies{bonusScore>0?` +${bonusScore}%`:""}</div>
         <div style={{display:"inline-flex",alignItems:"center",background:weekStatusColor+"18",borderRadius:20,padding:"3px 10px"}}>
           <span style={{fontSize:10,fontWeight:600,color:weekStatusColor}}>{weekStatus}</span>
         </div>
       </div>
       <div style={{background:T.card,borderRadius:20,padding:"18px 16px",boxShadow:shadow}}>
-        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>Sprint avg</div>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>Moy. sprint</div>
         <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>
           {sprintAvg}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span>
         </div>
         <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>
-          {prevSprint?<span>vs <strong style={{color:T.text}}>{prevSprint.avgScore}%</strong> last sprint</span>:`Week ${wk} of 12`}
+          {prevSprint?<span>vs <strong style={{color:T.text}}>{prevSprint.avgScore}%</strong> last sprint</span>:`Semaine ${wk} sur 12`}
         </div>
         <div style={{display:"inline-flex",alignItems:"center",background:sprintStatusColor+"18",borderRadius:20,padding:"3px 10px"}}>
           <span style={{fontSize:10,fontWeight:600,color:sprintStatusColor}}>{sprintStatus}</span>
@@ -742,9 +756,9 @@ function HomeView({sprint,weekLogs,quote,userId}){
     {/* Bar chart — 12 weeks */}
     <div style={{background:T.card,borderRadius:20,padding:"18px 18px 14px",marginBottom:12,boxShadow:shadow}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <span style={{fontSize:12,fontWeight:600,color:T.text,letterSpacing:-0.2}}>Weekly performance</span>
+        <span style={{fontSize:12,fontWeight:600,color:T.text,letterSpacing:-0.2}}>Performance hebdomadaire</span>
         <div style={{display:"flex",gap:8}}>
-          {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["rgba(0,122,255,0.70)","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
+          {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["#5ac87a","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
             <div key={l} style={{display:"flex",alignItems:"center",gap:3}}>
               <div style={{width:7,height:7,borderRadius:2,background:c}}/>
               <span style={{fontSize:8,color:T.muted,fontWeight:500}}>{l}</span>
@@ -783,14 +797,14 @@ function HomeView({sprint,weekLogs,quote,userId}){
     {/* Radar charts */}
     {activeCats.length>=3&&<>
       <div style={{background:T.card,borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:shadow}}>
-        <div style={{fontSize:11,fontWeight:600,color:T.text,letterSpacing:-0.2,marginBottom:14}}>Week {wk} vs sprint average</div>
+        <div style={{fontSize:11,fontWeight:600,color:T.text,letterSpacing:-0.2,marginBottom:14}}>Semaine {wk} vs sprint average</div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
           <RadarChart cats={activeCats} datasets={[
-            {label:`Week ${wk}`,color:T.accent,values:radarCatVals(wkByCat)},
-            {label:"Sprint avg",color:T.green,values:radarCatVals(sprintByCatAvg)},
+            {label:`Semaine ${wk}`,color:T.accent,values:radarCatVals(wkByCat)},
+            {label:"Moy. sprint",color:T.green,values:radarCatVals(sprintByCatAvg)},
           ]}/>
           <div style={{display:"flex",gap:16,justifyContent:"center"}}>
-            {[{l:`Week ${wk}`,c:T.accent},{l:"Sprint avg",c:T.green}].map(({l,c})=>(
+            {[{l:`Semaine ${wk}`,c:T.accent},{l:"Moy. sprint",c:T.green}].map(({l,c})=>(
               <div key={l} style={{display:"flex",alignItems:"center",gap:5}}>
                 <div style={{width:8,height:8,borderRadius:2,background:c}}/>
                 <span style={{fontSize:10,color:T.muted,fontWeight:500}}>{l}</span>
@@ -800,7 +814,7 @@ function HomeView({sprint,weekLogs,quote,userId}){
         </div>
       </div>
       {prevSprint&&prevSprint.catAvgs&&<div style={{background:T.card,borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:shadow}}>
-        <div style={{fontSize:11,fontWeight:600,color:T.text,letterSpacing:-0.2,marginBottom:14}}>Current sprint vs Q1-26</div>
+        <div style={{fontSize:11,fontWeight:600,color:T.text,letterSpacing:-0.2,marginBottom:14}}>Sprint actuel vs Q1-26</div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
           <RadarChart cats={activeCats} datasets={[
             {label:"This sprint",color:T.accent,values:radarCatVals(sprintByCatAvg)},
@@ -820,12 +834,12 @@ function HomeView({sprint,weekLogs,quote,userId}){
 
     {/* Toggle */}
     <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:12}}>
-      {[["%","% Score"],["#","Raw values"]].map(([m,l])=>(
+      {[["%","% Score"],["#","Valeurs brutes"]].map(([m,l])=>(
         <button key={m} onClick={()=>setDetailMode(m)} style={{flex:1,padding:"8px 0",border:"none",borderRadius:10,cursor:"pointer",background:detailMode===m?T.card:"transparent",color:detailMode===m?T.text:T.muted,fontSize:13,fontWeight:600,boxShadow:detailMode===m?shadow:"none",transition:"all 0.2s"}}>{l}</button>
       ))}
     </div>
 
-    {/* Category detail */}
+    {/* Catégorie detail */}
     {detailMode==="%"
       ?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
           {activeCats.map(cat=>(
@@ -868,41 +882,41 @@ function HomeView({sprint,weekLogs,quote,userId}){
 }
 
 // ── LOG ──
-function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
+function JournalView({sprint,weekJournals,onEnregistrer,userId,onMettre à jourSprint}){
   const currentWk=useMemo(()=>weekNum(sprint.startDate),[sprint.startDate]);
   const [selWk,setSelWk]=useState(currentWk);
-  const [local,setLocal]=useState(weekLogs[currentWk]||{});
-  const [saved,setSaved]=useState(false);
-  useEffect(()=>setLocal(weekLogs[selWk]||{}),[weekLogs,selWk]);
+  const [local,setLocal]=useState(weekJournals[currentWk]||{});
+  const [saved,setEnregistrerd]=useState(false);
+  useEffect(()=>setLocal(weekJournals[selWk]||{}),[weekJournals,selWk]);
   const {overall,bonusScore}=useMemo(()=>calcScores(sprint.habits,local),[sprint.habits,local]);
-  const pausedWeeks=sprint.pausedWeeks||[];
-  const isSelWkPaused=pausedWeeks.includes(selWk);
+  const pausedSemaines=sprint.pausedSemaines||[];
+  const isSelWkPaused=pausedSemaines.includes(selWk);
 
   async function togglePause(){
-    const newPaused=isSelWkPaused?pausedWeeks.filter(w=>w!==selWk):[...pausedWeeks,selWk];
-    const updated={...sprint,pausedWeeks:newPaused};
+    const newPaused=isSelWkPaused?pausedSemaines.filter(w=>w!==selWk):[...pausedSemaines,selWk];
+    const updated={...sprint,pausedSemaines:newPaused};
     await ss(`sprint_${userId}`,updated,true);
-    onUpdateSprint(updated);
+    onMettre à jourSprint(updated);
   }
 
   async function save(){
     if(isSelWkPaused)return;
-    // Save logs and update UI immediately — don't wait on social writes
+    // Enregistrer logs and update UI immediately — don't wait on social writes
     await ss(`logs_${userId}_${sprint.id}_w${selWk}`,local,true);
-    onSave(selWk,local);
-    setSaved(true);
-    setTimeout(()=>setSaved(false),2000);
+    onEnregistrer(selWk,local);
+    setEnregistrerd(true);
+    setTimeout(()=>setEnregistrerd(false),2000);
     // Push social data in background (non-blocking)
     const {overall:ov,byCat}=calcScores(sprint.habits,local);
     sg(`user_${userId}`,true).then(u=>{
       const uname=u?.name||"User";
       const wsk=`social_${sprint.id}_w${selWk}`;
       sg(wsk,true).then(we=>{
-        ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,overall:ov,byCat}],true);
+        ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,email:(await sg(`user_${userId}`,true))?.email||"",overall:ov,byCat}],true);
       });
-      const allSaved={...weekLogs,[selWk]:local};
-      const curPaused=sprint.pausedWeeks||[];
-      const entries=Object.entries(allSaved).map(([w,lg])=>{
+      const allEnregistrerd={...weekJournals,[selWk]:local};
+      const curPaused=sprint.pausedSemaines||[];
+      const entries=Object.entries(allEnregistrerd).map(([w,lg])=>{
         if(curPaused.includes(parseInt(w)))return null;
         const has=sprint.habits.some(h=>lg[h.id]!==undefined&&lg[h.id]!==null&&lg[h.id]!=="");
         const{overall:s}=calcScores(sprint.habits,lg);return has?{w:parseInt(w),s}:null;
@@ -910,7 +924,7 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
       const spAvg=entries.length?Math.round(entries.reduce((a,e)=>a+e.s,0)/entries.length):0;
       const ssk=`social_sprint_${sprint.id}`;
       sg(ssk,true).then(se=>{
-        ss(ssk,[...(se||[]).filter(e=>e.userId!==userId),{userId,name:uname,sprintAvg:spAvg,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.s]))}],true);
+        ss(ssk,[...(se||[]).filter(e=>e.userId!==userId),{userId,name:uname,sprintAvg:spAvg,weeksJournalged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.s]))}],true);
       });
     });
   }
@@ -920,11 +934,11 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
   return <Scroll>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
       <div>
-        <SH>Log</SH>
+        <SH>Journal</SH>
         <p style={{color:T.muted,fontSize:13,margin:"4px 0 0"}}>
           {isSelWkPaused
-            ?<span style={{color:T.amber,fontWeight:600}}>Week {selWk} marked as OFF — not counted in averages</span>
-            :<><strong style={{color:scoreColor(overall)}}>{overall}%</strong>{bonusScore>0&&<span style={{color:T.amber,marginLeft:6,fontSize:11}}>+{bonusScore}% bonus</span>}{selWk!==currentWk&&<span style={{color:T.amber,marginLeft:8,fontSize:11}}>← past week</span>}</>
+            ?<span style={{color:T.amber,fontWeight:600}}>Semaine {selWk} marked as OFF — not counted in averages</span>
+            :<><strong style={{color:scoreColor(overall)}}>{overall}%</strong>{bonusScore>0&&<span style={{color:T.amber,marginLeft:6,fontSize:11}}>+{bonusScore}% bonus</span>}{selWk!==currentWk&&<span style={{color:T.amber,marginLeft:8,fontSize:11}}>← semaine passée</span>}</>
           }
         </p>
       </div>
@@ -932,16 +946,16 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
         <button onClick={togglePause}
           style={{background:isSelWkPaused?T.amber+"22":"transparent",border:`1px solid ${isSelWkPaused?T.amber:T.border}`,
             color:isSelWkPaused?T.amber:T.muted,borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer",fontWeight:600}}>
-          {isSelWkPaused?"▶ Resume":"⏸ Days off"}
+          {isSelWkPaused?"▶ Reprendre":"⏸ Jours off"}
         </button>
-        {!isSelWkPaused&&<Btn onClick={save} variant={saved?"success":"primary"}>{saved?"Saved ✓":"Save"}</Btn>}
+        {!isSelWkPaused&&<Btn onClick={save} variant={saved?"success":"primary"}>{saved?"Enregistré ✓":"Enregistrer"}</Btn>}
       </div>
     </div>
     <div style={{display:"flex",gap:4,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
       {Array.from({length:currentWk},(_,i)=>{
-        const w=i+1;const ll=weekLogs[w]||{};
-        const isPaused=pausedWeeks.includes(w);
-        const hasLog=!isPaused&&regHabits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+        const w=i+1;const ll=weekJournals[w]||{};
+        const isPaused=pausedSemaines.includes(w);
+        const hasJournal=!isPaused&&regHabits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
         const{overall:ws}=calcScores(sprint.habits,ll);const isSel=selWk===w;
         return <button key={w} onClick={()=>setSelWk(w)} style={{flexShrink:0,padding:"8px 12px",borderRadius:8,
           border:`1px solid ${isSel?(isPaused?T.amber:T.accent):T.border}`,
@@ -950,15 +964,15 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
           <span style={{fontSize:10,color:isSel?(isPaused?T.amber:T.accent):T.muted,fontWeight:isSel?700:400}}>W{w}</span>
           {isPaused
             ?<span style={{fontSize:8,color:T.amber,fontWeight:700}}>OFF</span>
-            :<div style={{width:6,height:6,borderRadius:3,background:hasLog?scoreColor(ws):T.faint}}/>
+            :<div style={{width:6,height:6,borderRadius:3,background:hasJournal?scoreColor(ws):T.faint}}/>
           }
         </button>;
       })}
     </div>
     {isSelWkPaused&&<div style={{background:T.amber+"12",border:`1px solid ${T.amber}33`,borderRadius:12,padding:"20px 16px",textAlign:"center",marginBottom:16}}>
       <div style={{fontSize:28,marginBottom:8}}>🏖️</div>
-      <p style={{color:T.amber,fontSize:14,fontWeight:600,margin:"0 0 4px"}}>This week is marked as OFF</p>
-      <p style={{color:T.muted,fontSize:12,margin:0}}>Days off, holiday or sick leave — this week won't count toward your sprint average. You can still log if you want.</p>
+      <p style={{color:T.amber,fontSize:14,fontWeight:600,margin:"0 0 4px"}}>Cette semaine is marked as OFF</p>
+      <p style={{color:T.muted,fontSize:12,margin:0}}>Congés, vacances ou maladie — cette semaine ne compte pas dans ta moyenne. You can still log if you want.</p>
     </div>}
     {catGroups.map(cat=>{
       const reg=cat.habits.filter(h=>!h.isBonus);const bon=cat.habits.filter(h=>h.isBonus);
@@ -997,18 +1011,18 @@ function HabitRow({habit,value,onChange,isBonus=false}){
 }
 
 // ── SPRINT TAB ──
-function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated}){
+function SprintTab({user,sprint,onSprintCreated,onHabitsMettre à jourd,history=[]}){
   const [reconfigure,setReconfigure]=useState(false);
-  const [editingId,setEditingId]=useState(null);const [editDraft,setEditDraft]=useState(null);const [saving,setSaving]=useState(false);
-  if(!sprint||reconfigure)return <SprintSetupView user={user} onDone={s=>{setReconfigure(false);onSprintCreated(s);}}/>;
+  const [editingId,setModifieringId]=useState(null);const [editDraft,setModifierDraft]=useState(null);const [saving,setSaving]=useState(false);
+  if(!sprint||reconfigure)return <SprintSetupView user={user} onDone={s=>{setReconfigure(false);onSprintCreated(s);}} isFirstSprint={!sprint&&history.length===0}/>;
   const wk=weekNum(sprint.startDate);
-  async function saveEdit(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp,true);onHabitsUpdated(sp);setEditingId(null);setEditDraft(null);setSaving(false);}
-  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp,true);onHabitsUpdated(sp);}
+  async function saveModifier(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp,true);onHabitsMettre à jourd(sp);setModifieringId(null);setModifierDraft(null);setSaving(false);}
+  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp,true);onHabitsMettre à jourd(sp);}
   const catGroups=CATS.map(c=>({...c,habits:sprint.habits.filter(h=>h.catId===c.id),weight:(sprint.catWeights||{})[c.id]||0})).filter(c=>c.habits.length>0);
   return <Scroll>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><SH>Current sprint</SH><Btn small variant="secondary" onClick={()=>setReconfigure(true)}>New sprint</Btn></div>
-    <Sub>Week {wk} of 12 · started {fmtDate(sprint.startDate)}</Sub>
-    <Notice color={T.accent}>Tap Edit on any habit to update it. Past logs are not affected.</Notice>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><SH>Sprint en cours</SH><Btn small variant="secondary" onClick={()=>setReconfigure(true)}>Nouveau sprint</Btn></div>
+    <Sub>Semaine {wk} sur 12 · started {fmtDate(sprint.startDate)}</Sub>
+    <Notice color={T.accent}>Appuie sur Modifier pour mettre à jour une habitude. Les logs passés ne sont pas affectés.</Notice>
     {catGroups.map(cat=>{
       const reg=cat.habits.filter(h=>!h.isBonus);const bon=cat.habits.filter(h=>h.isBonus);
       const totW=reg.reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
@@ -1022,14 +1036,14 @@ function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated}){
           const isBonus=h.isBonus;
           if(editingId===h.id&&editDraft){
             const otherW=reg.filter(x=>x.id!==h.id).reduce((a,x)=>a+(parseFloat(x.weight)||0),0);
-            return <div key={h.id} style={{marginTop:4}}><HabitForm habit={editDraft} cat={cat} remaining={(cat.weight||0)-otherW} onChange={setEditDraft} saveLabel={saving?"Saving…":"Update"} onSave={saveEdit} onCancel={()=>{setEditingId(null);setEditDraft(null);}}/></div>;
+            return <div key={h.id} style={{marginTop:4}}><HabitForm habit={editDraft} cat={cat} remaining={(cat.weight||0)-otherW} onChange={setModifierDraft} saveLabel={saving?"Saving…":"Mettre à jour"} onEnregistrer={saveModifier} onAnnuler={()=>{setModifieringId(null);setModifierDraft(null);}}/></div>;
           }
           return <div key={h.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isBonus?T.amber+"10":T.surface,borderRadius:10,marginBottom:6,border:isBonus?`1px solid ${T.amber}22`:"none"}}>
             <div style={{flex:1}}>
               <div style={{color:isBonus?T.amber:T.text,fontSize:13,fontWeight:500}}>{isBonus?"⭐ ":""}{h.name}{h.subCat&&<span style={{color:T.muted,fontSize:11}}> · {h.subCat}</span>}</div>
               <div style={{color:T.muted,fontSize:11,marginTop:3}}>{h.type!=="boolean"&&`${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""} · `}<strong style={{color:isBonus?T.amber:cat.color}}>{isBonus?"+5% bonus":h.weight+"%"}</strong></div>
             </div>
-            <button onClick={()=>{setEditingId(h.id);setEditDraft({...h});}} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",flexShrink:0,minHeight:36}}>Edit</button>
+            <button onClick={()=>{setModifieringId(h.id);setModifierDraft({...h});}} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,padding:"8px 12px",fontSize:12,cursor:"pointer",flexShrink:0,minHeight:36}}>Modifier</button>
             <button onClick={()=>delHabit(h.id)} style={{background:"none",border:"none",color:T.red+"88",fontSize:18,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>×</button>
           </div>;
         })}
@@ -1040,74 +1054,531 @@ function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated}){
 
 // ── SOCIAL ──
 function SocialView({user,sprint}){
-  const [tab,setTab]=useState("sprint");const [spData,setSpData]=useState([]);const [wkData,setWkData]=useState([]);const [loading,setLoading]=useState(true);
-  const wk=useMemo(()=>weekNum(sprint.startDate),[sprint.startDate]);
+  const [tab,setTab]=useState("week");
+  const [spData,setSpData]=useState([]);
+  const [wkData,setWkData]=useState([]);
+  const [prevWkData,setPrevWkData]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [expanded,setExpanded]=useState(null);
+  const wk=weekNum(sprint.startDate);
   const activeCats=CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
-  useEffect(()=>{(async()=>{setLoading(true);const [sd,wd]=await Promise.all([sg(`social_sprint_${sprint.id}`,true),sg(`social_${sprint.id}_w${wk}`,true)]);setSpData((sd||[]).sort((a,b)=>b.sprintAvg-a.sprintAvg));setWkData((wd||[]).sort((a,b)=>b.overall-a.overall));setLoading(false);})();},[sprint,wk]);
-  const entries=tab==="sprint"?spData:wkData;const ranks=["🥇","🥈","🥉"];
-  return <Scroll>
-    <SH>Community</SH><Sub>Week {wk} · compare progress with others</Sub>
 
-    {/* How to invite friends */}
-    <div style={{background:T.card,borderRadius:16,boxShadow:shadow,padding:"13px 16px",marginBottom:16}}>
-      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px"}}>Invite friends</p>
-      <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>
-        To invite friends, copy the URL from your <strong style={{color:T.text}}>browser address bar</strong> (starts with <span style={{color:T.accent}}>claude.ai/chat/…</span>) and send it to them.
-      </p>
-      <div style={{background:T.surface,border:`1px solid ${T.accent}33`,borderRadius:8,padding:"12px 14px"}}>
-        <p style={{margin:0,fontSize:12,color:T.muted,lineHeight:1.6}}>
-          Once they open the link they can <strong style={{color:T.text}}>create an account</strong>, set up their sprint, log a week and hit Save — they appear on the leaderboard automatically. No invite code needed.
-        </p>
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      const [sd,wd,pwd]=await Promise.all([
+        sg(`social_sprint_${sprint.id}`,true),
+        sg(`social_${sprint.id}_w${wk}`,true),
+        wk>1?sg(`social_${sprint.id}_w${wk-1}`,true):Promise.resolve([]),
+      ]);
+      setSpData((sd||[]).sort((a,b)=>b.sprintAvg-a.sprintAvg));
+      setWkData((wd||[]).sort((a,b)=>b.overall-a.overall));
+      setPrevWkData(pwd||[]);
+      setLoading(false);
+    })();
+  },[sprint,wk]);
+
+  const entries=tab==="week"?wkData:spData;
+
+  // Streak: consecutive weeks above 75%
+  function getStreak(entry){
+    if(!entry.weekScores)return 0;
+    let streak=0;
+    for(let w=wk;w>=1;w--){
+      const s=entry.weekScores[w];
+      if(s===undefined||s===null)break;
+      if(s>=75)streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  // Movement vs previous week
+  function getMovement(entry){
+    if(tab!=="week"||!prevWkData.length)return null;
+    const prev=prevWkData.find(e=>e.userId===entry.userId);
+    if(!prev)return null;
+    const diff=entry.overall-prev.overall;
+    return diff;
+  }
+
+  // Beat last sprint badge
+  function beatLastSprint(entry){
+    if(tab!=="sprint")return false;
+    return entry.sprintAvg&&entry.lastSprintAvg&&entry.sprintAvg>entry.lastSprintAvg;
+  }
+
+  // Top 3 for podium
+  const top3=entries.slice(0,3);
+  const rest=entries.slice(3);
+
+  return <Scroll>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+      <div>
+        <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 2px",letterSpacing:-0.3}}>Communauté</h2>
+        <p style={{color:T.muted,fontSize:13,margin:0}}>Semaine {wk} · {entries.length} participant{entries.length!==1?"s":""}</p>
       </div>
     </div>
-    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:20}}>
-      {[["sprint","Sprint avg"],["week","This week"]].map(([t,l])=>(
-        <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"8px 0",border:"none",borderRadius:8,cursor:"pointer",background:tab===t?T.accent:"transparent",color:tab===t?"#fff":T.muted,fontSize:13,fontWeight:600,transition:"all 0.2s"}}>{l}</button>
+
+    {/* Tab toggle */}
+    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,margin:"14px 0 20px"}}>
+      {[["week","Cette semaine"],["sprint","Sprint"]].map(([t,l])=>(
+        <button key={t} onClick={()=>{setTab(t);setExpanded(null);}}
+          style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",
+            background:tab===t?T.card:"transparent",color:tab===t?T.text:T.muted,
+            fontSize:13,fontWeight:600,boxShadow:tab===t?shadow:"none",transition:"all 0.2s"}}>{l}</button>
       ))}
     </div>
-    {loading&&<div style={{textAlign:"center",padding:48,color:T.muted}}>Loading…</div>}
-    {!loading&&entries.length===0&&<div style={{textAlign:"center",padding:48}}><p style={{color:T.muted}}>No scores yet — log and save to appear here.</p></div>}
-    {entries.map((entry,i)=>{
-      const score=tab==="sprint"?entry.sprintAvg:entry.overall;const isMe=entry.userId===user.id;
-      return <div key={entry.userId} style={{background:T.card,borderRadius:14,padding:"16px 18px",marginBottom:10,border:`1px solid ${isMe?T.accent:T.border}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:tab==="week"?10:0}}>
-          <div style={{width:32,height:32,borderRadius:10,background:T.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:i<3?16:13,flexShrink:0}}>{i<3?ranks[i]:<span style={{color:T.muted,fontWeight:700}}>{i+1}</span>}</div>
-          <Avatar name={entry.name} userId={entry.userId} size={32}/>
-          <div style={{flex:1}}>
-            <span style={{color:T.text,fontSize:15,fontWeight:600}}>{entry.name}</span>
-            {isMe&&<span style={{marginLeft:8,fontSize:10,color:T.accent,background:T.accent+"22",padding:"2px 7px",borderRadius:5,fontWeight:700}}>you</span>}
-            {tab==="sprint"&&<div style={{color:T.muted,fontSize:11,marginTop:2}}>{entry.weeksLogged} week{entry.weeksLogged!==1?"s":""} logged</div>}
+
+    {/* Invite card */}
+    <div style={{background:T.card,borderRadius:16,padding:"13px 16px",marginBottom:20,boxShadow:shadow}}>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 6px"}}>Inviter des amis</p>
+      <p style={{color:T.text,fontSize:12,lineHeight:1.6,margin:0}}>
+        Copie l'URL depuis ta <strong>barre d'adresse</strong> (commence par <span style={{color:T.accent}}>github.io/…</span>) et envoie-la. Ils créent un compte et apparaissent ici automatiquement.
+      </p>
+    </div>
+
+    {loading&&<div style={{textAlign:"center",padding:48,color:T.muted}}>Chargement…</div>}
+    {!loading&&entries.length===0&&(
+      <div style={{textAlign:"center",padding:48}}>
+        <p style={{color:T.muted,fontSize:14}}>Aucun score pour l'instant.</p>
+        <p style={{color:T.faint,fontSize:13,marginTop:6}}>Saisis tes habitudes et enregistre pour apparaître ici.</p>
+      </div>
+    )}
+
+    {/* ── PODIUM top 3 ── */}
+    {!loading&&top3.length>0&&(
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.muted,marginBottom:12}}>Classement</div>
+
+        {/* Podium visual */}
+        {top3.length>=2&&<div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:8,marginBottom:16,height:100}}>
+          {/* 2nd */}
+          {top3[1]&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
+            <Avatar name={top3[1].name} userId={top3[1].userId} email={top3[1].email} size={36}/>
+            <span style={{fontSize:10,fontWeight:600,color:T.muted,maxWidth:60,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{top3[1].name.split(" ")[0]}</span>
+            <div style={{width:"100%",background:"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:50,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:16,fontWeight:800,color:T.muted}}>2</span>
+            </div>
+          </div>}
+          {/* 1st */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
+            <div style={{fontSize:18,lineHeight:1}}>🥇</div>
+            <Avatar name={top3[0].name} userId={top3[0].userId} email={top3[0].email} size={42}/>
+            <span style={{fontSize:10,fontWeight:700,color:T.text,maxWidth:70,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{top3[0].name.split(" ")[0]}</span>
+            <div style={{width:"100%",background:T.accent,borderRadius:"8px 8px 0 0",height:68,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:18,fontWeight:800,color:"#fff"}}>{tab==="week"?top3[0].overall:top3[0].sprintAvg}%</span>
+            </div>
           </div>
-          <div style={{fontSize:22,fontWeight:800,color:scoreColor(score)}}>{score}%</div>
-        </div>
-        {tab==="week"&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {activeCats.map(cat=>{const s=entry.byCat?.[cat.id];if(s===null||s===undefined)return null;
-            return <div key={cat.id} style={{display:"flex",alignItems:"center",gap:4,background:T.surface,borderRadius:6,padding:"4px 8px"}}><div style={{width:5,height:5,borderRadius:2,background:cat.color}}/><span style={{color:T.muted,fontSize:11}}>{cat.name}</span><span style={{color:scoreColor(s),fontSize:11,fontWeight:700}}>{s}%</span></div>;
-          })}
+          {/* 3rd */}
+          {top3[2]&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
+            <Avatar name={top3[2].name} userId={top3[2].userId} email={top3[2].email} size={32}/>
+            <span style={{fontSize:10,fontWeight:600,color:T.muted,maxWidth:60,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{top3[2].name.split(" ")[0]}</span>
+            <div style={{width:"100%",background:"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:38,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:14,fontWeight:800,color:T.muted}}>3</span>
+            </div>
+          </div>}
         </div>}
-      </div>;
-    })}
+
+        {/* Full list — top 3 + rest */}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {entries.map((entry,i)=>{
+            const score=tab==="week"?entry.overall:entry.sprintAvg;
+            const isMe=entry.userId===user.id;
+            const isExpanded=expanded===entry.userId;
+            const streak=getStreak(entry);
+            const movement=getMovement(entry);
+            const beat=beatLastSprint(entry);
+
+            return(
+              <div key={entry.userId}
+                onClick={()=>setExpanded(isExpanded?null:entry.userId)}
+                style={{background:isMe?"rgba(0,122,255,0.06)":T.card,borderRadius:16,
+                  border:isMe?`1.5px solid rgba(0,122,255,0.25)`:"none",
+                  boxShadow:shadow,overflow:"hidden",cursor:"pointer",transition:"all 0.2s"}}>
+
+                {/* Main row */}
+                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  {/* Rank */}
+                  <div style={{width:24,height:24,borderRadius:8,background:i===0?"rgba(0,122,255,0.12)":i===1?"rgba(0,0,0,0.05)":i===2?"rgba(255,149,0,0.1)":"transparent",
+                    display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <span style={{fontSize:i<3?14:11,fontWeight:700,color:i===0?T.accent:i===1?T.muted:i===2?T.amber:T.faint}}>
+                      {i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}
+                    </span>
+                  </div>
+
+                  {/* Avatar */}
+                  <Avatar name={entry.name} userId={entry.userId} email={entry.email} size={34}/>
+
+                  {/* Name + badges */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:14,fontWeight:600,color:T.text,letterSpacing:-0.2}}>{entry.name}</span>
+                      {isMe&&<span style={{fontSize:9,color:T.accent,background:"rgba(0,122,255,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>toi</span>}
+                      {streak>=3&&<span style={{fontSize:9,color:T.green,background:"rgba(48,209,88,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>🔥 {streak} sem.</span>}
+                      {beat&&<span style={{fontSize:9,color:T.green,background:"rgba(48,209,88,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>↑ record</span>}
+                    </div>
+                    <div style={{fontSize:11,color:T.muted,marginTop:2}}>
+                      {tab==="sprint"?`${entry.weeksLogged||0} sem. saisies`:`S${wk}`}
+                    </div>
+                  </div>
+
+                  {/* Score + movement */}
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
+                    <span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>
+                    {movement!==null&&<span style={{fontSize:10,fontWeight:600,color:movement>0?T.green:movement<0?T.red:T.muted}}>
+                      {movement>0?`↑ +${movement}pp`:movement<0?`↓ ${movement}pp`:"→"}
+                    </span>}
+                  </div>
+
+                  {/* Expand chevron */}
+                  <div style={{color:T.muted,fontSize:14,transform:isExpanded?"rotate(180deg)":"rotate(0)",transition:"transform 0.2s",marginLeft:4}}>⌄</div>
+                </div>
+
+                {/* Expanded: category breakdown */}
+                {isExpanded&&<div style={{padding:"0 16px 16px",borderTop:`1px solid ${T.border}`}}>
+                  <div style={{paddingTop:12,display:"flex",flexDirection:"column",gap:8}}>
+                    <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:4}}>
+                      Score par catégorie · poids visible, objectifs privés
+                    </div>
+                    {activeCats.map(cat=>{
+                      const catScore=tab==="week"?entry.byCat?.[cat.id]:null;
+                      const catWeight=(sprint.catWeights||{})[cat.id]||0;
+                      if(catScore===null||catScore===undefined)return null;
+                      return(
+                        <div key={cat.id}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                            <div style={{width:6,height:6,borderRadius:3,background:cat.color,flexShrink:0}}/>
+                            <span style={{fontSize:12,color:T.text,fontWeight:500,flex:1}}>{cat.name}</span>
+                            <span style={{fontSize:10,color:T.muted}}>{catWeight}%</span>
+                            <span style={{fontSize:12,fontWeight:700,color:scoreColor(catScore),minWidth:36,textAlign:"right"}}>{catScore}%</span>
+                          </div>
+                          <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:2,marginLeft:14}}>
+                            <div style={{height:"100%",borderRadius:2,background:barColor(catScore),width:`${catScore}%`,transition:"width 0.5s"}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {tab==="sprint"&&entry.weekScores&&(
+                      <div style={{marginTop:8}}>
+                        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>Progression du sprint</div>
+                        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:40}}>
+                          {Array.from({length:wk},(_,i)=>{
+                            const s=entry.weekScores[i+1];
+                            return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                              <div style={{width:"100%",height:s!==undefined?`${Math.max((s/100)*34,2)}px`:"2px",
+                                background:s!==undefined?barColor(s):"rgba(0,0,0,0.06)",borderRadius:"2px 2px 0 0",minHeight:2}}/>
+                              <span style={{fontSize:6.5,color:T.muted}}>S{i+1}</span>
+                            </div>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
   </Scroll>;
 }
 
+// ── DUELS ──
+function DuelsView({user,sprint}){
+  const [myDuels,setMyDuels]=useState([]);
+  const [users,setUsers]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [creating,setCreating]=useState(false);
+  const [form,setForm]=useState({opponentId:"",type:"overall",catId:"health",wk:weekNum(sprint.startDate)});
+  const [msg,setMsg]=useState(null);
+  const wk=weekNum(sprint.startDate);
+
+  async function load(){
+    setLoading(true);
+    const [idx,duelsData]=await Promise.all([
+      sg("userIndex",true),
+      sg(`duels_${sprint.id}`,true),
+    ]);
+    setUsers((idx||[]).filter(u=>u.id!==user.id));
+    const all=duelsData||[];
+    setMyDuels(all.filter(d=>d.challengerId===user.id||d.opponentId===user.id));
+    setLoading(false);
+  }
+
+  useEffect(()=>{load();},[sprint]);
+
+  async function createDuel(){
+    if(!form.opponentId)return;
+    const duelId=uid();
+    const newDuel={
+      id:duelId,
+      challengerId:user.id,
+      challengerName:user.name,
+      opponentId:form.opponentId,
+      opponentName:users.find(u=>u.id===form.opponentId)?.name||"",
+      type:form.type, // "overall" or "category"
+      catId:form.type==="category"?form.catId:null,
+      week:wk,
+      status:"pending", // pending → active → completed
+      createdAt:Date.now(),
+    };
+    const all=await sg(`duels_${sprint.id}`,true)||[];
+    await ss(`duels_${sprint.id}`,[...all,newDuel],true);
+    setCreating(false);
+    setMsg("Défi envoyé ! En attente d'acceptation.");
+    setTimeout(()=>setMsg(null),3000);
+    load();
+  }
+
+  async function respondDuel(duelId,accept){
+    const all=await sg(`duels_${sprint.id}`,true)||[];
+    const updated=all.map(d=>d.id===duelId?{...d,status:accept?"active":"declined"}:d);
+    await ss(`duels_${sprint.id}`,updated,true);
+    setMsg(accept?"Défi accepté ! C'est parti 🔥":"Défi refusé.");
+    setTimeout(()=>setMsg(null),3000);
+    load();
+  }
+
+  // Resolve duel result from social scores
+  async function resolveDuel(duel){
+    const wkData=await sg(`social_${sprint.id}_w${duel.week}`,true)||[];
+    const cEntry=wkData.find(e=>e.userId===duel.challengerId);
+    const oEntry=wkData.find(e=>e.userId===duel.opponentId);
+    const getScore=(entry)=>{
+      if(!entry)return null;
+      if(duel.type==="category")return entry.byCat?.[duel.catId]??null;
+      return entry.overall??null;
+    };
+    const cs=getScore(cEntry);const os=getScore(oEntry);
+    if(cs===null||os===null)return null;
+    return{challengerScore:cs,opponentScore:os,winner:cs>os?duel.challengerId:os>cs?duel.opponentId:"tie"};
+  }
+
+  const pending=myDuels.filter(d=>d.status==="pending"&&d.opponentId===user.id);
+  const active=myDuels.filter(d=>d.status==="active"&&d.week===wk);
+  const past=myDuels.filter(d=>d.status==="active"&&d.week<wk||d.status==="completed");
+  const activeCats=CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
+
+  function DuelCard({duel,resolved}){
+    const isChallenger=duel.challengerId===user.id;
+    const opponent=isChallenger?duel.opponentName:duel.challengerName;
+    const myScore=resolved?isChallenger?resolved.challengerScore:resolved.opponentScore:null;
+    const theirScore=resolved?isChallenger?resolved.opponentScore:resolved.challengerScore:null;
+    const iWon=resolved&&resolved.winner===user.id;
+    const tie=resolved&&resolved.winner==="tie";
+    const cat=duel.catId?CATS.find(c=>c.id===duel.catId):null;
+    return(
+      <div style={{background:T.card,borderRadius:16,boxShadow:shadow,overflow:"hidden"}}>
+        <div style={{padding:"14px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{fontSize:20}}>{duel.type==="category"?"🎯":"⚔️"}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:T.text}}>
+                {isChallenger?"Tu as défié":"Défi reçu de"} <span style={{color:T.accent}}>{opponent}</span>
+              </div>
+              <div style={{fontSize:11,color:T.muted,marginTop:2}}>
+                {duel.type==="category"?`Catégorie : ${cat?.name||duel.catId}`:"Score global"}
+                {" · "}Semaine {duel.week}
+              </div>
+            </div>
+            {resolved&&(
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:11,fontWeight:700,color:iWon?T.green:tie?T.amber:T.red}}>
+                  {iWon?"🏆 Gagné":tie?"🤝 Égalité":"💪 Perdu"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Scores */}
+          {resolved&&(
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center",background:"rgba(0,0,0,0.03)",borderRadius:12,padding:"10px 14px"}}>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:T.muted,marginBottom:4}}>Toi</div>
+                <div style={{fontSize:24,fontWeight:800,color:iWon?T.green:T.text,letterSpacing:-1}}>{myScore}%</div>
+              </div>
+              <div style={{fontSize:14,color:T.muted,fontWeight:600}}>vs</div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:T.muted,marginBottom:4}}>{opponent}</div>
+                <div style={{fontSize:24,fontWeight:800,color:!iWon&&!tie?T.green:T.text,letterSpacing:-1}}>{theirScore}%</div>
+              </div>
+            </div>
+          )}
+
+          {/* Active — in progress */}
+          {!resolved&&duel.status==="active"&&(
+            <div style={{background:"rgba(0,122,255,0.06)",borderRadius:10,padding:"10px 12px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:6,height:6,borderRadius:3,background:T.accent,animation:"pulse 1.5s infinite"}}/>
+              <span style={{fontSize:12,color:T.accent,fontWeight:500}}>En cours · résultat à la fin de la semaine {duel.week}</span>
+            </div>
+          )}
+
+          {/* Pending — awaiting response */}
+          {duel.status==="pending"&&duel.opponentId===user.id&&(
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <button onClick={()=>respondDuel(duel.id,false)}
+                style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"rgba(255,59,48,0.1)",color:T.red,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+                Refuser
+              </button>
+              <button onClick={()=>respondDuel(duel.id,true)}
+                style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:T.accent,color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+                Accepter 🔥
+              </button>
+            </div>
+          )}
+          {duel.status==="pending"&&duel.challengerId===user.id&&(
+            <div style={{background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"9px 12px"}}>
+              <span style={{fontSize:12,color:T.muted}}>⏳ En attente d'acceptation…</span>
+            </div>
+          )}
+          {duel.status==="declined"&&(
+            <div style={{background:"rgba(255,59,48,0.06)",borderRadius:10,padding:"9px 12px"}}>
+              <span style={{fontSize:12,color:T.red}}>Défi refusé</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return <Scroll>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+      <div>
+        <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 2px",letterSpacing:-0.3}}>Duels</h2>
+        <p style={{color:T.muted,fontSize:13,margin:0}}>Défie tes amis cette semaine</p>
+      </div>
+      {!creating&&<button onClick={()=>setCreating(true)}
+        style={{background:T.accent,color:"#fff",border:"none",borderRadius:12,padding:"9px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+        + Nouveau défi
+      </button>}
+    </div>
+
+    {msg&&<div style={{background:"rgba(48,209,88,0.1)",borderRadius:12,padding:"11px 14px",marginBottom:16}}>
+      <p style={{margin:0,fontSize:13,color:T.green,fontWeight:500}}>{msg}</p>
+    </div>}
+
+    {/* Create duel form */}
+    {creating&&<div style={{background:T.card,borderRadius:18,padding:"18px 16px",marginBottom:20,boxShadow:shadow}}>
+      <div style={{fontSize:13,fontWeight:700,color:T.text,marginBottom:16}}>Nouveau défi</div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div>
+          <label style={{fontSize:10,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:T.muted,display:"block",marginBottom:6}}>Adversaire</label>
+          <select value={form.opponentId} onChange={e=>setForm(p=>({...p,opponentId:e.target.value}))} style={{...iSx}}>
+            <option value="">Choisir un adversaire…</option>
+            {users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{fontSize:10,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:T.muted,display:"block",marginBottom:6}}>Type de défi</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[["overall","⚔️ Score global"],["category","🎯 Catégorie"]].map(([t,l])=>(
+              <button key={t} onClick={()=>setForm(p=>({...p,type:t}))}
+                style={{padding:"11px 8px",border:"none",borderRadius:12,cursor:"pointer",
+                  background:form.type===t?T.accent:"rgba(0,0,0,0.05)",
+                  color:form.type===t?"#fff":T.text,fontWeight:600,fontSize:13}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        {form.type==="category"&&<div>
+          <label style={{fontSize:10,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:T.muted,display:"block",marginBottom:6}}>Catégorie</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {activeCats.map(cat=>(
+              <button key={cat.id} onClick={()=>setForm(p=>({...p,catId:cat.id}))}
+                style={{padding:"7px 12px",border:"none",borderRadius:10,cursor:"pointer",
+                  background:form.catId===cat.id?cat.color:"rgba(0,0,0,0.05)",
+                  color:form.catId===cat.id?"#fff":T.text,fontWeight:600,fontSize:12}}>
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>}
+        <div style={{background:"rgba(0,122,255,0.07)",borderRadius:10,padding:"10px 12px"}}>
+          <p style={{margin:0,fontSize:12,color:T.accent,lineHeight:1.5}}>
+            {form.type==="category"
+              ? `🎯 Le score en ${CATS.find(c=>c.id===form.catId)?.name||""} de la semaine ${wk} sera comparé. Meilleur score gagne.`
+              : `⚔️ Le score global de la semaine ${wk} sera comparé. Meilleur score gagne.`}
+          </p>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setCreating(false)}
+            style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"rgba(0,0,0,0.06)",color:T.muted,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+            Annuler
+          </button>
+          <button onClick={createDuel} disabled={!form.opponentId}
+            style={{flex:2,padding:"11px",borderRadius:12,border:"none",
+              background:form.opponentId?T.accent:"rgba(0,0,0,0.06)",
+              color:form.opponentId?"#fff":T.muted,fontWeight:700,fontSize:13,cursor:form.opponentId?"pointer":"not-allowed"}}>
+            Envoyer le défi 🔥
+          </button>
+        </div>
+      </div>
+    </div>}
+
+    {/* Pending challenges to accept */}
+    {pending.length>0&&<div style={{marginBottom:20}}>
+      <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.red,marginBottom:10}}>
+        🔔 {pending.length} défi{pending.length>1?"s":""} en attente
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {pending.map(d=><DuelCard key={d.id} duel={d} resolved={null}/>)}
+      </div>
+    </div>}
+
+    {/* Active this week */}
+    {active.filter(d=>d.status==="active").length>0&&<div style={{marginBottom:20}}>
+      <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.accent,marginBottom:10}}>
+        ⚔️ En cours — semaine {wk}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {active.filter(d=>d.status==="active").map(d=><DuelCard key={d.id} duel={d} resolved={null}/>)}
+      </div>
+    </div>}
+
+    {/* Past duels */}
+    {past.length>0&&<div style={{marginBottom:20}}>
+      <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.muted,marginBottom:10}}>Historique</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {past.map(d=>{
+          const [resolved,setResolved]=useState(null);
+          useEffect(()=>{resolveDuel(d).then(setResolved);},[]);
+          return <DuelCard key={d.id} duel={d} resolved={resolved}/>;
+        })}
+      </div>
+    </div>}
+
+    {!loading&&myDuels.length===0&&!creating&&(
+      <div style={{textAlign:"center",padding:"40px 20px"}}>
+        <div style={{fontSize:40,marginBottom:12}}>⚔️</div>
+        <p style={{color:T.text,fontSize:15,fontWeight:600,marginBottom:6}}>Aucun défi en cours</p>
+        <p style={{color:T.muted,fontSize:13}}>Lance le premier défi de la semaine !</p>
+      </div>
+    )}
+  </Scroll>;
+}
+
+
 // ── PROFILE ──
-function ProfileView({user,sprint,weekLogs,onLogout}){
+function ProfilView({user,sprint,weekJournals,onJournalout}){
   const [history,setHistory]=useState([]);
   useEffect(()=>{(async()=>{const h=await sg(`sprint_history_${user.id}`,true)||[];setHistory(h.reverse());})();},[user.id]);
   const wk=sprint?weekNum(sprint.startDate):0;
-  const{overall}=sprint?calcScores(sprint.habits,weekLogs[wk]||{}):{overall:0};
+  const{overall}=sprint?calcScores(sprint.habits,weekJournals[wk]||{}):{overall:0};
   const memberSince=new Date(user.createdAt).toLocaleDateString("en-GB",{month:"long",year:"numeric"});
   const allAvgs=history.map(s=>s.avgScore).filter(Boolean);
   const lifetimeAvg=allAvgs.length?Math.round(allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length):null;
   return <Scroll>
     <div style={{background:T.card,borderRadius:22,boxShadow:shadow,padding:"24px 20px",marginBottom:16,textAlign:"center"}}>
-      <div style={{width:80,height:80,borderRadius:24,background:avCol(user.id),display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:800,color:"#fff",margin:"0 auto 16px"}}>{initials(user.name)}</div>
+      <div style={{display:"none"}}>{initials(user.name)}</div>
       <h2 style={{color:T.text,fontSize:20,fontWeight:800,margin:"0 0 4px"}}>{user.name}</h2>
       <p style={{color:T.muted,fontSize:13,margin:"0 0 8px"}}>{user.email}</p>
-      <div style={{color:T.faint,fontSize:12}}>Member since {memberSince}</div>
+      <div style={{color:T.faint,fontSize:12}}>Membre depuis {memberSince}</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-      {[{label:"Sprints done",val:history.length},{label:"Weeks logged",val:history.reduce((a,s)=>a+(s.weeksLogged||0),0)},{label:"Lifetime avg",val:lifetimeAvg!==null?`${lifetimeAvg}%`:"—"}].map(({label,val})=>(
+      {[{label:"Sprints réalisés",val:history.length},{label:"Semaines saisies",val:history.reduce((a,s)=>a+(s.weeksJournalged||0),0)},{label:"Moy. globale",val:lifetimeAvg!==null?`${lifetimeAvg}%`:"—"}].map(({label,val})=>(
         <div key={label} style={{background:T.card,borderRadius:16,boxShadow:shadow,padding:"14px 10px",textAlign:"center"}}>
           <div style={{color:T.muted,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>{label}</div>
           <div style={{color:T.text,fontSize:20,fontWeight:800}}>{val}</div>
@@ -1115,19 +1586,19 @@ function ProfileView({user,sprint,weekLogs,onLogout}){
       ))}
     </div>
     {sprint&&<div style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"16px 18px",marginBottom:16}}>
-      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px"}}>Current sprint</p>
-      <div style={{display:"flex",alignItems:"center",gap:16}}><Ring score={overall} size={64}/><div><div style={{color:T.text,fontSize:14,fontWeight:600}}>Week {wk} of 12</div><div style={{color:T.muted,fontSize:12,marginTop:4}}>Started {fmtDate(sprint.startDate)}</div><div style={{color:T.muted,fontSize:12,marginTop:2}}>{sprint.habits.length} habits tracked</div></div></div>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px"}}>Sprint en cours</p>
+      <div style={{display:"flex",alignItems:"center",gap:16}}><Ring score={overall} size={64}/><div><div style={{color:T.text,fontSize:14,fontWeight:600}}>Semaine {wk} sur 12</div><div style={{color:T.muted,fontSize:12,marginTop:4}}>Started {fmtDate(sprint.startDate)}</div><div style={{color:T.muted,fontSize:12,marginTop:2}}>{sprint.habits.length} habitudes suivies</div></div></div>
     </div>}
     {history.length>0&&<div style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"16px 18px",marginBottom:16}}>
-      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px"}}>Sprint history</p>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px"}}>Historique des sprints</p>
       {history.map((sp,i)=>(
         <div key={sp.sprintId} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
-          <div style={{flex:1}}><div style={{color:T.text,fontSize:13,fontWeight:500}}>Sprint {history.length-i}</div><div style={{color:T.muted,fontSize:11,marginTop:2}}>{fmtDate(sp.startDate)} · {sp.weeksLogged} weeks logged</div></div>
+          <div style={{flex:1}}><div style={{color:T.text,fontSize:13,fontWeight:500}}>Sprint {history.length-i}</div><div style={{color:T.muted,fontSize:11,marginTop:2}}>{fmtDate(sp.startDate)} · {sp.weeksJournalged} semaines saisies</div></div>
           <div style={{fontSize:16,fontWeight:800,color:scoreColor(sp.avgScore),minWidth:40,textAlign:"right"}}>{sp.avgScore}%</div>
         </div>
       ))}
     </div>}
-    <Btn full variant="danger" onClick={onLogout}>Sign out</Btn>
+    <Btn full variant="danger" onClick={onJournalout}>Se déconnecter</Btn>
   </Scroll>;
 }
 
@@ -1136,13 +1607,13 @@ const HIST_Q1={
   sprintId:"q1_2026",startDate:"2026-01-05",endDate:"2026-03-30",
   catWeights:{health:15,finance:5,social:15,growth:35,fun:5,career:25},
   weekScores:[{w:1,score:56},{w:2,score:95},{w:3,score:81},{w:4,score:70},{w:5,score:71},{w:6,score:74},{w:7,score:84},{w:8,score:75},{w:9,score:85},{w:10,score:75},{w:11,score:82},{w:12,score:82},{w:13,score:30}],
-  avgScore:73,weeksLogged:13,
+  avgScore:73,weeksJournalged:13,
   catAvgs:{health:60,finance:79,social:95,growth:45,fun:100,career:94},
   habits:[
     {id:"q1h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:5},
     {id:"q1h2",catId:"health",subCat:"Nutrition",name:"Alcohol drinks",type:"numeric",targetType:"max",target:"3",unit:"drinks",weight:5},
     {id:"q1h3",catId:"health",subCat:"Mental Health",name:"Meditation session",type:"numeric",targetType:"min",target:"3",unit:"sessions",weight:5},
-    {id:"q1h4",catId:"finance",name:"Save & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:5},
+    {id:"q1h4",catId:"finance",name:"Enregistrer & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:5},
     {id:"q1h5",catId:"social",name:"Friends & family time",type:"numeric",targetType:"min",target:"2",unit:"moments",weight:5},
     {id:"q1h6",catId:"social",name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:10},
     {id:"q1h7",catId:"growth",name:"Learning hours (data)",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:30},
@@ -1156,7 +1627,7 @@ const HIST_Q3={
   sprintId:"q3_2025",startDate:"2025-07-07",endDate:"2025-09-29",
   catWeights:{health:28,finance:5,social:12,growth:30,fun:3,career:22},
   weekScores:[{w:1,score:92},{w:2,score:80},{w:3,score:90},{w:4,score:20},{w:5,score:89},{w:6,score:90},{w:7,score:77},{w:8,score:88},{w:9,score:85},{w:10,score:81},{w:11,score:82},{w:12,score:87}],
-  avgScore:80,weeksLogged:12,
+  avgScore:80,weeksJournalged:12,
   catAvgs:{health:70,finance:75,social:90,growth:75,fun:100,career:85},
   habits:[
     {id:"q3h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:15},
@@ -1176,7 +1647,7 @@ const HIST_Q4={
   sprintId:"q4_2025",startDate:"2025-10-06",endDate:"2025-12-30",
   catWeights:{health:28,finance:5,social:12,growth:30,fun:3,career:22},
   weekScores:[{w:1,score:80},{w:2,score:80},{w:3,score:80},{w:4,score:80},{w:5,score:80},{w:6,score:80},{w:7,score:80},{w:8,score:80},{w:9,score:84},{w:10,score:80},{w:11,score:67},{w:12,score:null},{w:13,score:null}],
-  avgScore:79,weeksLogged:11,
+  avgScore:79,weeksJournalged:11,
   catAvgs:{health:68,finance:72,social:88,growth:72,fun:95,career:82},
   habits:[
     {id:"q4h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:15},
@@ -1193,7 +1664,7 @@ const HIST_Q4={
   ],
 };
 
-function AdminView({currentUser,onHistoryUpdated}){
+function AdminView({currentUser,onHistoryMettre à jourd}){
   const [users,setUsers]=useState([]);const [loading,setLoading]=useState(true);
   const [expanded,setExpanded]=useState(null);const [details,setDetails]=useState({});
   const [msg,setMsg]=useState(null);const [newPwds,setNewPwds]=useState({});
@@ -1212,7 +1683,7 @@ function AdminView({currentUser,onHistoryUpdated}){
   async function importCurrentSprint(){
     setImporting(true);
     const existing=await sg(`sprint_${currentUser.id}`,true);
-    if(existing){setMsg("Sprint already exists — clear it first if you want to reimport.");setImporting(false);setTimeout(()=>setMsg(null),4000);return;}
+    if(existing){setMsg("Le sprint existe déjà — clear it first if you want to reimport.");setImporting(false);setTimeout(()=>setMsg(null),4000);return;}
     const sprintId="q2_2026_import";
     const sprint={
       id:sprintId,
@@ -1220,7 +1691,7 @@ function AdminView({currentUser,onHistoryUpdated}){
       startDate:"2026-03-30",
       createdAt:Date.now(),
       catWeights:{health:30,growth:35,career:15,finance:5,social:10,fun:5},
-      pausedWeeks:[],
+      pausedSemaines:[],
       habits:[
         {id:"s1h1",catId:"health",subCat:"Sport",name:"Sport sessions",type:"numeric",targetType:"min",target:"4",unit:"sessions",weight:20},
         {id:"s1h2",catId:"health",subCat:"Nutrition",name:"Alcohol drinks",type:"numeric",targetType:"max",target:"3",unit:"drinks",weight:10},
@@ -1228,7 +1699,7 @@ function AdminView({currentUser,onHistoryUpdated}){
         {id:"s1h4",catId:"growth",name:"Data learning and practice",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:30},
         {id:"s1h5",catId:"career",name:"Hours at work",type:"duration",targetType:"min",target:"55",unit:"hrs",weight:5},
         {id:"s1h6",catId:"career",name:"Impact delivered",type:"boolean",targetType:"min",target:"1",unit:"",weight:10},
-        {id:"s1h7",catId:"finance",name:"Save & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:5},
+        {id:"s1h7",catId:"finance",name:"Enregistrer & invest",type:"numeric",targetType:"min",target:"350",unit:"€",weight:5},
         {id:"s1h8",catId:"social",name:"Quality time partner",type:"numeric",targetType:"min",target:"1",unit:"moments",weight:10},
         {id:"s1h9",catId:"fun",name:"Hobby hours",type:"duration",targetType:"min",target:"4",unit:"hrs",weight:5},
         {id:"s1bonus",catId:"health",name:"Bonus habit",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true},
@@ -1237,7 +1708,7 @@ function AdminView({currentUser,onHistoryUpdated}){
     await ss(`sprint_${currentUser.id}`,sprint,true);
     setMsg("Sprint imported — start date 30 Mar 2026, 9 habits + bonus. Reload the app to see it.");
     setImporting(false);setTimeout(()=>setMsg(null),6000);
-    if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
+    if(onHistoryMettre à jourd)onHistoryMettre à jourd(currentUser.id);
   }
 
   async function importMyHistory(){
@@ -1249,17 +1720,17 @@ function AdminView({currentUser,onHistoryUpdated}){
     await ss(`sprint_history_${currentUser.id}`,[...existing,...toAdd],true);
     setMsg(`Imported ${toAdd.length} sprint${toAdd.length!==1?"s":""}: Q1-26 (73%), Q3-25 (80%), Q4-25 (79%)`);
     setImporting(false);setTimeout(()=>setMsg(null),5000);
-    if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
+    if(onHistoryMettre à jourd)onHistoryMettre à jourd(currentUser.id);
   }
 
   return <Scroll>
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}><div style={{width:8,height:8,borderRadius:2,background:T.amber}}/><SH>Admin panel</SH></div>
-    <Sub>{users.length} registered user{users.length!==1?"s":""}</Sub>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}><div style={{width:8,height:8,borderRadius:2,background:T.amber}}/><SH>Panneau admin</SH></div>
+    <Sub>{users.length} utilisateur enregistré{users.length!==1?"s":""}</Sub>
     {msg&&<Notice color={T.green}>{msg}</Notice>}
 
     {/* History import for Manu */}
     <div style={{background:T.card,border:`1px solid ${T.accent}44`,borderRadius:14,padding:"16px 18px",marginBottom:16}}>
-      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 10px"}}>Import historical data</p>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 10px"}}>Importer les données historiques</p>
       <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>
         Import your Q1 (73%), Q3 (80%) and Q4 (79%) 2025 sprint history from your spreadsheet. This will populate the sprint comparison and home page trend charts.
       </p>
@@ -1272,14 +1743,14 @@ function AdminView({currentUser,onHistoryUpdated}){
           </div>
         ))}
       </div>
-      {/* Current sprint import */}
+      {/* Sprint en cours import */}
       <div style={{background:T.card,border:"1px solid rgba(0,122,255,0.2)",borderRadius:14,padding:"16px 18px",marginBottom:16,boxShadow:shadow}}>
-        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 10px"}}>Import current sprint</p>
+        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 10px"}}>Importer le sprint en cours</p>
         <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>
           Recreates your Q2-26 sprint (started 30 Mar) with all 9 habits — Health, Growth, Career, Finance, Social, Fun + bonus.
         </p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
-          {[{l:"Start",v:"30 Mar"},{l:"Habits",v:"9 + bonus"},{l:"Week",v:"W2/12"}].map(({l,v})=>(
+          {[{l:"Start",v:"30 Mar"},{l:"Habits",v:"9 + bonus"},{l:"Semaine",v:"W2/12"}].map(({l,v})=>(
             <div key={l} style={{background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px",textAlign:"center"}}>
               <div style={{color:T.muted,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div>
               <div style={{color:T.accent,fontSize:16,fontWeight:800}}>{v}</div>
@@ -1287,7 +1758,7 @@ function AdminView({currentUser,onHistoryUpdated}){
           ))}
         </div>
         <Btn full variant="secondary" disabled={importing} onClick={importCurrentSprint}>
-          {importing?"Importing…":"Import current sprint →"}
+          {importing?"Importing…":"Importer le sprint en cours →"}
         </Btn>
       </div>
 
@@ -1296,28 +1767,28 @@ function AdminView({currentUser,onHistoryUpdated}){
       </Btn>
     </div>
     <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:16,boxShadow:shadow}}>
-      {loading&&<div style={{padding:24,textAlign:"center",color:T.muted}}>Loading…</div>}
+      {loading&&<div style={{padding:24,textAlign:"center",color:T.muted}}>Chargement…</div>}
       {users.map((u,i)=>{
         const det=details[u.id];const isOpen=expanded===u.id;
         return <div key={u.id}>
           <div onClick={()=>loadDetails(u.id)} style={{display:"grid",gridTemplateColumns:"1fr 80px 24px",padding:"12px 16px",borderTop:i>0?`1px solid ${T.border}`:"none",cursor:"pointer",background:isOpen?T.surface:"transparent",transition:"background 0.15s"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><Avatar name={u.name} userId={u.id} size={28}/><div><div style={{color:T.text,fontSize:13,fontWeight:500}}>{u.name}</div><div style={{color:T.muted,fontSize:11}}>{u.email}</div></div>{ADMIN_EMAILS.includes(u.email)&&<span style={{fontSize:9,color:T.amber,background:T.amber+"22",padding:"2px 6px",borderRadius:4,fontWeight:700,marginLeft:4}}>ADMIN</span>}</div>
-            <div style={{display:"flex",alignItems:"center"}}>{det?.sprint?<span style={{fontSize:11,color:T.green,fontWeight:600}}>W{det.wk}/12</span>:det?.sprint===null?<span style={{fontSize:11,color:T.muted}}>No sprint</span>:<span style={{fontSize:11,color:T.faint}}>—</span>}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><Avatar name={u.name} userId={u.id} email={u.email} size={28}/><div><div style={{color:T.text,fontSize:13,fontWeight:500}}>{u.name}</div><div style={{color:T.muted,fontSize:11}}>{u.email}</div></div>{ADMIN_EMAILS.includes(u.email)&&<span style={{fontSize:9,color:T.amber,background:T.amber+"22",padding:"2px 6px",borderRadius:4,fontWeight:700,marginLeft:4}}>ADMIN</span>}</div>
+            <div style={{display:"flex",alignItems:"center"}}>{det?.sprint?<span style={{fontSize:11,color:T.green,fontWeight:600}}>W{det.wk}/12</span>:det?.sprint===null?<span style={{fontSize:11,color:T.muted}}>Aucun sprint</span>:<span style={{fontSize:11,color:T.faint}}>—</span>}</div>
             <span style={{color:T.muted,fontSize:18,transform:isOpen?"rotate(90deg)":"rotate(0)",transition:"transform 0.2s",display:"inline-block",alignSelf:"center"}}>›</span>
           </div>
           {isOpen&&det&&<div style={{background:T.bg,borderTop:`1px solid ${T.border}`,padding:"16px 16px 20px"}}>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-              {[{l:"Sprints",v:det.history.length},{l:"Current score",v:det.sprint&&det.cs!==null?`${det.cs}%`:"—"},{l:"Weeks logged",v:det.history.reduce((a,s)=>a+(s.weeksLogged||0),0)}].map(({l,v})=>(
+              {[{l:"Sprints",v:det.history.length},{l:"Current score",v:det.sprint&&det.cs!==null?`${det.cs}%`:"—"},{l:"Semaines saisies",v:det.history.reduce((a,s)=>a+(s.weeksJournalged||0),0)}].map(({l,v})=>(
                 <div key={l} style={{background:T.card,borderRadius:10,padding:"10px 12px",textAlign:"center"}}><div style={{color:T.muted,fontSize:9,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div><div style={{color:T.text,fontSize:16,fontWeight:700}}>{v}</div></div>
               ))}
             </div>
             <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
-              <p style={{color:T.muted,fontSize:11,margin:"0 0 10px",textTransform:"uppercase",letterSpacing:0.5}}>Admin actions</p>
+              <p style={{color:T.muted,fontSize:11,margin:"0 0 10px",textTransform:"uppercase",letterSpacing:0.5}}>Actions admin</p>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {det.sprint&&<div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:T.muted,fontSize:12,flex:1}}>Clear active sprint</span><Btn small variant="danger" onClick={()=>clearSprint(u.id)}>Clear</Btn></div>}
+                {det.sprint&&<div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:T.muted,fontSize:12,flex:1}}>Effacer le sprint actif</span><Btn small variant="danger" onClick={()=>clearSprint(u.id)}>Effacer</Btn></div>}
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <input placeholder="New password" type="password" value={newPwds[u.id]||""} onChange={e=>setNewPwds(p=>({...p,[u.id]:e.target.value}))} style={{...iSx,flex:1,fontSize:12,padding:"7px 10px"}}/>
-                  <Btn small variant="amber" disabled={!newPwds[u.id]} onClick={()=>resetPwd(u.id,newPwds[u.id])}>Reset pwd</Btn>
+                  <input placeholder="Nouveau mot de passe" type="password" value={newPwds[u.id]||""} onChange={e=>setNewPwds(p=>({...p,[u.id]:e.target.value}))} style={{...iSx,flex:1,fontSize:12,padding:"7px 10px"}}/>
+                  <Btn small variant="amber" disabled={!newPwds[u.id]} onClick={()=>resetPwd(u.id,newPwds[u.id])}>Réinit. mdp</Btn>
                 </div>
               </div>
             </div>
@@ -1329,28 +1800,28 @@ function AdminView({currentUser,onHistoryUpdated}){
 }
 
 // ── RECAP ──
-function RecapView({user,sprint,weekLogs,onArchive}){
+function RecapView({user,sprint,weekJournals,onArchive}){
   const [archiving,setArchiving]=useState(false);
   const wk=weekNum(sprint.startDate);
-  const weekScores=useMemo(()=>{const out=[];for(let w=1;w<=12;w++){const logs=weekLogs[w]||{};const logged=sprint.habits.some(h=>logs[h.id]!==undefined&&logs[h.id]!==null&&logs[h.id]!=="");const{overall}=calcScores(sprint.habits,logs);out.push({w,overall:logged?overall:null,logged});}return out;},[sprint,weekLogs]);
+  const weekScores=useMemo(()=>{const out=[];for(let w=1;w<=12;w++){const logs=weekJournals[w]||{};const logged=sprint.habits.some(h=>logs[h.id]!==undefined&&logs[h.id]!==null&&logs[h.id]!=="");const{overall}=calcScores(sprint.habits,logs);out.push({w,overall:logged?overall:null,logged});}return out;},[sprint,weekJournals]);
   const lw=weekScores.filter(w=>w.logged);
   const avg=lw.length?Math.round(lw.reduce((a,w)=>a+w.overall,0)/lw.length):0;
-  const catAvgs=catAvgsFromWeeks(sprint.habits,weekLogs,wk);
+  const catAvgs=catAvgsFromSemaines(sprint.habits,weekJournals,wk);
   async function doArchive(){
     setArchiving(true);
-    const record={sprintId:sprint.id,startDate:sprint.startDate,endDate:new Date().toISOString().split("T")[0],habits:sprint.habits,catWeights:sprint.catWeights,weekScores:weekScores.map(w=>({w:w.w,score:w.overall})),avgScore:avg,weeksLogged:lw.length,catAvgs};
+    const record={sprintId:sprint.id,startDate:sprint.startDate,endDate:new Date().toISOString().split("T")[0],habits:sprint.habits,catWeights:sprint.catWeights,weekScores:weekScores.map(w=>({w:w.w,score:w.overall})),avgScore:avg,weeksJournalged:lw.length,catAvgs};
     const hist=await sg(`sprint_history_${user.id}`,true)||[];
     await ss(`sprint_history_${user.id}`,[...hist,record],true);
     await ss(`sprint_${user.id}`,null,true);setArchiving(false);onArchive();
   }
   return <Scroll>
-    <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:40,marginBottom:8}}>🏁</div><h2 style={{color:T.text,fontSize:24,fontWeight:800,margin:0}}>Sprint complete!</h2><p style={{color:T.muted,fontSize:14,margin:"8px 0 0"}}>{fmtDate(sprint.startDate)} — {fmtDate(new Date().toISOString().split("T")[0])}</p></div>
+    <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:40,marginBottom:8}}>🏁</div><h2 style={{color:T.text,fontSize:24,fontWeight:800,margin:0}}>Sprint terminé !</h2><p style={{color:T.muted,fontSize:14,margin:"8px 0 0"}}>{fmtDate(sprint.startDate)} — {fmtDate(new Date().toISOString().split("T")[0])}</p></div>
     <div style={{background:T.card,borderRadius:22,boxShadow:shadow,padding:"24px 20px",marginBottom:16,display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
       <Ring score={avg} size={120}/>
-      <div style={{textAlign:"center"}}><div style={{color:T.text,fontSize:18,fontWeight:800}}>{avg>=80?"Excellent sprint":avg>=60?"Solid effort":"Room to grow"}</div><div style={{color:T.muted,fontSize:13,marginTop:4}}>{lw.length} / 12 weeks logged · avg {avg}%</div></div>
+      <div style={{textAlign:"center"}}><div style={{color:T.text,fontSize:18,fontWeight:800}}>{avg>=80?"Sprint excellent":avg>=60?"Bel effort":"Peut mieux faire"}</div><div style={{color:T.muted,fontSize:13,marginTop:4}}>{lw.length} / 12 semaines saisies · avg {avg}%</div></div>
     </div>
     <div style={{background:T.card,borderRadius:18,boxShadow:shadow,padding:"16px 18px",marginBottom:16}}>
-      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>12-week journey</p>
+      <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Parcours de 12 semaines</p>
       <div style={{display:"flex",alignItems:"flex-end",gap:3,height:72}}>
         {weekScores.map(({w,overall,logged})=>(
           <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
@@ -1360,23 +1831,23 @@ function RecapView({user,sprint,weekLogs,onArchive}){
         ))}
       </div>
     </div>
-    <Btn full disabled={archiving} onClick={doArchive}>{archiving?"Archiving…":"Archive & start new sprint →"}</Btn>
+    <Btn full disabled={archiving} onClick={doArchive}>{archiving?"Archivage…":"Archiver et démarrer un nouveau sprint →"}</Btn>
   </Scroll>;
 }
 
 // ── MAIN APP ──
 function App(){
-  const [user,setUser]=useState(null);const [sprint,setSprint]=useState(null);const [weekLogs,setWL]=useState({});
+  const [user,setUser]=useState(null);const [sprint,setSprint]=useState(null);const [weekJournals,setWL]=useState({});
   const [view,setView]=useState("home");const [booting,setBooting]=useState(true);
   const [showOnboarding,setShowOnboarding]=useState(false);const [showRecap,setShowRecap]=useState(false);
   const [history,setHistory]=useState([]);
   const [quote]=useState(WISDOM[new Date().getDay()%WISDOM.length]);
   const wk=sprint?weekNum(sprint.startDate):0;
   const userIsAdmin=user&&ADMIN_EMAILS.includes(user.email);
-  const NAV=useMemo(()=>[{id:"home",label:"Home"},{id:"log",label:"Log"},{id:"sprint",label:"Sprint"},{id:"social",label:"Social"},{id:"profile",label:"Profile"},...(userIsAdmin?[{id:"admin",label:"Admin"}]:[])]  ,[userIsAdmin]);
+  const NAV=useMemo(()=>[{id:"home",label:"Accueil"},{id:"log",label:"Journal"},{id:"sprint",label:"Sprint"},{id:"social",label:"Social"},{id:"duels",label:"Duels"},{id:"profile",label:"Profil"},...(userIsAdmin?[{id:"admin",label:"Admin"}]:[])]  ,[userIsAdmin]);
 
   async function loadHistory(userId){const h=await sg(`sprint_history_${userId}`,true)||[];setHistory(h);}
-  async function loadLogs(userId,sp){
+  async function loadJournals(userId,sp){
     const out={};for(let w=1;w<=weekNum(sp.startDate);w++){const d=await sg(`logs_${userId}_${sp.id}_w${w}`,true);if(d)out[w]=d;}setWL(out);
   }
 
@@ -1387,7 +1858,7 @@ function App(){
       setUser(u);
       await loadHistory(u.id);
       const sp=await sg(`sprint_${u.id}`,true);
-      if(sp){setSprint(sp);await loadLogs(u.id,sp);}
+      if(sp){setSprint(sp);await loadJournals(u.id,sp);}
       setBooting(false);
     })();
   },[]);
@@ -1398,22 +1869,22 @@ function App(){
     await ss("session",{userId:u.id},true);
     if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated,true);setUser(updated);setShowOnboarding(true);return;}
     setUser(u);await loadHistory(u.id);
-    const sp=await sg(`sprint_${u.id}`,true);if(sp){setSprint(sp);await loadLogs(u.id,sp);}
+    const sp=await sg(`sprint_${u.id}`,true);if(sp){setSprint(sp);await loadJournals(u.id,sp);}
   }
-  async function onLogout(){await ss("session",null,true);setUser(null);setSprint(null);setWL({});setHistory([]);setView("home");setShowOnboarding(false);setShowRecap(false);}
+  async function onJournalout(){await ss("session",null,true);setUser(null);setSprint(null);setWL({});setHistory([]);setView("home");setShowOnboarding(false);setShowRecap(false);}
   function onSprintCreated(sp){setSprint(sp);setWL({});setView("home");setShowRecap(false);}
-  function onSaveLogs(w,logs){setWL(p=>({...p,[w]:logs}));}
+  function onEnregistrerJournals(w,logs){setWL(p=>({...p,[w]:logs}));}
   async function onArchive(){setSprint(null);setWL({});setShowRecap(false);setView("sprint");if(user)await loadHistory(user.id);}
 
-  if(booting)return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:T.muted,fontSize:14}}>Loading…</span></div>;
+  if(booting)return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:T.muted,fontSize:14}}>Chargement…</span></div>;
   if(!user)return <AuthView onAuth={onAuth}/>;
   if(showOnboarding)return <OnboardingView name={user.name} onDone={()=>{setShowOnboarding(false);setView("sprint");}}/>;
   if(showRecap&&sprint)return <div style={{minHeight:"100vh",background:T.bg,color:T.text}}>
     <div style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:"11px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <div style={{display:"flex",alignItems:"center",gap:9}}><div style={{width:28,height:28,borderRadius:8,background:T.text,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff"}}>M</div><span style={{fontWeight:800,fontSize:15}}>Momentum</span></div>
-      <span style={{color:T.amber,fontSize:12,fontWeight:600}}>Sprint complete</span>
+      <span style={{color:T.amber,fontSize:12,fontWeight:600}}>Sprint terminé</span>
     </div>
-    <RecapView user={user} sprint={sprint} weekLogs={weekLogs} onArchive={onArchive}/>
+    <RecapView user={user} sprint={sprint} weekJournals={weekJournals} onArchive={onArchive}/>
   </div>;
 
   return <div style={{minHeight:"100vh",background:T.bg,color:T.text}}>
@@ -1422,23 +1893,24 @@ function App(){
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         {sprint&&<span style={{color:T.muted,fontSize:11}}>W{wk}/12</span>}
         {userIsAdmin&&<span style={{fontSize:9,color:T.amber,background:T.amber+"22",padding:"2px 7px",borderRadius:4,fontWeight:700}}>ADMIN</span>}
-        <Avatar name={user.name} userId={user.id} size={28}/>
+        <Avatar name={user.name} userId={user.id} email={user.email} size={28}/>
       </div>
     </div>
-    {!sprint&&view!=="sprint"&&<div style={{background:"rgba(0,122,255,0.08)",borderBottom:"1px solid rgba(0,122,255,0.15)",padding:"10px 20px",textAlign:"center"}}><span style={{color:T.text,fontSize:13}}>No active sprint.{" "}<button onClick={()=>setView("sprint")} style={{background:"none",border:"none",color:T.accent,fontWeight:700,fontSize:13,cursor:"pointer",padding:0}}>Set one up →</button></span></div>}
+    {!sprint&&view!=="sprint"&&<div style={{background:"rgba(0,122,255,0.08)",borderBottom:"1px solid rgba(0,122,255,0.15)",padding:"10px 20px",textAlign:"center"}}><span style={{color:T.text,fontSize:13}}>Aucun sprint actif.{" "}<button onClick={()=>setView("sprint")} style={{background:"none",border:"none",color:T.accent,fontWeight:700,fontSize:13,cursor:"pointer",padding:0}}>En créer un →</button></span></div>}
     <div style={{paddingTop:4}}>
-      {view==="home"&&(sprint?<HomeView sprint={sprint} weekLogs={weekLogs} quote={quote} userId={user.id}/>:<div style={{textAlign:"center",padding:64}}><p style={{color:T.muted,fontSize:15,marginBottom:20}}>Set up a sprint to start.</p><Btn onClick={()=>setView("sprint")}>Set up sprint →</Btn></div>)}
-      {view==="log"&&(sprint?<LogView sprint={sprint} weekLogs={weekLogs} onSave={onSaveLogs} userId={user.id} onUpdateSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Set up a sprint first.</div>)}
-      {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsUpdated={sp=>setSprint(sp)}/>}
-      {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Set up a sprint first.</div>)}
-      {view==="profile"&&<ProfileView user={user} sprint={sprint} weekLogs={weekLogs} onLogout={onLogout}/>}
-      {view==="admin"&&userIsAdmin&&<AdminView currentUser={user} onHistoryUpdated={loadHistory}/>}
+      {view==="home"&&(sprint?<AccueilView sprint={sprint} weekJournals={weekJournals} quote={quote} userId={user.id}/>:<div style={{textAlign:"center",padding:64}}><p style={{color:T.muted,fontSize:15,marginBottom:20}}>Configure un sprint pour commencer.</p><Btn onClick={()=>setView("sprint")}>Configurer un sprint →</Btn></div>)}
+      {view==="log"&&(sprint?<JournalView sprint={sprint} weekJournals={weekJournals} onEnregistrer={onEnregistrerJournals} userId={user.id} onMettre à jourSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
+      {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsMettre à jourd={sp=>setSprint(sp)} history={history}/>}
+      {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
+      {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
+      {view==="profile"&&<ProfilView user={user} sprint={sprint} weekJournals={weekJournals} onJournalout={onJournalout}/>}
+      {view==="admin"&&userIsAdmin&&<AdminView currentUser={user} onHistoryMettre à jourd={loadHistory}/>}
     </div>
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(0,0,0,0.1)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
       {NAV.map(item=>(
-        <button key={item.id} onClick={()=>setView(item.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"10px 4px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-          <div style={{width:20,height:2.5,borderRadius:2,background:view===item.id?(item.id==="admin"?T.amber:T.accent):"transparent",transition:"background 0.2s"}}/>
-          <span style={{fontSize:11,fontWeight:view===item.id?700:400,color:view===item.id?(item.id==="admin"?T.amber:T.text):T.muted,transition:"color 0.2s"}}>{item.label}</span>
+        <button key={item.id} onClick={()=>setView(item.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"12px 4px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:5,minHeight:56}}>
+          <div style={{width:24,height:3,borderRadius:2,background:view===item.id?(item.id==="admin"?T.amber:T.accent):"transparent",transition:"background 0.2s"}}/>
+          <span style={{fontSize:12,fontWeight:view===item.id?700:500,color:view===item.id?(item.id==="admin"?T.amber:T.text):T.muted,transition:"color 0.2s",letterSpacing:-0.1}}>{item.label}</span>
         </button>
       ))}
     </div>
