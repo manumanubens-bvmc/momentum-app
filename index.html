@@ -7,9 +7,27 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+try{
+  firebase.initializeApp({
+    apiKey:"AIzaSyBBIQtMPM14OEF1QhAcZ6yRzregv0xX8sk",
+    authDomain:"momentum-app-dfa5b.firebaseapp.com",
+    databaseURL:"https://momentum-app-dfa5b-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"momentum-app-dfa5b",
+    storageBucket:"momentum-app-dfa5b.firebasestorage.app",
+    messagingSenderId:"267672149485",
+    appId:"1:267672149485:web:6bb0e2b7e6bc2b3cac5be4"
+  });
+  window._fbDb=firebase.database();
+  window._fbReady=true;
+  console.log("Firebase connected ✓");
+}catch(e){window._fbReady=false;console.warn("Firebase failed:",e);}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#f2f2f7;font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:#E6E6F0;}
+body{background:#f2f2f7;font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:#1c1c1e;}
 input,select,button{font-family:inherit;}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-thumb{background:#272840;border-radius:2px;}
@@ -18,9 +36,27 @@ input,select,button{font-family:inherit;}
 <body>
 <div id="root"></div>
 <script>
-const STORAGE_OK = typeof window.storage !== 'undefined';
-async function sg(k,sh=true){try{if(STORAGE_OK){const r=await window.storage.get(k,sh);return r?JSON.parse(r.value):null;}else{const v=localStorage.getItem((sh?'sh_':'pr_')+k);return v?JSON.parse(v):null;}}catch(e){return null;}}
-async function ss(k,v,sh=true){try{if(STORAGE_OK){await window.storage.set(k,JSON.stringify(v),sh);}else{localStorage.setItem((sh?'sh_':'pr_')+k,JSON.stringify(v));}}catch(e){}}
+// Firebase storage — shared across all devices
+function fbKey(k){return k.replace(/[.#$\[\]]/g,'_');}
+async function sg(k){
+  try{
+    if(window._fbReady){
+      const snap=await window._fbDb.ref(fbKey(k)).once('value');
+      return snap.exists()?snap.val():null;
+    }
+    const v=localStorage.getItem(k);return v?JSON.parse(v):null;
+  }catch(e){console.warn('sg error',k,e);return null;}
+}
+async function ss(k,v){
+  try{
+    if(window._fbReady){
+      await window._fbDb.ref(fbKey(k)).set(v===null?null:v);
+      return;
+    }
+    if(v===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,JSON.stringify(v));
+  }catch(e){console.warn('ss error',k,e);}
+}
 </script>
 <script type="text/babel">
 const {useState,useEffect,useMemo}=React;
@@ -310,19 +346,19 @@ function AuthView({onAuth}){
       const em=email.trim().toLowerCase();
       if(mode==="register"){
         setDbg("Vérification de l'email…");
-        const idx=await sg("userIndex",true)||[];
+        const idx=await sg("userIndex")||[];
         if(idx.find(u=>u.email===em)){setErr("Email déjà enregistré. Essaie de te connecter.");return;}
         const user={id:uid(),name:name.trim(),email:em,passwordHash:hashStr(password),createdAt:Date.now(),isNew:true};
         setDbg("Création du compte…");
-        await ss(`user_${user.id}`,user,true);
-        await ss("userIndex",[...idx,{id:user.id,email:user.email,name:user.name}],true);
+        await ss(`user_${user.id}`,user);
+        await ss("userIndex",[...idx,{id:user.id,email:user.email,name:user.name}]);
         setDbg("");onAuth(user);
       }else{
         setDbg("Recherche du compte…");
-        const idx=await sg("userIndex",true)||[];
+        const idx=await sg("userIndex")||[];
         const found=idx.find(u=>u.email===em);
         if(!found){setErr("Aucun compte trouvé avec cet email.");return;}
-        const user=await sg(`user_${found.id}`,true);
+        const user=await sg(`user_${found.id}`);
         if(!user||user.passwordHash!==hashStr(password)){setErr("Mot de passe incorrect.");return;}
         setDbg("");onAuth(user);
       }
@@ -442,7 +478,7 @@ function SprintSetupView({user,onDone,isFirstSprint=false}){
     const allH=CATS.flatMap(c=>habits[c.id]||[]);
     if(bonus)allH.push(bonus);
     const sprint={id:uid(),userId:user.id,startDate:new Date().toISOString().split("T")[0],habits:allH,catWeights:catW,createdAt:Date.now()};
-    await ss(`sprint_${user.id}`,sprint,true);setSaving(false);onDone(sprint);
+    await ss(`sprint_${user.id}`,sprint);setSaving(false);onDone(sprint);
   }
 
   // Step 0 — weights
@@ -658,7 +694,7 @@ function AccueilView({sprint,weekJournals,quote,userId}){
   const [history,setHistory]=useState(null);
   const pausedSemaines=sprint.pausedSemaines||[];
 
-  useEffect(()=>{sg(`sprint_history_${userId}`,true).then(h=>setHistory(h||[]));},[userId]);
+  useEffect(()=>{sg(`sprint_history_${userId}`).then(h=>setHistory(h||[]));},[userId]);
 
   const sprintAvg=sprintAvgFromJournals(sprint.habits,weekJournals,wk,pausedSemaines);
   const sprintByCatAvg=catAvgsFromSemaines(sprint.habits,weekJournals,wk,pausedSemaines);
@@ -895,24 +931,24 @@ function JournalView({sprint,weekJournals,onEnregistrer,userId,onMettre à jourS
   async function togglePause(){
     const newPaused=isSelWkPaused?pausedSemaines.filter(w=>w!==selWk):[...pausedSemaines,selWk];
     const updated={...sprint,pausedSemaines:newPaused};
-    await ss(`sprint_${userId}`,updated,true);
+    await ss(`sprint_${userId}`,updated);
     onMettre à jourSprint(updated);
   }
 
   async function save(){
     if(isSelWkPaused)return;
     // Enregistrer logs and update UI immediately — don't wait on social writes
-    await ss(`logs_${userId}_${sprint.id}_w${selWk}`,local,true);
+    await ss(`logs_${userId}_${sprint.id}_w${selWk}`,local);
     onEnregistrer(selWk,local);
     setEnregistrerd(true);
     setTimeout(()=>setEnregistrerd(false),2000);
     // Push social data in background (non-blocking)
     const {overall:ov,byCat}=calcScores(sprint.habits,local);
-    sg(`user_${userId}`,true).then(u=>{
+    sg(`user_${userId}`).then(u=>{
       const uname=u?.name||"User";
       const wsk=`social_${sprint.id}_w${selWk}`;
       sg(wsk,true).then(we=>{
-        ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,email:(await sg(`user_${userId}`,true))?.email||"",overall:ov,byCat}],true);
+        ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,email:(await sg(`user_${userId}`))?.email||"",overall:ov,byCat}],true);
       });
       const allEnregistrerd={...weekJournals,[selWk]:local};
       const curPaused=sprint.pausedSemaines||[];
@@ -1016,8 +1052,8 @@ function SprintTab({user,sprint,onSprintCreated,onHabitsMettre à jourd,history=
   const [editingId,setModifieringId]=useState(null);const [editDraft,setModifierDraft]=useState(null);const [saving,setSaving]=useState(false);
   if(!sprint||reconfigure)return <SprintSetupView user={user} onDone={s=>{setReconfigure(false);onSprintCreated(s);}} isFirstSprint={!sprint&&history.length===0}/>;
   const wk=weekNum(sprint.startDate);
-  async function saveModifier(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp,true);onHabitsMettre à jourd(sp);setModifieringId(null);setModifierDraft(null);setSaving(false);}
-  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp,true);onHabitsMettre à jourd(sp);}
+  async function saveModifier(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp);onHabitsMettre à jourd(sp);setModifieringId(null);setModifierDraft(null);setSaving(false);}
+  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp);onHabitsMettre à jourd(sp);}
   const catGroups=CATS.map(c=>({...c,habits:sprint.habits.filter(h=>h.catId===c.id),weight:(sprint.catWeights||{})[c.id]||0})).filter(c=>c.habits.length>0);
   return <Scroll>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><SH>Sprint en cours</SH><Btn small variant="secondary" onClick={()=>setReconfigure(true)}>Nouveau sprint</Btn></div>
@@ -1067,9 +1103,9 @@ function SocialView({user,sprint}){
     (async()=>{
       setLoading(true);
       const [sd,wd,pwd]=await Promise.all([
-        sg(`social_sprint_${sprint.id}`,true),
-        sg(`social_${sprint.id}_w${wk}`,true),
-        wk>1?sg(`social_${sprint.id}_w${wk-1}`,true):Promise.resolve([]),
+        sg(`social_sprint_${sprint.id}`),
+        sg(`social_${sprint.id}_w${wk}`),
+        wk>1?sg(`social_${sprint.id}_w${wk-1}`):Promise.resolve([]),
       ]);
       setSpData((sd||[]).sort((a,b)=>b.sprintAvg-a.sprintAvg));
       setWkData((wd||[]).sort((a,b)=>b.overall-a.overall));
@@ -1298,8 +1334,8 @@ function DuelsView({user,sprint}){
   async function load(){
     setLoading(true);
     const [idx,duelsData]=await Promise.all([
-      sg("userIndex",true),
-      sg(`duels_${sprint.id}`,true),
+      sg("userIndex"),
+      sg(`duels_${sprint.id}`),
     ]);
     setUsers((idx||[]).filter(u=>u.id!==user.id));
     const all=duelsData||[];
@@ -1324,8 +1360,8 @@ function DuelsView({user,sprint}){
       status:"pending", // pending → active → completed
       createdAt:Date.now(),
     };
-    const all=await sg(`duels_${sprint.id}`,true)||[];
-    await ss(`duels_${sprint.id}`,[...all,newDuel],true);
+    const all=await sg(`duels_${sprint.id}`)||[];
+    await ss(`duels_${sprint.id}`,[...all,newDuel]);
     setCreating(false);
     setMsg("Défi envoyé ! En attente d'acceptation.");
     setTimeout(()=>setMsg(null),3000);
@@ -1333,9 +1369,9 @@ function DuelsView({user,sprint}){
   }
 
   async function respondDuel(duelId,accept){
-    const all=await sg(`duels_${sprint.id}`,true)||[];
+    const all=await sg(`duels_${sprint.id}`)||[];
     const updated=all.map(d=>d.id===duelId?{...d,status:accept?"active":"declined"}:d);
-    await ss(`duels_${sprint.id}`,updated,true);
+    await ss(`duels_${sprint.id}`,updated);
     setMsg(accept?"Défi accepté ! C'est parti 🔥":"Défi refusé.");
     setTimeout(()=>setMsg(null),3000);
     load();
@@ -1343,7 +1379,7 @@ function DuelsView({user,sprint}){
 
   // Resolve duel result from social scores
   async function resolveDuel(duel){
-    const wkData=await sg(`social_${sprint.id}_w${duel.week}`,true)||[];
+    const wkData=await sg(`social_${sprint.id}_w${duel.week}`)||[];
     const cEntry=wkData.find(e=>e.userId===duel.challengerId);
     const oEntry=wkData.find(e=>e.userId===duel.opponentId);
     const getScore=(entry)=>{
@@ -1564,7 +1600,7 @@ function DuelsView({user,sprint}){
 // ── PROFILE ──
 function ProfilView({user,sprint,weekJournals,onJournalout}){
   const [history,setHistory]=useState([]);
-  useEffect(()=>{(async()=>{const h=await sg(`sprint_history_${user.id}`,true)||[];setHistory(h.reverse());})();},[user.id]);
+  useEffect(()=>{(async()=>{const h=await sg(`sprint_history_${user.id}`)||[];setHistory(h.reverse());})();},[user.id]);
   const wk=sprint?weekNum(sprint.startDate):0;
   const{overall}=sprint?calcScores(sprint.habits,weekJournals[wk]||{}):{overall:0};
   const memberSince=new Date(user.createdAt).toLocaleDateString("en-GB",{month:"long",year:"numeric"});
@@ -1669,20 +1705,20 @@ function AdminView({currentUser,onHistoryMettre à jourd}){
   const [expanded,setExpanded]=useState(null);const [details,setDetails]=useState({});
   const [msg,setMsg]=useState(null);const [newPwds,setNewPwds]=useState({});
   const [importing,setImporting]=useState(false);
-  useEffect(()=>{(async()=>{setLoading(true);const idx=await sg("userIndex",true)||[];setUsers(idx);setLoading(false);})();},[]);
+  useEffect(()=>{(async()=>{setLoading(true);const idx=await sg("userIndex")||[];setUsers(idx);setLoading(false);})();},[]);
   async function loadDetails(uid){
     if(details[uid])return setExpanded(expanded===uid?null:uid);
-    const [u,sp,hist]=await Promise.all([sg(`user_${uid}`,true),sg(`sprint_${uid}`,true),sg(`sprint_history_${uid}`,true)]);
+    const [u,sp,hist]=await Promise.all([sg(`user_${uid}`),sg(`sprint_${uid}`),sg(`sprint_history_${uid}`)]);
     const wk=sp?weekNum(sp.startDate):0;let cs=null;
-    if(sp){const logs=await sg(`logs_${uid}_${sp.id}_w${wk}`,true)||{};const{overall}=calcScores(sp.habits,logs);cs=overall;}
+    if(sp){const logs=await sg(`logs_${uid}_${sp.id}_w${wk}`)||{};const{overall}=calcScores(sp.habits,logs);cs=overall;}
     setDetails(p=>({...p,[uid]:{user:u,sprint:sp,history:hist||[],wk,cs}}));setExpanded(expanded===uid?null:uid);
   }
-  async function resetPwd(uid,pwd){const u=await sg(`user_${uid}`,true);if(!u)return;await ss(`user_${uid}`,{...u,passwordHash:hashStr(pwd)},true);setMsg(`Password reset for ${u.name}`);setTimeout(()=>setMsg(null),3000);setNewPwds(p=>({...p,[uid]:""}));}
-  async function clearSprint(uid){await ss(`sprint_${uid}`,null,true);setDetails(p=>({...p,[uid]:{...p[uid],sprint:null,cs:null,wk:0}}));setMsg("Sprint cleared.");setTimeout(()=>setMsg(null),3000);}
+  async function resetPwd(uid,pwd){const u=await sg(`user_${uid}`);if(!u)return;await ss(`user_${uid}`,{...u,passwordHash:hashStr(pwd)},true);setMsg(`Password reset for ${u.name}`);setTimeout(()=>setMsg(null),3000);setNewPwds(p=>({...p,[uid]:""}));}
+  async function clearSprint(uid){await ss(`sprint_${uid}`,null);setDetails(p=>({...p,[uid]:{...p[uid],sprint:null,cs:null,wk:0}}));setMsg("Sprint cleared.");setTimeout(()=>setMsg(null),3000);}
 
   async function importCurrentSprint(){
     setImporting(true);
-    const existing=await sg(`sprint_${currentUser.id}`,true);
+    const existing=await sg(`sprint_${currentUser.id}`);
     if(existing){setMsg("Le sprint existe déjà — clear it first if you want to reimport.");setImporting(false);setTimeout(()=>setMsg(null),4000);return;}
     const sprintId="q2_2026_import";
     const sprint={
@@ -1705,7 +1741,7 @@ function AdminView({currentUser,onHistoryMettre à jourd}){
         {id:"s1bonus",catId:"health",name:"Bonus habit",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true},
       ],
     };
-    await ss(`sprint_${currentUser.id}`,sprint,true);
+    await ss(`sprint_${currentUser.id}`,sprint);
     setMsg("Sprint imported — start date 30 Mar 2026, 9 habits + bonus. Reload the app to see it.");
     setImporting(false);setTimeout(()=>setMsg(null),6000);
     if(onHistoryMettre à jourd)onHistoryMettre à jourd(currentUser.id);
@@ -1713,11 +1749,11 @@ function AdminView({currentUser,onHistoryMettre à jourd}){
 
   async function importMyHistory(){
     setImporting(true);
-    const existing=await sg(`sprint_history_${currentUser.id}`,true)||[];
+    const existing=await sg(`sprint_history_${currentUser.id}`)||[];
     const existingIds=new Set(existing.map(s=>s.sprintId));
     const toAdd=[HIST_Q3,HIST_Q4,HIST_Q1].filter(s=>!existingIds.has(s.sprintId));
     if(toAdd.length===0){setMsg("History already imported — nothing to add.");setImporting(false);setTimeout(()=>setMsg(null),3000);return;}
-    await ss(`sprint_history_${currentUser.id}`,[...existing,...toAdd],true);
+    await ss(`sprint_history_${currentUser.id}`,[...existing,...toAdd]);
     setMsg(`Imported ${toAdd.length} sprint${toAdd.length!==1?"s":""}: Q1-26 (73%), Q3-25 (80%), Q4-25 (79%)`);
     setImporting(false);setTimeout(()=>setMsg(null),5000);
     if(onHistoryMettre à jourd)onHistoryMettre à jourd(currentUser.id);
@@ -1810,9 +1846,9 @@ function RecapView({user,sprint,weekJournals,onArchive}){
   async function doArchive(){
     setArchiving(true);
     const record={sprintId:sprint.id,startDate:sprint.startDate,endDate:new Date().toISOString().split("T")[0],habits:sprint.habits,catWeights:sprint.catWeights,weekScores:weekScores.map(w=>({w:w.w,score:w.overall})),avgScore:avg,weeksJournalged:lw.length,catAvgs};
-    const hist=await sg(`sprint_history_${user.id}`,true)||[];
-    await ss(`sprint_history_${user.id}`,[...hist,record],true);
-    await ss(`sprint_${user.id}`,null,true);setArchiving(false);onArchive();
+    const hist=await sg(`sprint_history_${user.id}`)||[];
+    await ss(`sprint_history_${user.id}`,[...hist,record]);
+    await ss(`sprint_${user.id}`,null);setArchiving(false);onArchive();
   }
   return <Scroll>
     <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:40,marginBottom:8}}>🏁</div><h2 style={{color:T.text,fontSize:24,fontWeight:800,margin:0}}>Sprint terminé !</h2><p style={{color:T.muted,fontSize:14,margin:"8px 0 0"}}>{fmtDate(sprint.startDate)} — {fmtDate(new Date().toISOString().split("T")[0])}</p></div>
@@ -1846,18 +1882,18 @@ function App(){
   const userIsAdmin=user&&ADMIN_EMAILS.includes(user.email);
   const NAV=useMemo(()=>[{id:"home",label:"Accueil"},{id:"log",label:"Journal"},{id:"sprint",label:"Sprint"},{id:"social",label:"Social"},{id:"duels",label:"Duels"},{id:"profile",label:"Profil"},...(userIsAdmin?[{id:"admin",label:"Admin"}]:[])]  ,[userIsAdmin]);
 
-  async function loadHistory(userId){const h=await sg(`sprint_history_${userId}`,true)||[];setHistory(h);}
+  async function loadHistory(userId){const h=await sg(`sprint_history_${userId}`)||[];setHistory(h);}
   async function loadJournals(userId,sp){
-    const out={};for(let w=1;w<=weekNum(sp.startDate);w++){const d=await sg(`logs_${userId}_${sp.id}_w${w}`,true);if(d)out[w]=d;}setWL(out);
+    const out={};for(let w=1;w<=weekNum(sp.startDate);w++){const d=await sg(`logs_${userId}_${sp.id}_w${w}`);if(d)out[w]=d;}setWL(out);
   }
 
   useEffect(()=>{
     (async()=>{
-      const session=await sg("session",true);if(!session?.userId){setBooting(false);return;}
-      const u=await sg(`user_${session.userId}`,true);if(!u){setBooting(false);return;}
+      const session=await sg("session");if(!session?.userId){setBooting(false);return;}
+      const u=await sg(`user_${session.userId}`);if(!u){setBooting(false);return;}
       setUser(u);
       await loadHistory(u.id);
-      const sp=await sg(`sprint_${u.id}`,true);
+      const sp=await sg(`sprint_${u.id}`);
       if(sp){setSprint(sp);await loadJournals(u.id,sp);}
       setBooting(false);
     })();
@@ -1866,12 +1902,12 @@ function App(){
   useEffect(()=>{if(sprint&&weekNum(sprint.startDate)>=12)setShowRecap(true);},[sprint]);
 
   async function onAuth(u){
-    await ss("session",{userId:u.id},true);
-    if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated,true);setUser(updated);setShowOnboarding(true);return;}
+    await ss("session",{userId:u.id});
+    if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated);setUser(updated);setShowOnboarding(true);return;}
     setUser(u);await loadHistory(u.id);
-    const sp=await sg(`sprint_${u.id}`,true);if(sp){setSprint(sp);await loadJournals(u.id,sp);}
+    const sp=await sg(`sprint_${u.id}`);if(sp){setSprint(sp);await loadJournals(u.id,sp);}
   }
-  async function onJournalout(){await ss("session",null,true);setUser(null);setSprint(null);setWL({});setHistory([]);setView("home");setShowOnboarding(false);setShowRecap(false);}
+  async function onJournalout(){await ss("session",null);setUser(null);setSprint(null);setWL({});setHistory([]);setView("home");setShowOnboarding(false);setShowRecap(false);}
   function onSprintCreated(sp){setSprint(sp);setWL({});setView("home");setShowRecap(false);}
   function onEnregistrerJournals(w,logs){setWL(p=>({...p,[w]:logs}));}
   async function onArchive(){setSprint(null);setWL({});setShowRecap(false);setView("sprint");if(user)await loadHistory(user.id);}
