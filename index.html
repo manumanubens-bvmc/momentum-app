@@ -85,12 +85,12 @@ const MTYPES=[{id:"boolean",label:"Fait / Non fait"},{id:"numeric",label:"Nombre
 const WISDOM=[
   ["La première chose à corriger, c'est le sommeil. Sans lui, il n'y a ni motivation ni discipline.","Bryan Johnson"],
   ["Ne meurs pas. Ton projet le plus important, c'est ta propre vie.","Bryan Johnson"],
-  ["Tu ne t'élèves pas au niveau de tes objectifs — tu tombes au niveau de tes systèmes.","James Effacer"],
+  ["Tu ne t'élèves pas au niveau de tes objectifs — tu tombes au niveau de tes systèmes.","James Clear"],
   ["Nous sommes ce que nous faisons de manière répétée. L'excellence n'est pas un acte, c'est une habitude.","Aristote"],
-  ["Les habitudes ne s'additionnent pas — elles se multiplient.","James Effacer"],
+  ["Les habitudes ne s'additionnent pas — elles se multiplient.","James Clear"],
   ["Le sommeil est la chose la plus efficace que nous puissions faire pour régénérer le cerveau et le corps.","Matthew Walker"],
   ["Ce qui se mesure s'améliore.","Peter Drucker"],
-  ["Chaque action est un vote pour la personne que tu veux devenir.","James Effacer"],
+  ["Chaque action est un vote pour la personne que tu veux devenir.","James Clear"],
   ["La discipline, c'est choisir ce que tu veux le plus plutôt que ce que tu veux maintenant.","Abraham Lincoln"],
   ["Prends soin de ton corps. C'est le seul endroit où tu as à vivre.","Jim Rohn"],
   ["Les chaînes de l'habitude sont trop légères pour être ressenties jusqu'à ce qu'elles soient trop lourdes à briser.","Warren Buffett"],
@@ -184,7 +184,7 @@ const TEMPLATES={
 const ONBOARDING=[
   {emoji:"🚀",title:"Bienvenue sur Momentum",body:"Momentum est construit autour de sprints de 12 semaines — des périodes d'intention intense couvrant chaque dimension de ta vie. Pas une to-do list. Un système.",sub:"Utilisé par des personnes qui veulent construire la vie qu'elles ont choisie, pas celle qui leur arrive.",cta:"C'est parti →"},
   {emoji:"😴",title:"Le sommeil d'abord",body:"Bryan Johnson est formel : corrige le sommeil avant tout. Sans un sommeil de qualité, il n'y a ni volonté, ni motivation, ni discipline.",sub:"Toutes tes autres habitudes en dépendent. On te le rappellera au moment de configurer ton sprint.",cta:"Compris →"},
-  {emoji:"📈",title:"Les habitudes se multiplient",body:"L'insight de James Effacer : les habitudes ne s'additionnent pas — elles se multiplient. Une amélioration de 1% par jour donne une croissance de 37× sur un an.",sub:"C'est pourquoi on suit à la semaine, pas au jour. Des rythmes durables plutôt que des exploits ponctuels.",cta:"Journalique →"},
+  {emoji:"📈",title:"Les habitudes se multiplient",body:"L'insight de James Clear : les habitudes ne s'additionnent pas — elles se multiplient. Une amélioration de 1% par jour donne une croissance de 37× sur un an.",sub:"C'est pourquoi on suit à la semaine, pas au jour. Des rythmes durables plutôt que des exploits ponctuels.",cta:"Journalique →"},
   {emoji:"⚖️",title:"Comment fonctionne le score",body:"Chaque habitude a un poids et un objectif. Ton score hebdomadaire est une moyenne pondérée. Les catégories qui comptent le plus pour toi ont le plus de poids.",sub:"Tes scores par catégorie sont partagés socialement. Le détail de tes habitudes reste privé.",cta:"Configurer mon premier sprint →"},
 ];
 
@@ -597,7 +597,7 @@ function SprintSetupView({user,onDone,isFirstSprint=false}){
 
       {/* Habit list */}
       {regH.map(h=>{
-        if(editingId===h.id&&formOpen)return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Mettre à jour" onEnregistrer={()=>saveForm(cat)} onAnnuler={()=>{setFormOpen(false);setModifieringId(null);setDraft(null);}}/></div>;
+        if(editingId===h.id&&formOpen)return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Update" onEnregistrer={()=>saveForm(cat)} onAnnuler={()=>{setFormOpen(false);setModifieringId(null);setDraft(null);}}/></div>;
         return <div key={h.id} style={{background:T.card,borderRadius:14,boxShadow:shadow,padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{color:T.text,fontSize:14,fontWeight:500}}>{h.name}</div>
@@ -956,7 +956,7 @@ function AccueilView({sprint,weekJournals,quote,userId}){
 }
 
 // ── LOG ──
-function JournalView({sprint,weekJournals,onEnregistrer,userId,onMettre à jourSprint}){
+function JournalView({sprint,weekJournals,onEnregistrer,userId,onUpdateSprint}){
   const currentWk=useMemo(()=>weekNum(sprint.startDate),[sprint.startDate]);
   const [selWk,setSelWk]=useState(currentWk);
   const [local,setLocal]=useState(weekJournals[currentWk]||{});
@@ -970,7 +970,7 @@ function JournalView({sprint,weekJournals,onEnregistrer,userId,onMettre à jourS
     const newPaused=isSelWkPaused?pausedSemaines.filter(w=>w!==selWk):[...pausedSemaines,selWk];
     const updated={...sprint,pausedSemaines:newPaused};
     await ss(`sprint_${userId}`,updated);
-    onMettre à jourSprint(updated);
+    onUpdateSprint(updated);
   }
 
   async function save(){
@@ -1085,13 +1085,13 @@ function HabitRow({habit,value,onChange,isBonus=false}){
 }
 
 // ── SPRINT TAB ──
-function SprintTab({user,sprint,onSprintCreated,onHabitsMettre à jourd,history=[]}){
+function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated,history=[]}){
   const [reconfigure,setReconfigure]=useState(false);
   const [editingId,setModifieringId]=useState(null);const [editDraft,setModifierDraft]=useState(null);const [saving,setSaving]=useState(false);
   if(!sprint||reconfigure)return <SprintSetupView user={user} onDone={s=>{setReconfigure(false);onSprintCreated(s);}} isFirstSprint={!sprint&&history.length===0}/>;
   const wk=weekNum(sprint.startDate);
-  async function saveModifier(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp);onHabitsMettre à jourd(sp);setModifieringId(null);setModifierDraft(null);setSaving(false);}
-  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp);onHabitsMettre à jourd(sp);}
+  async function saveModifier(){setSaving(true);const updated=sprint.habits.map(h=>h.id===editDraft.id?{...editDraft,weight:parseFloat(editDraft.weight)||0}:h);const sp={...sprint,habits:updated};await ss(`sprint_${user.id}`,sp);onHabitsUpdated(sp);setModifieringId(null);setModifierDraft(null);setSaving(false);}
+  async function delHabit(id){const sp={...sprint,habits:sprint.habits.filter(h=>h.id!==id)};await ss(`sprint_${user.id}`,sp);onHabitsUpdated(sp);}
   const catGroups=CATS.map(c=>({...c,habits:sprint.habits.filter(h=>h.catId===c.id),weight:(sprint.catWeights||{})[c.id]||0})).filter(c=>c.habits.length>0);
   return <Scroll>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><SH>Sprint en cours</SH><Btn small variant="secondary" onClick={()=>setReconfigure(true)}>Nouveau sprint</Btn></div>
@@ -1110,7 +1110,7 @@ function SprintTab({user,sprint,onSprintCreated,onHabitsMettre à jourd,history=
           const isBonus=h.isBonus;
           if(editingId===h.id&&editDraft){
             const otherW=reg.filter(x=>x.id!==h.id).reduce((a,x)=>a+(parseFloat(x.weight)||0),0);
-            return <div key={h.id} style={{marginTop:4}}><HabitForm habit={editDraft} cat={cat} remaining={(cat.weight||0)-otherW} onChange={setModifierDraft} saveLabel={saving?"Saving…":"Mettre à jour"} onEnregistrer={saveModifier} onAnnuler={()=>{setModifieringId(null);setModifierDraft(null);}}/></div>;
+            return <div key={h.id} style={{marginTop:4}}><HabitForm habit={editDraft} cat={cat} remaining={(cat.weight||0)-otherW} onChange={setModifierDraft} saveLabel={saving?"Saving…":"Update"} onEnregistrer={saveModifier} onAnnuler={()=>{setModifieringId(null);setModifierDraft(null);}}/></div>;
           }
           return <div key={h.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isBonus?T.amber+"10":T.surface,borderRadius:10,marginBottom:6,border:isBonus?`1px solid ${T.amber}22`:"none"}}>
             <div style={{flex:1}}>
@@ -1738,7 +1738,7 @@ const HIST_Q4={
   ],
 };
 
-function AdminView({currentUser,onHistoryMettre à jourd}){
+function AdminView({currentUser,onHistoryUpdated}){
   const [users,setUsers]=useState([]);const [loading,setLoading]=useState(true);
   const [expanded,setExpanded]=useState(null);const [details,setDetails]=useState({});
   const [msg,setMsg]=useState(null);const [newPwds,setNewPwds]=useState({});
@@ -1782,7 +1782,7 @@ function AdminView({currentUser,onHistoryMettre à jourd}){
     await ss(`sprint_${currentUser.id}`,sprint);
     setMsg("Sprint imported — start date 30 Mar 2026, 9 habits + bonus. Reload the app to see it.");
     setImporting(false);setTimeout(()=>setMsg(null),6000);
-    if(onHistoryMettre à jourd)onHistoryMettre à jourd(currentUser.id);
+    if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
   }
 
   async function importMyHistory(){
@@ -1794,7 +1794,7 @@ function AdminView({currentUser,onHistoryMettre à jourd}){
     await ss(`sprint_history_${currentUser.id}`,[...existing,...toAdd]);
     setMsg(`Imported ${toAdd.length} sprint${toAdd.length!==1?"s":""}: Q1-26 (73%), Q3-25 (80%), Q4-25 (79%)`);
     setImporting(false);setTimeout(()=>setMsg(null),5000);
-    if(onHistoryMettre à jourd)onHistoryMettre à jourd(currentUser.id);
+    if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
   }
 
   return <Scroll>
@@ -1973,12 +1973,12 @@ function App(){
     {!sprint&&view!=="sprint"&&<div style={{background:"rgba(0,122,255,0.08)",borderBottom:"1px solid rgba(0,122,255,0.15)",padding:"10px 20px",textAlign:"center"}}><span style={{color:T.text,fontSize:13}}>Aucun sprint actif.{" "}<button onClick={()=>setView("sprint")} style={{background:"none",border:"none",color:T.accent,fontWeight:700,fontSize:13,cursor:"pointer",padding:0}}>En créer un →</button></span></div>}
     <div style={{paddingTop:4}}>
       {view==="home"&&(sprint?<AccueilView sprint={sprint} weekJournals={weekJournals} quote={quote} userId={user.id}/>:<div style={{textAlign:"center",padding:64}}><p style={{color:T.muted,fontSize:15,marginBottom:20}}>Configure un sprint pour commencer.</p><Btn onClick={()=>setView("sprint")}>Configurer un sprint →</Btn></div>)}
-      {view==="log"&&(sprint?<JournalView sprint={sprint} weekJournals={weekJournals} onEnregistrer={onEnregistrerJournals} userId={user.id} onMettre à jourSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
-      {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsMettre à jourd={sp=>setSprint(sp)} history={history}/>}
+      {view==="log"&&(sprint?<JournalView sprint={sprint} weekJournals={weekJournals} onEnregistrer={onEnregistrerJournals} userId={user.id} onUpdateSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
+      {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsUpdated={sp=>setSprint(sp)} history={history}/>}
       {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
       {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
       {view==="profile"&&<ProfilView user={user} sprint={sprint} weekJournals={weekJournals} onJournalout={onJournalout}/>}
-      {view==="admin"&&userIsAdmin&&<AdminView currentUser={user} onHistoryMettre à jourd={loadHistory}/>}
+      {view==="admin"&&userIsAdmin&&<AdminView currentUser={user} onHistoryUpdated={loadHistory}/>}
     </div>
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(0,0,0,0.1)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
       {NAV.map(item=>(
