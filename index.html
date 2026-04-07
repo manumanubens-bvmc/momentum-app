@@ -85,7 +85,7 @@ const ADMIN_EMAILS = ["manu.manubens@gmail.com"];
 // ── BAR COLOR (opacity-based blue) ──
 function barColor(s) {
   if (s >= 85) return "rgba(0,122,255,1.0)";
-  if (s >= 75) return "#5ac87a";
+  if (s >= 75) return "rgba(0,122,255,0.70)";
   if (s >= 60) return "rgba(0,122,255,0.45)";
   return "rgba(0,122,255,0.22)";
 }
@@ -800,19 +800,19 @@ function HomeView({sprint, weekLogs, quote, userId}) {
         <div style={{marginBottom:10}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
             <span style={{fontSize:12,fontWeight:600,color:T.muted}}>Semaine {wk} · {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"][dow-1]}</span>
-            <span style={{fontSize:12,fontWeight:700,color:wkColor}}>{weekPct}%</span>
+            <span style={{fontSize:12,fontWeight:700,color:"#30d158"}}>{weekPct}%</span>
           </div>
           <div style={{height:8,background:"rgba(0,0,0,0.07)",borderRadius:4}}>
-            <div style={{height:"100%",borderRadius:4,background:wkColor,width:`${weekPct}%`,transition:"width 0.6s"}}/>
+            <div style={{height:"100%",borderRadius:4,background:"#30d158",width:`${weekPct}%`,transition:"width 0.6s"}}/>
           </div>
         </div>
         <div>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
             <span style={{fontSize:12,fontWeight:600,color:T.muted}}>Sprint · Semaine {wk} sur 12</span>
-            <span style={{fontSize:12,fontWeight:700,color:spColor}}>{sprintPct}%</span>
+            <span style={{fontSize:12,fontWeight:700,color:"#30d158"}}>{sprintPct}%</span>
           </div>
           <div style={{height:8,background:"rgba(0,0,0,0.07)",borderRadius:4,position:"relative"}}>
-            <div style={{height:"100%",borderRadius:4,background:spColor,width:`${sprintPct}%`,transition:"width 0.6s"}}/>
+            <div style={{height:"100%",borderRadius:4,background:"#30d158",width:`${sprintPct}%`,transition:"width 0.6s"}}/>
             {Array.from({length:11},(_,i)=><div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:T.bg,opacity:0.8}}/>)}
           </div>
         </div>
@@ -840,7 +840,7 @@ function HomeView({sprint, weekLogs, quote, userId}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <span style={{fontSize:12,fontWeight:600,color:T.text}}>Performance hebdomadaire</span>
           <div style={{display:"flex",gap:8}}>
-            {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["#5ac87a","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
+            {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["rgba(0,122,255,0.70)","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
               <div key={l} style={{display:"flex",alignItems:"center",gap:3}}>
                 <div style={{width:7,height:7,borderRadius:2,background:c}}/>
                 <span style={{fontSize:8,color:T.muted}}>{l}</span>
@@ -1469,8 +1469,8 @@ function AdminView({currentUser, onHistoryUpdated}) {
       <p style={{color:T.muted,fontSize:13,margin:"0 0 16px"}}>{users.length} utilisateur{users.length!==1?"s":""}</p>
       {msg&&<Notice color={T.green}>{msg}</Notice>}
 
-      {/* Sprint import */}
-      <Card style={{marginBottom:14,border:"1px solid rgba(0,122,255,0.2)"}}>
+      {/* Sprint import — admin only */}
+      {currentUser.email==="manu.manubens@gmail.com"&&<Card style={{marginBottom:14,border:"1px solid rgba(0,122,255,0.2)"}}>
         <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer le sprint en cours</p>
         <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Recrée ton sprint Q2-26 (démarré le 30 mars) avec 9 habitudes + bonus.</p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
@@ -1482,10 +1482,10 @@ function AdminView({currentUser, onHistoryUpdated}) {
           ))}
         </div>
         <Btn full variant="secondary" disabled={importing} onClick={importSprint}>Importer le sprint en cours →</Btn>
-      </Card>
+      </Card>}
 
-      {/* History import */}
-      <Card style={{marginBottom:14,border:`1px solid ${T.amber}33`}}>
+      {/* History import — admin only */}
+      {currentUser.email==="manu.manubens@gmail.com"&&<Card style={{marginBottom:14,border:`1px solid ${T.amber}33`}}>
         <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer mon historique</p>
         <p style={{color:T.text,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Importe tes sprints Q3-25 (80%), Q4-25 (79%) et Q1-26 (73%).</p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
@@ -1498,7 +1498,7 @@ function AdminView({currentUser, onHistoryUpdated}) {
           ))}
         </div>
         <Btn full variant="amber" disabled={importing} onClick={importHistory}>{importing?"Importation…":"Importer mon historique →"}</Btn>
-      </Card>
+      </Card>}
 
       {/* User list */}
       <Card style={{overflow:"hidden",padding:0}}>
