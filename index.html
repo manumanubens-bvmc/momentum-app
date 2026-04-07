@@ -24,6 +24,27 @@ try{
   window._fbReady=true;
   console.log("Firebase connected ✓");
 }catch(e){window._fbReady=false;console.warn("Firebase failed:",e);}
+
+function fbKey(k){return k.replace(/\./g,"_").replace(/#/g,"_").replace(/\$/g,"_").replace(/\[/g,"_").replace(/\]/g,"_");}
+async function sg(k){
+  try{
+    if(window._fbReady){
+      var snap=await window._fbDb.ref(fbKey(k)).once("value");
+      return snap.exists()?snap.val():null;
+    }
+    var v=localStorage.getItem(k);return v?JSON.parse(v):null;
+  }catch(e){console.warn("sg error",k,e);return null;}
+}
+async function ss(k,v){
+  try{
+    if(window._fbReady){
+      await window._fbDb.ref(fbKey(k)).set(v===null?null:v);
+      return;
+    }
+    if(v===null)localStorage.removeItem(k);
+    else localStorage.setItem(k,JSON.stringify(v));
+  }catch(e){console.warn("ss error",k,e);}
+}
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -35,29 +56,7 @@ input,select,button{font-family:inherit;}
 </head>
 <body>
 <div id="root"></div>
-<script>
-// Firebase storage — shared across all devices
-function fbKey(k){return k.replace(/[.#$\[\]]/g,'_');}
-async function sg(k){
-  try{
-    if(window._fbReady){
-      const snap=await window._fbDb.ref(fbKey(k)).once('value');
-      return snap.exists()?snap.val():null;
-    }
-    const v=localStorage.getItem(k);return v?JSON.parse(v):null;
-  }catch(e){console.warn('sg error',k,e);return null;}
-}
-async function ss(k,v){
-  try{
-    if(window._fbReady){
-      await window._fbDb.ref(fbKey(k)).set(v===null?null:v);
-      return;
-    }
-    if(v===null)localStorage.removeItem(k);
-    else localStorage.setItem(k,JSON.stringify(v));
-  }catch(e){console.warn('ss error',k,e);}
-}
-</script>
+
 <script type="text/babel">
 const {useState,useEffect,useMemo}=React;
 
@@ -986,7 +985,7 @@ function JournalView({sprint,weekJournals,onEnregistrer,userId,onMettre à jourS
     sg(`user_${userId}`).then(u=>{
       const uname=u?.name||"User";
       const wsk=`social_${sprint.id}_w${selWk}`;
-      sg(wsk,true).then(we=>{
+      sg(wsk).then(we=>{
         ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,email:(await sg(`user_${userId}`))?.email||"",overall:ov,byCat}],true);
       });
       const allEnregistrerd={...weekJournals,[selWk]:local};
@@ -998,7 +997,7 @@ function JournalView({sprint,weekJournals,onEnregistrer,userId,onMettre à jourS
       }).filter(Boolean);
       const spAvg=entries.length?Math.round(entries.reduce((a,e)=>a+e.s,0)/entries.length):0;
       const ssk=`social_sprint_${sprint.id}`;
-      sg(ssk,true).then(se=>{
+      sg(ssk).then(se=>{
         ss(ssk,[...(se||[]).filter(e=>e.userId!==userId),{userId,name:uname,sprintAvg:spAvg,weeksJournalged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.s]))}],true);
       });
     });
