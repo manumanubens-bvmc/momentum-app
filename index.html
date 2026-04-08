@@ -352,17 +352,19 @@ function Sel({label,options,...p}) {
 function RadarChart({cats, datasets}) {
   const n = cats.length;
   if (n < 3) return null;
-  // Fixed inner size for the polygon, with generous padding for labels
-  const pad = 36; // space for labels on all sides
-  const inner = typeof window!=="undefined" ? Math.min(Math.max(window.innerWidth-140,160),200) : 180;
-  const total = inner + pad*2;
-  const cx = total/2, cy = total/2;
-  const R = inner*0.38;
+  // Use a fixed coordinate space large enough for labels on all sides
+  // Labels are placed in the viewBox — no overflow clipping needed
+  const VB = 300; // total viewBox size
+  const cx = VB/2, cy = VB/2;
+  const R = 90; // polygon radius
+  const LR = 122; // label radius — far enough for longest label
   const angle = (i) => (i/n)*2*Math.PI - Math.PI/2;
   const pt = (a, v) => [cx+R*Math.cos(a)*v/100, cy+R*Math.sin(a)*v/100];
   const angles = cats.map((_,i)=>angle(i));
+  // Responsive display size
+  const displaySize = typeof window!=="undefined" ? Math.min(Math.max(window.innerWidth-120,200),280) : 240;
   return (
-    <svg width={total} height={total} viewBox={`0 0 ${total} ${total}`} style={{overflow:"visible"}}>
+    <svg width={displaySize} height={displaySize} viewBox={`0 0 ${VB} ${VB}`}>
       {[25,50,75,100].map(lv=>{
         const pts = angles.map(a=>pt(a,lv));
         return <polygon key={lv} points={pts.map(p=>p.join(",")).join(" ")} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={lv===100?1:0.5}/>;
@@ -372,17 +374,15 @@ function RadarChart({cats, datasets}) {
         const pts = angles.map((a,i)=>pt(a,ds.values[i]||0));
         return <g key={di}>
           <polygon points={pts.map(p=>p.join(",")).join(" ")} fill={ds.color+"22"} stroke={ds.color} strokeWidth={1.5}/>
-          {pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={3} fill={ds.color}/>)}
+          {pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={4} fill={ds.color}/>)}
         </g>;
       })}
       {angles.map((a,i)=>{
-        // Place label outside polygon with enough distance for text
-        const dist = R + 22;
-        const lx = cx + dist*Math.cos(angle(i));
-        const ly = cy + dist*Math.sin(angle(i));
+        const lx = cx + LR*Math.cos(angle(i));
+        const ly = cy + LR*Math.sin(angle(i));
         const anchor = Math.cos(angle(i))>0.15?"start":Math.cos(angle(i))<-0.15?"end":"middle";
         const label = (cats[i].radar||cats[i].name).toUpperCase();
-        return <text key={i} x={lx} y={ly} textAnchor={anchor} fontSize={9} fill={cats[i].color} dominantBaseline="middle" fontWeight="700" letterSpacing="0.5">{label}</text>;
+        return <text key={i} x={lx} y={ly} textAnchor={anchor} fontSize={14} fill={cats[i].color} dominantBaseline="middle" fontWeight="700">{label}</text>;
       })}
     </svg>
   );
