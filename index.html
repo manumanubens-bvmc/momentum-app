@@ -180,17 +180,17 @@ function avColor(id) { let n=0; for(let i=0;i<(id||"").length;i++) n=(n+id.charC
 
 // ── CATS ──
 const CATS = [
-  {id:"health", name:"Santé", color:"#ff3b30", subs:["Sport","Sommeil","Nutrition","Santé mentale"],
+  {id:"health", name:"Santé", radar:"SANTÉ", color:"#ff3b30", subs:["Sport","Sommeil","Nutrition","Santé mentale"],
    desc:"Ta fondation physique et mentale. La règle n°1 de Bryan Johnson : le sommeil d'abord — sans lui tout s'effondre."},
-  {id:"growth", name:"Croissance", color:"#5856d6",
+  {id:"growth", name:"Stimulation intellectuelle", radar:"INTELLECT", color:"#5856d6",
    desc:"Compétences, connaissances et développement intellectuel. Les habitudes qui se transforment en expertise au fil des années."},
-  {id:"career", name:"Carrière", color:"#007aff",
+  {id:"career", name:"Carrière", radar:"CARRIÈRE", color:"#007aff",
    desc:"Performance professionnelle et impact. Ta capacité à être présent, concentré, à livrer et à développer ton influence."},
-  {id:"finance", name:"Finance", color:"#ff9500",
+  {id:"finance", name:"Finance", radar:"FINANCE", color:"#ff9500",
    desc:"Construire sa richesse par la discipline. Épargner, investir, et éviter les décisions impulsives."},
-  {id:"social", name:"Social", color:"#30d158",
+  {id:"social", name:"Social", radar:"SOCIAL", color:"#30d158",
    desc:"La qualité de tes relations. Une connexion profonde avec les personnes que tu aimes."},
-  {id:"fun", name:"Fun", color:"#ff6b00",
+  {id:"fun", name:"Fun", radar:"FUN", color:"#ff6b00",
    desc:"La joie, le jeu et les nouvelles expériences. Une vie équilibrée a besoin de récupération et de plaisir."},
 ];
 
@@ -375,7 +375,7 @@ function RadarChart({cats, datasets}) {
       {angles.map((a,i)=>{
         const [x,y]=lblPt(a);
         const anchor = Math.cos(a)>0.2?"start":Math.cos(a)<-0.2?"end":"middle";
-        return <text key={i} x={x} y={y} textAnchor={anchor} fontSize={Math.max(size*0.038,8)} fill={cats[i].color} dominantBaseline="middle" fontWeight="700">{cats[i].name.toUpperCase()}</text>;
+        return <text key={i} x={x} y={y} textAnchor={anchor} fontSize={Math.max(size*0.038,8)} fill={cats[i].color} dominantBaseline="middle" fontWeight="700">{(cats[i].radar||cats[i].name).toUpperCase()}</text>;
       })}
     </svg>
   );
@@ -758,7 +758,7 @@ function HomeView({sprint, weekLogs, quote, userId}) {
 
   useEffect(()=>{ sg(`sprint_history_${userId}`).then(h=>setHistory(h||[])); },[userId]);
 
-  const spAvg = sprintAvg(sprint.habits, weekLogs, wk, paused);
+  const spAvg = sprintAvg(sprint.habits, weekLogs, Math.max(wk-1,0), paused);
   const spByCat = catAvgs(sprint.habits, weekLogs, wk, paused);
   const prevSprint = history&&history.length>0 ? history[history.length-1] : null;
   const last3 = history&&history.length>0 ? Math.round(history.slice(-3).reduce((a,s)=>a+(s.avgScore||0),0)/Math.min(history.length,3)) : null;
@@ -769,8 +769,13 @@ function HomeView({sprint, weekLogs, quote, userId}) {
   const dow = now.getDay()===0?7:now.getDay();
   const weekPct = Math.round((dow/7)*100);
   const sprintPct = Math.round((wk/12)*100);
-  const wkColor = scoreColor(wkScore);
+  // Pro-rata color: adjust thresholds based on how far through the week we are
+  // If weekPct=14% (Monday) and score=40%, you're actually on pace → color green
+  const proRataScore = weekPct > 5 ? Math.min(Math.round((wkScore / (weekPct/100))), 100) : 100;
+  const wkColor = scoreColor(proRataScore);
   const spColor = scoreColor(spAvg);
+  // Trend: projected end-of-week score if current pace continues
+  const trendScore = weekPct > 5 ? Math.min(Math.round(wkScore / (weekPct/100)), 100) : null;
 
   // 12-week bars
   const bars = Array.from({length:12},(_,i)=>{
@@ -828,8 +833,14 @@ function HomeView({sprint, weekLogs, quote, userId}) {
             <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>{label}</div>
             <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>{val}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span></div>
             <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>{sub}</div>
-            <div style={{display:"inline-flex",background:`${color}18`,borderRadius:20,padding:"3px 10px"}}>
-              <span style={{fontSize:10,fontWeight:600,color}}>{status}</span>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <div style={{display:"inline-flex",background:`${color}18`,borderRadius:20,padding:"3px 10px"}}>
+                <span style={{fontSize:10,fontWeight:600,color}}>{status}</span>
+              </div>
+              {trend!==null&&<div style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(0,0,0,0.05)",borderRadius:20,padding:"3px 8px"}}>
+                <span style={{fontSize:9,color:T.muted}}>tendance</span>
+                <span style={{fontSize:10,fontWeight:700,color:scoreColor(trend)}}>{trend}%</span>
+              </div>}
             </div>
           </div>
         ))}
