@@ -758,47 +758,56 @@ function HomeView({sprint, weekLogs, quote, userId}) {
 
   useEffect(()=>{ sg(`sprint_history_${userId}`).then(h=>setHistory(h||[])); },[userId]);
 
-  const spAvg = sprintAvg(sprint.habits, weekLogs, Math.max(wk-1,0), paused);
-  const spByCat = catAvgs(sprint.habits, weekLogs, wk, paused);
+  // Sprint avg: completed weeks only (excludes current in-progress week)
+  const spAvg = sprintAvg(sprint.habits, weekLogs, Math.max(wk-1, 0), paused);
+  const spByCat = catAvgs(sprint.habits, weekLogs, Math.max(wk-1, 0), paused);
+
   const prevSprint = history&&history.length>0 ? history[history.length-1] : null;
-  const last3 = history&&history.length>0 ? Math.round(history.slice(-3).reduce((a,s)=>a+(s.avgScore||0),0)/Math.min(history.length,3)) : null;
   const activeCats = CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
-  const logged = sprint.habits.filter(h=>!h.isBonus).filter(h=>{const v=logs[h.id];return v!==undefined&&v!==null&&v!=="";}).length;
+  const logged = sprint.habits.filter(h=>!h.isBonus).filter(h=>{
+    const v=logs[h.id]; return v!==undefined&&v!==null&&v!=="";
+  }).length;
 
   const now = new Date();
-  const dow = now.getDay()===0?7:now.getDay();
+  const dow = now.getDay()===0?7:now.getDay(); // Mon=1 … Sun=7
   const weekPct = Math.round((dow/7)*100);
   const sprintPct = Math.round((wk/12)*100);
-  // Pro-rata color: adjust thresholds based on how far through the week we are
-  // If weekPct=14% (Monday) and score=40%, you're actually on pace → color green
-  const proRataScore = weekPct > 5 ? Math.min(Math.round((wkScore / (weekPct/100))), 100) : 100;
+
+  // Pro-rata color: adjust thresholds based on week progress
+  // e.g. 40% score on Monday (14% through week) = on pace → green
+  const proRataScore = weekPct > 5 ? Math.min(Math.round(wkScore / (weekPct/100)), 100) : 100;
   const wkColor = scoreColor(proRataScore);
   const spColor = scoreColor(spAvg);
-  // Trend: projected end-of-week score if current pace continues
+
+  // Trend: projected end-of-week score at current pace
   const trendScore = weekPct > 5 ? Math.min(Math.round(wkScore / (weekPct/100)), 100) : null;
 
-  // 12-week bars
-  const bars = Array.from({length:12},(_,i)=>{
-    const w=i+1;
-    if (paused.includes(w)) return {w,score:null,paused:true,logged:false};
-    if (w>wk) return {w,score:null,paused:false,logged:false};
-    const ll=weekLogs[w]||{};
-    const hasLog=sprint.habits.filter(h=>!h.isBonus).some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
-    if (!hasLog) return {w,score:null,paused:false,logged:false};
-    return {w,score:calcScores(sprint.habits,ll).overall,paused:false,logged:true};
+  const sprintCompletedWeeks = wk > 1 ? wk-1 : 0;
+
+  // 12-week bar data
+  const bars = Array.from({length:12}, (_,i) => {
+    const w = i+1;
+    if (paused.includes(w)) return {w, score:null, paused:true, logged:false};
+    if (w > wk) return {w, score:null, paused:false, logged:false};
+    const ll = weekLogs[w]||{};
+    const hasLog = sprint.habits.filter(h=>!h.isBonus).some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+    if (!hasLog) return {w, score:null, paused:false, logged:false};
+    return {w, score:calcScores(sprint.habits,ll).overall, paused:false, logged:true};
   });
-  const chartH=76;
-  const benchScore = prevSprint?prevSprint.avgScore:80;
-  const benchLabel = prevSprint?`Q1-26 · ${benchScore}%`:"Objectif · 80%";
+  const chartH = 76;
+  const benchScore = prevSprint ? prevSprint.avgScore : 80;
+  const benchLabel = prevSprint ? `Q1-26 · ${benchScore}%` : "Objectif · 80%";
   const benchDashed = !prevSprint;
 
   return (
     <Scroll>
       {/* 21-day banner for first sprint */}
-      {history!==null&&history.length===0&&<div style={{background:"rgba(0,122,255,0.08)",borderRadius:16,padding:"14px 16px",marginBottom:12,borderLeft:`3px solid ${T.accent}`}}>
-        <div style={{fontSize:12,fontWeight:700,color:T.accent,marginBottom:4}}>🧠 Les 21 premiers jours sont décisifs</div>
-        <p style={{fontSize:12,color:T.muted,lineHeight:1.6,margin:0}}>Les neurosciences montrent que les habitudes se câblent dans le cerveau pendant les 3 premières semaines. La discipline que tu construis maintenant se multiplie sur tout le sprint — et au-delà.</p>
-      </div>}
+      {history!==null&&history.length===0&&(
+        <div style={{background:"rgba(0,122,255,0.08)",borderRadius:16,padding:"14px 16px",marginBottom:12,borderLeft:`3px solid ${T.accent}`}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.accent,marginBottom:4}}>🧠 Les 21 premiers jours sont décisifs</div>
+          <p style={{fontSize:12,color:T.muted,lineHeight:1.6,margin:0}}>Les neurosciences montrent que les habitudes se câblent dans le cerveau pendant les 3 premières semaines. La discipline que tu construis maintenant se multiplie sur tout le sprint — et au-delà.</p>
+        </div>
+      )}
 
       {/* Progress bars */}
       <Card style={{marginBottom:12,padding:"18px 20px"}}>
@@ -818,7 +827,9 @@ function HomeView({sprint, weekLogs, quote, userId}) {
           </div>
           <div style={{height:8,background:"rgba(0,0,0,0.07)",borderRadius:4,position:"relative"}}>
             <div style={{height:"100%",borderRadius:4,background:"#30d158",width:`${sprintPct}%`,transition:"width 0.6s"}}/>
-            {Array.from({length:11},(_,i)=><div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:T.bg,opacity:0.8}}/>)}
+            {Array.from({length:11},(_,i)=>(
+              <div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:T.bg,opacity:0.8}}/>
+            ))}
           </div>
         </div>
       </Card>
@@ -826,21 +837,39 @@ function HomeView({sprint, weekLogs, quote, userId}) {
       {/* Two score cards */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
         {[
-          {label:"Cette semaine",val:wkScore,color:wkColor,sub:`${logged}/${sprint.habits.filter(h=>!h.isBonus).length} saisies${bonusScore>0?` +${bonusScore}%`:""}`,status:statusLabel(wkScore)},
-          {label:"Moy. sprint",val:spAvg,color:spColor,sub:prevSprint?`vs ${prevSprint.avgScore}% dernier sprint`:`Semaine ${wk} sur 12`,status:statusLabel(spAvg)},
-        ].map(({label,val,color,sub,status})=>(
+          {
+            label:"Cette semaine",
+            val:wkScore,
+            color:wkColor,
+            sub:`${logged}/${sprint.habits.filter(h=>!h.isBonus).length} saisies${bonusScore>0?` +${bonusScore}%`:""}`,
+            status:statusLabel(proRataScore),
+            trend:trendScore,
+          },
+          {
+            label:"Moy. sprint",
+            val:spAvg,
+            color:spColor,
+            sub:sprintCompletedWeeks>0?`${sprintCompletedWeeks} sem. complète${sprintCompletedWeeks>1?"s":""}` : "Aucune sem. complète",
+            status:statusLabel(spAvg),
+            trend:null,
+          },
+        ].map(({label,val,color,sub,status,trend})=>(
           <div key={label} style={{background:T.card,borderRadius:20,boxShadow:SH,padding:"18px 16px"}}>
             <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:8}}>{label}</div>
-            <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>{val}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span></div>
+            <div style={{fontSize:40,fontWeight:800,letterSpacing:-2,lineHeight:1,color:T.text}}>
+              {val}<span style={{fontSize:18,fontWeight:500,color:T.muted,letterSpacing:-0.5}}>%</span>
+            </div>
             <div style={{fontSize:10,color:T.muted,marginTop:4,marginBottom:8}}>{sub}</div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               <div style={{display:"inline-flex",background:`${color}18`,borderRadius:20,padding:"3px 10px"}}>
                 <span style={{fontSize:10,fontWeight:600,color}}>{status}</span>
               </div>
-              {trend!==null&&<div style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(0,0,0,0.05)",borderRadius:20,padding:"3px 8px"}}>
-                <span style={{fontSize:9,color:T.muted}}>tendance</span>
-                <span style={{fontSize:10,fontWeight:700,color:scoreColor(trend)}}>{trend}%</span>
-              </div>}
+              {trend!==null&&(
+                <div style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(0,0,0,0.05)",borderRadius:20,padding:"3px 8px"}}>
+                  <span style={{fontSize:9,color:T.muted}}>tendance</span>
+                  <span style={{fontSize:10,fontWeight:700,color:scoreColor(trend)}}>{trend}%</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -861,14 +890,15 @@ function HomeView({sprint, weekLogs, quote, userId}) {
         </div>
         <div style={{position:"relative",paddingBottom:20}}>
           {/* Benchmark line */}
-          <div style={{position:"absolute",left:0,right:0,bottom:20+benchBottom(benchScore,chartH),borderTop:`1.5px ${benchDashed?"dashed":"solid"} ${T.amber}`,pointerEvents:"none",zIndex:1}}>
+          <div style={{position:"absolute",left:0,right:0,bottom:20+(benchScore/100)*chartH,borderTop:`1.5px ${benchDashed?"dashed":"solid"} ${T.amber}`,pointerEvents:"none",zIndex:1}}>
             <span style={{position:"absolute",right:0,top:-16,fontSize:8,fontWeight:600,color:T.amber,background:T.card,padding:"1px 5px",borderRadius:4}}>{benchLabel}</span>
           </div>
+          {/* Bars */}
           <div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
-            {bars.map(({w,score,paused:isPaused,logged:isLogged})=>{
-              const isCur=w===wk;
-              const h=isLogged&&score!==null?(score/100)*chartH+4:4;
-              const bg=isLogged&&score!==null?barColor(score):"rgba(0,0,0,0.06)";
+            {bars.map(({w, score, paused:isPaused, logged:isLogged})=>{
+              const isCur = w===wk;
+              const h = isLogged&&score!==null ? (score/100)*chartH+4 : 4;
+              const bg = isLogged&&score!==null ? barColor(score) : "rgba(0,0,0,0.06)";
               return (
                 <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
                   <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,boxShadow:isCur&&isLogged?`0 0 0 1.5px ${T.accent}`:"none",transition:"height 0.4s"}}/>
@@ -881,26 +911,46 @@ function HomeView({sprint, weekLogs, quote, userId}) {
       </Card>
 
       {/* Radar charts */}
-      {activeCats.length>=3&&<>
-        <Card style={{marginBottom:12,padding:"16px 18px"}}>
-          <div style={{fontSize:11,fontWeight:600,color:T.text,marginBottom:12}}>Semaine {wk} vs moyenne sprint</div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-            <RadarChart cats={activeCats} datasets={[{label:`S${wk}`,color:T.accent,values:activeCats.map(c=>wkByCat[c.id]??0)},{label:"Moy.",color:T.green,values:activeCats.map(c=>spByCat[c.id]??0)}]}/>
-            <div style={{display:"flex",gap:16}}>
-              {[{l:`S${wk}`,c:T.accent},{l:"Moy. sprint",c:T.green}].map(({l,c})=><div key={l} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:T.muted}}>{l}</span></div>)}
+      {activeCats.length>=3&&(
+        <>
+          <Card style={{marginBottom:12,padding:"16px 18px"}}>
+            <div style={{fontSize:11,fontWeight:600,color:T.text,marginBottom:12}}>Semaine {wk} vs moyenne sprint</div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+              <RadarChart cats={activeCats} datasets={[
+                {label:`S${wk}`,color:T.accent,values:activeCats.map(c=>wkByCat[c.id]??0)},
+                {label:"Moy.",color:T.green,values:activeCats.map(c=>spByCat[c.id]??0)},
+              ]}/>
+              <div style={{display:"flex",gap:16}}>
+                {[{l:`S${wk}`,c:T.accent},{l:"Moy. sprint",c:T.green}].map(({l,c})=>(
+                  <div key={l} style={{display:"flex",alignItems:"center",gap:5}}>
+                    <div style={{width:8,height:8,borderRadius:2,background:c}}/>
+                    <span style={{fontSize:10,color:T.muted}}>{l}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </Card>
-        {prevSprint&&prevSprint.catAvgs&&<Card style={{marginBottom:12,padding:"16px 18px"}}>
-          <div style={{fontSize:11,fontWeight:600,color:T.text,marginBottom:12}}>Sprint actuel vs Q1-26</div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-            <RadarChart cats={activeCats} datasets={[{label:"Ce sprint",color:T.accent,values:activeCats.map(c=>spByCat[c.id]??0)},{label:"Q1-26",color:T.amber,values:activeCats.map(c=>prevSprint.catAvgs[c.id]??0)}]}/>
-            <div style={{display:"flex",gap:16}}>
-              {[{l:"Ce sprint",c:T.accent},{l:"Q1-26",c:T.amber}].map(({l,c})=><div key={l} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:T.muted}}>{l}</span></div>)}
-            </div>
-          </div>
-        </Card>}
-      </>}
+          </Card>
+          {prevSprint&&prevSprint.catAvgs&&(
+            <Card style={{marginBottom:12,padding:"16px 18px"}}>
+              <div style={{fontSize:11,fontWeight:600,color:T.text,marginBottom:12}}>Sprint actuel vs Q1-26</div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+                <RadarChart cats={activeCats} datasets={[
+                  {label:"Ce sprint",color:T.accent,values:activeCats.map(c=>spByCat[c.id]??0)},
+                  {label:"Q1-26",color:T.amber,values:activeCats.map(c=>prevSprint.catAvgs[c.id]??0)},
+                ]}/>
+                <div style={{display:"flex",gap:16}}>
+                  {[{l:"Ce sprint",c:T.accent},{l:"Q1-26",c:T.amber}].map(({l,c})=>(
+                    <div key={l} style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:8,height:8,borderRadius:2,background:c}}/>
+                      <span style={{fontSize:10,color:T.muted}}>{l}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* Toggle */}
       <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:12}}>
@@ -911,7 +961,7 @@ function HomeView({sprint, weekLogs, quote, userId}) {
 
       {/* Category detail */}
       {detailMode==="%"
-        ?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+        ? <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
             {activeCats.map(cat=>(
               <div key={cat.id} style={{background:T.card,borderRadius:16,boxShadow:SH,padding:"14px 10px",textAlign:"center"}}>
                 <div style={{fontSize:9,fontWeight:700,color:cat.color,textTransform:"uppercase",letterSpacing:0.5,marginBottom:10}}>{cat.name}</div>
@@ -920,25 +970,30 @@ function HomeView({sprint, weekLogs, quote, userId}) {
               </div>
             ))}
           </div>
-        :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        : <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {activeCats.map(cat=>{
-              const catHabits=sprint.habits.filter(h=>h.catId===cat.id&&!h.isBonus);
-              return <Card key={cat.id} style={{padding:"14px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <div style={{width:7,height:7,borderRadius:50,background:cat.color}}/>
-                  <span style={{color:T.text,fontSize:12,fontWeight:600,flex:1}}>{cat.name}</span>
-                  <span style={{color:T.muted,fontSize:11}}>{wkByCat[cat.id]??0}%</span>
-                </div>
-                {catHabits.map(h=>{
-                  const val=logs[h.id]; const hasVal=val!==undefined&&val!==null&&val!=="";
-                  const s=scoreOne(h.type==="boolean"?(val?1:0):val,h);
-                  return <div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:`1px solid ${T.border}`}}>
-                    <span style={{flex:1,color:T.text,fontSize:12}}>{h.name}</span>
-                    <span style={{color:T.muted,fontSize:11}}>{hasVal?(h.type==="boolean"?(val?"✓":"✗"):`${val}${h.unit?` ${h.unit}`:""} / ${h.target}`):"—"}</span>
-                    {hasVal&&<span style={{color:barColor(Math.round(s*100)),fontSize:11,fontWeight:700,minWidth:32,textAlign:"right"}}>{Math.round(s*100)}%</span>}
-                  </div>;
-                })}
-              </Card>;
+              const catHabits = sprint.habits.filter(h=>h.catId===cat.id&&!h.isBonus);
+              return (
+                <Card key={cat.id} style={{padding:"14px 16px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                    <div style={{width:7,height:7,borderRadius:50,background:cat.color}}/>
+                    <span style={{color:T.text,fontSize:12,fontWeight:600,flex:1}}>{cat.name}</span>
+                    <span style={{color:T.muted,fontSize:11}}>{wkByCat[cat.id]??0}%</span>
+                  </div>
+                  {catHabits.map(h=>{
+                    const val = logs[h.id];
+                    const hasVal = val!==undefined&&val!==null&&val!=="";
+                    const s = scoreOne(h.type==="boolean"?(val?1:0):val, h);
+                    return (
+                      <div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:`1px solid ${T.border}`}}>
+                        <span style={{flex:1,color:T.text,fontSize:12}}>{h.name}</span>
+                        <span style={{color:T.muted,fontSize:11}}>{hasVal?(h.type==="boolean"?(val?"✓":"✗"):`${val}${h.unit?` ${h.unit}`:""} / ${h.target}`):"—"}</span>
+                        {hasVal&&<span style={{color:barColor(Math.round(s*100)),fontSize:11,fontWeight:700,minWidth:32,textAlign:"right"}}>{Math.round(s*100)}%</span>}
+                      </div>
+                    );
+                  })}
+                </Card>
+              );
             })}
           </div>
       }
@@ -952,7 +1007,6 @@ function HomeView({sprint, weekLogs, quote, userId}) {
   );
 }
 
-function benchBottom(score, chartH) { return (score/100)*chartH; }
 
 // ── LOG ──
 function LogView({sprint, weekLogs, onSave, userId, onUpdateSprint}) {
