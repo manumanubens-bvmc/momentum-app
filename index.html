@@ -1346,8 +1346,22 @@ function SocialView({user, sprint}) {
 
       {/* Invite */}
       <Card style={{marginBottom:16,padding:"13px 16px"}}>
-        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 6px",fontWeight:600}}>Inviter des amis</p>
-        <p style={{color:T.text,fontSize:12,lineHeight:1.6,margin:0}}>Copie l'URL depuis ta <strong>barre d'adresse</strong> (commence par <span style={{color:T.accent}}>github.io/…</span>) et envoie-la. Ils créent un compte et apparaissent ici automatiquement.</p>
+        <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Inviter des amis</p>
+        <p style={{color:T.text,fontSize:12,lineHeight:1.6,margin:"0 0 10px"}}>Envoie ce lien à tes amis — il les amène directement à la création de compte :</p>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{flex:1,background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:T.accent,wordBreak:"break-all"}}>
+            manumanubens-bvmc.github.io/momentum-app
+          </div>
+          <button onClick={()=>{
+            navigator.clipboard.writeText("https://manumanubens-bvmc.github.io/momentum-app")
+              .then(()=>{
+                const btn=document.getElementById("copy-btn");
+                if(btn){btn.textContent="Copié ✓";btn.style.color="#30d158";setTimeout(()=>{btn.textContent="Copier";btn.style.color="#007aff";},2000);}
+              }).catch(()=>{});
+          }} id="copy-btn" style={{background:"rgba(0,122,255,0.1)",border:"none",borderRadius:10,padding:"10px 14px",color:T.accent,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+            Copier
+          </button>
+        </div>
       </Card>
 
       {loading&&<div style={{textAlign:"center",padding:40,color:T.muted}}>Chargement…</div>}
@@ -1788,7 +1802,7 @@ function App() {
 
   useEffect(()=>{
     (async()=>{
-      const session=await sg("session"); if(!session?.userId){setBooting(false);return;}
+      const session=JSON.parse(localStorage.getItem("session")||"null"); if(!session?.userId){setBooting(false);return;}
       const u=await sg(`user_${session.userId}`); if(!u){setBooting(false);return;}
       setUser(u); await loadHistory(u.id);
       const sp=await sg(`sprint_${u.id}`);
@@ -1800,14 +1814,14 @@ function App() {
   useEffect(()=>{if(sprint&&weekNum(sprint.startDate)>=12)setShowRecap(true);},[sprint]);
 
   async function onAuth(u) {
-    await ss("session",{userId:u.id});
+    localStorage.setItem("session",JSON.stringify({userId:u.id}));
     if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated);setUser(updated);setShowOnboarding(true);return;}
     setUser(u); await loadHistory(u.id);
     const sp=await sg(`sprint_${u.id}`);
     if(sp){setSprint(sp);await loadLogs(u.id,sp);}
   }
   async function onLogout() {
-    await ss("session",null); setUser(null); setSprint(null); setWL({}); setHistory([]);
+    localStorage.removeItem("session"); setUser(null); setSprint(null); setWL({}); setHistory([]);
     setView("home"); setShowOnboarding(false); setShowRecap(false);
   }
   function onSprintCreated(sp){setSprint(sp);setWL({});setView("home");setShowRecap(false);}
