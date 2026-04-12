@@ -950,9 +950,12 @@ function HomeView({sprint, weekLogs, quote, userId}) {
                   const isCur=w===wk;
                   const h=isLogged&&score!==null?(score/100)*chartH+4:4;
                   const bg=isLogged&&score!==null?barColor(score):"rgba(0,0,0,0.06)";
+                  const showLbl=isLogged&&score!==null&&h>18;
                   return (
                     <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
-                      <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,boxShadow:isCur&&isLogged?`0 0 0 1.5px ${T.accent}`:"none",transition:"height 0.4s"}}/>
+                      <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,boxShadow:isCur&&isLogged?`0 0 0 1.5px ${T.accent}`:"none",transition:"height 0.4s",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:2}}>
+                        {showLbl&&<span style={{fontSize:6,fontWeight:700,color:"#fff",lineHeight:1}}>{score}</span>}
+                      </div>
                       <span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:isCur?700:400,color:isCur?T.text:T.muted}}>{isPaused?"OFF":`W${w}`}</span>
                     </div>
                   );
@@ -1292,6 +1295,7 @@ function SocialView({user, sprint}) {
   const [spData, setSpData] = useState([]);
   const [wkData, setWkData] = useState([]);
   const [prevWkData, setPrevWkData] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
   const wk = weekNum(sprint.startDate);
@@ -1300,20 +1304,36 @@ function SocialView({user, sprint}) {
   useEffect(()=>{
     (async()=>{
       setLoading(true);
-      const [sd,wd,pwd] = await Promise.all([
+      const [sd,wd,pwd,idx] = await Promise.all([
         sg(`social_sprint_${sprint.id}`),
         sg(`social_${sprint.id}_w${wk}`),
         wk>1?sg(`social_${sprint.id}_w${wk-1}`):Promise.resolve([]),
+        sg("userIndex"),
       ]);
       setSpData((sd||[]).sort((a,b)=>b.sprintAvg-a.sprintAvg));
       setWkData((wd||[]).sort((a,b)=>b.overall-a.overall));
       setPrevWkData(pwd||[]);
+      setAllUsers(idx||[]);
       setLoading(false);
     })();
   },[sprint,wk]);
 
   const entries = tab==="week"?wkData:spData;
   const top3 = entries.slice(0,3);
+
+  // Build members list: all registered users with their scores where available
+  const membersList = allUsers.map(u=>{
+    const wkEntry = wkData.find(e=>e.userId===u.id);
+    const spEntry = spData.find(e=>e.userId===u.id);
+    return {
+      ...u,
+      weekScore: wkEntry?.overall??null,
+      sprintScore: spEntry?.sprintAvg??null,
+      byCat: wkEntry?.byCat||null,
+      weeksLogged: spEntry?.weeksLogged||0,
+      weekScores: spEntry?.weekScores||null,
+    };
+  });
 
   function getStreak(entry) {
     if (!entry.weekScores) return 0;
@@ -1332,10 +1352,80 @@ function SocialView({user, sprint}) {
     return entry.overall-prev.overall;
   }
 
+  function MemberCard({entry, i}) {
+    const score = tab==="week"?entry.overall:entry.sprintAvg;
+    const isMe = entry.userId===user.id;
+    const isExp = expanded===entry.userId;
+    const streak = getStreak(entry);
+    const mov = getMovement(entry);
+    return (
+      <div onClick={()=>setExpanded(isExp?null:entry.userId)} style={{background:isMe?"rgba(0,122,255,0.06)":T.card,borderRadius:16,border:isMe?`1.5px solid rgba(0,122,255,0.25)`:"none",boxShadow:SH,overflow:"hidden",cursor:"pointer"}}>
+        <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:26,height:26,borderRadius:8,background:i<3?"rgba(0,122,255,0.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <span style={{fontSize:i<3?14:11,fontWeight:700,color:i===0?T.accent:i===1?T.muted:i===2?T.amber:T.faint}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span>
+          </div>
+          <Avatar name={entry.name} userId={entry.userId} email={entry.email} size={34}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <span style={{fontSize:14,fontWeight:600,color:T.text}}>{entry.name}</span>
+              {isMe&&<span style={{fontSize:9,color:T.accent,background:"rgba(0,122,255,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>toi</span>}
+              {streak>=3&&<span style={{fontSize:9,color:T.green,background:"rgba(48,209,88,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>🔥 {streak} sem.</span>}
+            </div>
+            <div style={{fontSize:11,color:T.muted,marginTop:2}}>{tab==="sprint"?`${entry.weeksLogged||0} sem. saisies`:`S${wk}`}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+            {score!==null&&score!==undefined
+              ?<span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>
+              :<span style={{fontSize:13,color:T.faint,fontWeight:500}}>—</span>
+            }
+            {mov!==null&&<span style={{fontSize:10,fontWeight:600,color:mov>0?T.green:mov<0?T.red:T.muted}}>{mov>0?`↑ +${mov}pp`:mov<0?`↓ ${mov}pp`:"→"}</span>}
+          </div>
+          <div style={{color:T.muted,fontSize:14,transform:isExp?"rotate(180deg)":"rotate(0)",transition:"transform 0.2s",marginLeft:4}}>⌄</div>
+        </div>
+        {isExp&&<div style={{padding:"0 16px 14px",borderTop:`1px solid ${T.border}`}}>
+          <div style={{paddingTop:10,display:"flex",flexDirection:"column",gap:8}}>
+            {tab==="week"&&entry.byCat&&<>
+              <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted}}>Score par catégorie · objectifs privés</div>
+              {activeCats.map(cat=>{
+                const catScore=entry.byCat[cat.id];
+                const catW=(sprint.catWeights||{})[cat.id]||0;
+                if (catScore===null||catScore===undefined) return null;
+                return <div key={cat.id}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <div style={{width:6,height:6,borderRadius:3,background:cat.color,flexShrink:0}}/>
+                    <span style={{fontSize:12,color:T.text,fontWeight:500,flex:1}}>{cat.name}</span>
+                    <span style={{fontSize:10,color:T.muted}}>{catW}%</span>
+                    <span style={{fontSize:12,fontWeight:700,color:scoreColor(catScore),minWidth:36,textAlign:"right"}}>{catScore}%</span>
+                  </div>
+                  <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:2,marginLeft:14}}>
+                    <div style={{height:"100%",borderRadius:2,background:barColor(catScore),width:`${catScore}%`,transition:"width 0.5s"}}/>
+                  </div>
+                </div>;
+              })}
+            </>}
+            {tab==="sprint"&&entry.weekScores&&<div>
+              <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:6}}>Progression du sprint</div>
+              <div style={{display:"flex",alignItems:"flex-end",gap:3,height:36}}>
+                {Array.from({length:wk},(_,i)=>{
+                  const sc=entry.weekScores[i+1];
+                  return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                    <div style={{width:"100%",height:sc!==undefined?`${Math.max((sc/100)*28,2)}px`:"2px",background:sc!==undefined?barColor(sc):"rgba(0,0,0,0.06)",borderRadius:"2px 2px 0 0",minHeight:2}}/>
+                    <span style={{fontSize:6.5,color:T.muted}}>S{i+1}</span>
+                  </div>;
+                })}
+              </div>
+            </div>}
+            {score===null&&<p style={{fontSize:12,color:T.muted,margin:0}}>Pas encore de données cette {tab==="week"?"semaine":"période"}.</p>}
+          </div>
+        </div>}
+      </div>
+    );
+  }
+
   return (
     <Scroll>
       <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 2px"}}>Communauté</h2>
-      <p style={{color:T.muted,fontSize:13,margin:"0 0 14px"}}>Semaine {wk} · {entries.length} participant{entries.length!==1?"s":""}</p>
+      <p style={{color:T.muted,fontSize:13,margin:"0 0 14px"}}>Semaine {wk} · {allUsers.length} membre{allUsers.length!==1?"s":""}</p>
 
       {/* Tab toggle */}
       <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:16}}>
@@ -1347,7 +1437,7 @@ function SocialView({user, sprint}) {
       {/* Invite */}
       <Card style={{marginBottom:16,padding:"13px 16px"}}>
         <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Inviter des amis</p>
-        <p style={{color:T.text,fontSize:12,lineHeight:1.6,margin:"0 0 10px"}}>Envoie ce lien à tes amis — il les amène directement à la création de compte :</p>
+        <p style={{color:T.text,fontSize:12,lineHeight:1.6,margin:"0 0 10px"}}>Envoie ce lien — il mène directement à la création de compte :</p>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{flex:1,background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:T.accent,wordBreak:"break-all"}}>
             manumanubens-bvmc.github.io/momentum-app
@@ -1365,99 +1455,69 @@ function SocialView({user, sprint}) {
       </Card>
 
       {loading&&<div style={{textAlign:"center",padding:40,color:T.muted}}>Chargement…</div>}
-      {!loading&&entries.length===0&&<div style={{textAlign:"center",padding:40}}><p style={{color:T.muted}}>Aucun score — saisis et enregistre pour apparaître ici.</p></div>}
 
-      {/* Podium */}
-      {!loading&&top3.length>=2&&<div style={{marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:8,marginBottom:14,height:110}}>
-          {[1,0,2].map(rank=>{
-            const e=top3[rank]; if(!e) return <div key={rank} style={{flex:1}}/>;
-            const heights=[68,50,38];
-            const isFirst=rank===0;
-            return <div key={rank} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
-              {isFirst&&<div style={{fontSize:18}}>🥇</div>}
-              <Avatar name={e.name} userId={e.userId} email={e.email} size={isFirst?40:34}/>
-              <span style={{fontSize:10,fontWeight:isFirst?700:500,color:T.text,maxWidth:64,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{e.name.split(" ")[0]}</span>
-              <div style={{width:"100%",background:isFirst?T.accent:"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:heights[rank],display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":T.muted}}>{tab==="week"?e.overall:e.sprintAvg}%</span>
-              </div>
-            </div>;
-          })}
+      {/* Podium top 3 (only when data exists) */}
+      {!loading&&top3.length>=2&&(
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:8,marginBottom:14,height:110}}>
+            {[1,0,2].map(rank=>{
+              const e=top3[rank]; if(!e) return <div key={rank} style={{flex:1}}/>;
+              const heights=[68,50,38];
+              const isFirst=rank===0;
+              return <div key={rank} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
+                {isFirst&&<div style={{fontSize:18}}>🥇</div>}
+                <Avatar name={e.name} userId={e.userId} email={e.email} size={isFirst?40:34}/>
+                <span style={{fontSize:10,fontWeight:isFirst?700:500,color:T.text,maxWidth:64,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{e.name.split(" ")[0]}</span>
+                <div style={{width:"100%",background:isFirst?T.accent:"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:heights[rank],display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":T.muted}}>{tab==="week"?e.overall:e.sprintAvg}%</span>
+                </div>
+              </div>;
+            })}
+          </div>
         </div>
-      </div>}
+      )}
 
-      {/* Full list */}
-      {!loading&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {entries.map((entry,i)=>{
-          const score=tab==="week"?entry.overall:entry.sprintAvg;
-          const isMe=entry.userId===user.id;
-          const isExp=expanded===entry.userId;
-          const streak=getStreak(entry);
-          const mov=getMovement(entry);
-          return (
-            <div key={entry.userId} onClick={()=>setExpanded(isExp?null:entry.userId)} style={{background:isMe?"rgba(0,122,255,0.06)":T.card,borderRadius:16,border:isMe?`1.5px solid rgba(0,122,255,0.25)`:"none",boxShadow:SH,overflow:"hidden",cursor:"pointer"}}>
-              <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:26,height:26,borderRadius:8,background:i<3?"rgba(0,122,255,0.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  <span style={{fontSize:i<3?14:11,fontWeight:700,color:i===0?T.accent:i===1?T.muted:i===2?T.amber:T.faint}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span>
-                </div>
-                <Avatar name={entry.name} userId={entry.userId} email={entry.email} size={34}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{fontSize:14,fontWeight:600,color:T.text}}>{entry.name}</span>
-                    {isMe&&<span style={{fontSize:9,color:T.accent,background:"rgba(0,122,255,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>toi</span>}
-                    {streak>=3&&<span style={{fontSize:9,color:T.green,background:"rgba(48,209,88,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>🔥 {streak} sem.</span>}
-                  </div>
-                  <div style={{fontSize:11,color:T.muted,marginTop:2}}>{tab==="sprint"?`${entry.weeksLogged||0} sem. saisies`:`S${wk}`}</div>
-                </div>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-                  <span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>
-                  {mov!==null&&<span style={{fontSize:10,fontWeight:600,color:mov>0?T.green:mov<0?T.red:T.muted}}>{mov>0?`↑ +${mov}pp`:mov<0?`↓ ${mov}pp`:"→"}</span>}
-                </div>
-                <div style={{color:T.muted,fontSize:14,transform:isExp?"rotate(180deg)":"rotate(0)",transition:"transform 0.2s",marginLeft:4}}>⌄</div>
-              </div>
-              {isExp&&<div style={{padding:"0 16px 14px",borderTop:`1px solid ${T.border}`}}>
-                <div style={{paddingTop:10,display:"flex",flexDirection:"column",gap:8}}>
-                  <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted}}>Score par catégorie · objectifs privés</div>
-                  {activeCats.map(cat=>{
-                    const catScore=tab==="week"?entry.byCat?.[cat.id]:null;
-                    const catW=(sprint.catWeights||{})[cat.id]||0;
-                    if (catScore===null||catScore===undefined) return null;
-                    return <div key={cat.id}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                        <div style={{width:6,height:6,borderRadius:3,background:cat.color,flexShrink:0}}/>
-                        <span style={{fontSize:12,color:T.text,fontWeight:500,flex:1}}>{cat.name}</span>
-                        <span style={{fontSize:10,color:T.muted}}>{catW}%</span>
-                        <span style={{fontSize:12,fontWeight:700,color:scoreColor(catScore),minWidth:36,textAlign:"right"}}>{catScore}%</span>
-                      </div>
-                      <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:2,marginLeft:14}}>
-                        <div style={{height:"100%",borderRadius:2,background:barColor(catScore),width:`${catScore}%`,transition:"width 0.5s"}}/>
-                      </div>
-                    </div>;
-                  })}
-                  {tab==="sprint"&&entry.weekScores&&<div style={{marginTop:6}}>
-                    <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:T.muted,marginBottom:6}}>Progression</div>
-                    <div style={{display:"flex",alignItems:"flex-end",gap:3,height:36}}>
-                      {Array.from({length:wk},(_,i)=>{
-                        const sc=entry.weekScores[i+1];
-                        return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                          <div style={{width:"100%",height:sc!==undefined?`${Math.max((sc/100)*28,2)}px`:"2px",background:sc!==undefined?barColor(sc):"rgba(0,0,0,0.06)",borderRadius:"2px 2px 0 0",minHeight:2}}/>
-                          <span style={{fontSize:6.5,color:T.muted}}>S{i+1}</span>
-                        </div>;
-                      })}
-                    </div>
-                  </div>}
-                </div>
-              </div>}
-            </div>
-          );
-        })}
-      </div>}
+      {/* All members list — shows everyone, with or without scores */}
+      {!loading&&(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.muted,marginBottom:4}}>
+            Tous les membres · {membersList.length}
+          </div>
+          {membersList
+            .sort((a,b)=>{
+              const sa = tab==="week"?a.weekScore:a.sprintScore;
+              const sb = tab==="week"?b.weekScore:b.sprintScore;
+              if (sa===null&&sb===null) return 0;
+              if (sa===null) return 1;
+              if (sb===null) return -1;
+              return sb-sa;
+            })
+            .map((member,i)=>{
+              // Build a compatible entry object for MemberCard
+              const wkEntry = wkData.find(e=>e.userId===member.id);
+              const spEntry = spData.find(e=>e.userId===member.id);
+              const entry = {
+                userId:member.id,
+                name:member.name,
+                email:member.email,
+                overall:wkEntry?.overall??null,
+                sprintAvg:spEntry?.sprintAvg??null,
+                byCat:wkEntry?.byCat||null,
+                weeksLogged:spEntry?.weeksLogged||0,
+                weekScores:spEntry?.weekScores||null,
+              };
+              return <MemberCard key={member.id} entry={entry} i={i}/>;
+            })
+          }
+        </div>
+      )}
     </Scroll>
   );
 }
 
+
 // ── DUELS ──
-function DuelsView({user, sprint}) {
+function DuelsView({user, sprint, onPendingCount}) {
   const [myDuels, setMyDuels] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1472,7 +1532,11 @@ function DuelsView({user, sprint}) {
     const [idx,duelsData] = await Promise.all([sg("userIndex"),sg(`duels_${sprint.id}`)]);
     setUsers((idx||[]).filter(u=>u.id!==user.id));
     const all=duelsData||[];
-    setMyDuels(all.filter(d=>d.challengerId===user.id||d.opponentId===user.id));
+    const mine=all.filter(d=>d.challengerId===user.id||d.opponentId===user.id);
+    setMyDuels(mine);
+    // Notify App of pending count for badge
+    const pendingCount=mine.filter(d=>d.status==="pending"&&d.opponentId===user.id).length;
+    if(onPendingCount) onPendingCount(pendingCount);
     setLoading(false);
   }
   useEffect(()=>{load();},[sprint]);
@@ -1492,6 +1556,7 @@ function DuelsView({user, sprint}) {
 
   const pending=myDuels.filter(d=>d.status==="pending"&&d.opponentId===user.id);
   const active=myDuels.filter(d=>d.status==="active"&&d.week===wk);
+  const past=myDuels.filter(d=>d.status==="declined"||(d.status==="active"&&d.week<wk));
 
   function DuelCard({duel}) {
     const isChallenger=duel.challengerId===user.id;
@@ -1536,14 +1601,31 @@ function DuelsView({user, sprint}) {
           {form.type==="category"&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {activeCats.map(cat=><button key={cat.id} onClick={()=>setForm(p=>({...p,catId:cat.id}))} style={{padding:"7px 12px",border:"none",borderRadius:10,cursor:"pointer",background:form.catId===cat.id?cat.color:"rgba(0,0,0,0.05)",color:form.catId===cat.id?"#fff":T.text,fontWeight:600,fontSize:12}}>{cat.name}</button>)}
           </div>}
+          <div style={{background:"rgba(0,122,255,0.07)",borderRadius:10,padding:"10px 12px"}}>
+            <p style={{margin:0,fontSize:12,color:T.accent,lineHeight:1.5}}>
+              {form.type==="category"
+                ?`🎯 Le score en ${CATS.find(c=>c.id===form.catId)?.name||""} de la semaine ${wk} sera comparé.`
+                :`⚔️ Le score global de la semaine ${wk} sera comparé. Meilleur score gagne.`}
+            </p>
+          </div>
           <div style={{display:"flex",gap:8}}>
             <Btn variant="secondary" small onClick={()=>setCreating(false)}>Annuler</Btn>
             <Btn full small disabled={!form.opponentId} onClick={createDuel}>Envoyer le défi 🔥</Btn>
           </div>
         </div>
       </Card>}
-      {pending.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.red,marginBottom:8}}>🔔 {pending.length} défi{pending.length>1?"s":""} en attente</div>{pending.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
-      {active.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.accent,marginBottom:8}}>⚔️ En cours — semaine {wk}</div>{active.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
+      {pending.length>0&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.red,marginBottom:8}}>🔔 {pending.length} défi{pending.length>1?"s":""} à accepter</div>
+        {pending.map(d=><DuelCard key={d.id} duel={d}/>)}
+      </div>}
+      {active.length>0&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.accent,marginBottom:8}}>⚔️ En cours — semaine {wk}</div>
+        {active.map(d=><DuelCard key={d.id} duel={d}/>)}
+      </div>}
+      {past.length>0&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:T.muted,marginBottom:8}}>Historique</div>
+        {past.map(d=><DuelCard key={d.id} duel={d}/>)}
+      </div>}
       {!loading&&myDuels.length===0&&!creating&&<div style={{textAlign:"center",padding:"40px 20px"}}>
         <div style={{fontSize:40,marginBottom:10}}>⚔️</div>
         <p style={{color:T.text,fontSize:15,fontWeight:600,marginBottom:4}}>Aucun défi en cours</p>
@@ -1552,6 +1634,7 @@ function DuelsView({user, sprint}) {
     </Scroll>
   );
 }
+
 
 // ── PROFILE ──
 function ProfileView({user, sprint, weekLogs, onLogout}) {
@@ -1776,6 +1859,7 @@ function App() {
   const [showRecap, setShowRecap] = useState(false);
   const [history, setHistory] = useState([]);
   const [quote] = useState(WISDOM[new Date().getDay()%WISDOM.length]);
+  const [pendingDuels, setPendingDuels] = useState(0);
   const wk = sprint?weekNum(sprint.startDate):0;
   const isAdmin = user&&ADMIN_EMAILS.includes(user.email);
   const NAV_ICONS = {
@@ -1867,7 +1951,7 @@ function App() {
         {view==="log"&&(sprint?<LogView sprint={sprint} weekLogs={weekLogs} onSave={onSaveLogs} userId={user.id} onUpdateSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
         {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsUpdated={sp=>setSprint(sp)} history={history}/>}
         {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
-        {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
+        {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint} onPendingCount={setPendingDuels}/>:<div style={{textAlign:"center",padding:64,color:T.muted}}>Configure d'abord un sprint.</div>)}
         {view==="profile"&&<ProfileView user={user} sprint={sprint} weekLogs={weekLogs} onLogout={onLogout}/>}
         {view==="admin"&&isAdmin&&<AdminView currentUser={user} onHistoryUpdated={loadHistory}/>}
       </div>
@@ -1876,7 +1960,10 @@ function App() {
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(0,0,0,0.1)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
         {NAV.map(item=>(
           <button key={item.id} onClick={()=>setView(item.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"8px 4px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minHeight:56}}>
-            <span style={{color:view===item.id?(item.id==="admin"?T.amber:T.accent):T.muted,transition:"color 0.2s"}}>{NAV_ICONS[item.id]}</span>
+            <div style={{position:"relative",display:"inline-flex"}}>
+              <span style={{color:view===item.id?(item.id==="admin"?T.amber:T.accent):T.muted,transition:"color 0.2s"}}>{NAV_ICONS[item.id]}</span>
+              {item.id==="duels"&&pendingDuels>0&&<div style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:7,background:T.red,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:8,fontWeight:800,color:"#fff"}}>{pendingDuels}</span></div>}
+            </div>
             <span style={{fontSize:10,fontWeight:view===item.id?700:500,color:view===item.id?(item.id==="admin"?T.amber:T.text):T.muted,transition:"color 0.2s",letterSpacing:-0.1}}>{item.label}</span>
           </button>
         ))}
