@@ -51,6 +51,8 @@ async function ss(k, v) {
     else localStorage.setItem(k, JSON.stringify(v));
   } catch(e) { console.warn("ss",k,e.message); }
 }
+// Firebase can return objects instead of arrays — convert safely
+
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
@@ -65,6 +67,27 @@ input,select,button,textarea{font-family:inherit;}
 <div id="root"></div>
 <script type="text/babel">
 const {useState, useEffect, useMemo} = React;
+
+// These helpers need to be in Babel scope too
+function toArr(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  return Object.values(v);
+}
+function globalWeekKey() {
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (now.getDay()===0?6:now.getDay()-1));
+  const yr = mon.getFullYear();
+  const mm = String(mon.getMonth()+1).padStart(2,'0');
+  const dd = String(mon.getDate()).padStart(2,'0');
+  return `social_week_${yr}${mm}${dd}`;
+}
+function globalSprintKey() {
+  const now = new Date();
+  const q = Math.floor(now.getMonth()/3)+1;
+  return `social_sprint_${now.getFullYear()}_Q${q}`;
+}
 
 // ── THEME ──
 const T = {
@@ -172,6 +195,23 @@ function catAvgs(habits, weekLogs, upTo, paused=[]) {
   return res;
 }
 
+function globalWeekKey() {
+  // Use ISO week of today — completely independent of sprint start
+  // All users saving this week share this exact key
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (now.getDay()===0?6:now.getDay()-1));
+  const yr = mon.getFullYear();
+  const mm = String(mon.getMonth()+1).padStart(2,'0');
+  const dd = String(mon.getDate()).padStart(2,'0');
+  return `social_week_${yr}${mm}${dd}`;
+}
+function globalSprintKey() {
+  // Use current year+quarter — all users in same quarter share this key
+  const now = new Date();
+  const q = Math.floor(now.getMonth()/3)+1;
+  return `social_sprint_${now.getFullYear()}_Q${q}`;
+}
 function fmtDate(iso) { return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}); }
 function initials(n) { return (n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
 
@@ -1128,9 +1168,9 @@ function LogView({sprint, weekLogs, onSave, userId, onUpdateSprint}) {
       const email=u?.email||"";
       const {overall:ov,byCat}=calcScores(sprint.habits,local);
       // Social update
-      const wsk=`social_${sprint.id}_w${selWk}`;
+      const wsk=globalWeekKey();
       sg(wsk).then(we=>{
-        ss(wsk,[...(we||[]).filter(e=>e.userId!==userId),{userId,name:uname,email,overall:ov,byCat}]);
+        ss(wsk,[...toArr(we).filter(e=>e.userId!==userId),{userId,name:uname,email,overall:ov,byCat}]);
       });
       const allSaved={...weekLogs,[selWk]:local};
       const entries=Object.entries(allSaved).map(([w,lg])=>{
@@ -1140,9 +1180,9 @@ function LogView({sprint, weekLogs, onSave, userId, onUpdateSprint}) {
         return has?{w:parseInt(w),sc}:null;
       }).filter(Boolean);
       const spAvgVal=entries.length?Math.round(entries.reduce((a,e)=>a+e.sc,0)/entries.length):0;
-      const ssk=`social_sprint_${sprint.id}`;
+      const ssk=globalSprintKey();
       sg(ssk).then(se=>{
-        ss(ssk,[...(se||[]).filter(e=>e.userId!==userId),{userId,name:uname,email,sprintAvg:spAvgVal,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.sc]))}]);
+        ss(ssk,[...toArr(se).filter(e=>e.userId!==userId),{userId,name:uname,email,sprintAvg:spAvgVal,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.sc]))}]);
       });
       // AI insight generation
       generateInsight(userId, sprint.id, selWk, ov, byCat);
@@ -1305,14 +1345,14 @@ function SocialView({user, sprint}) {
     (async()=>{
       setLoading(true);
       const [sd,wd,pwd,idx] = await Promise.all([
-        sg(`social_sprint_${sprint.id}`),
-        sg(`social_${sprint.id}_w${wk}`),
-        wk>1?sg(`social_${sprint.id}_w${wk-1}`):Promise.resolve([]),
+        sg(globalSprintKey()),
+        sg(globalWeekKey()),
+        wk>1?sg(globalWeekKey()):Promise.resolve([]),
         sg("userIndex"),
       ]);
-      setSpData((sd||[]).sort((a,b)=>b.sprintAvg-a.sprintAvg));
-      setWkData((wd||[]).sort((a,b)=>b.overall-a.overall));
-      setPrevWkData(pwd||[]);
+      setSpData(toArr(sd).sort((a,b)=>b.sprintAvg-a.sprintAvg));
+      setWkData(toArr(wd).sort((a,b)=>b.overall-a.overall));
+      setPrevWkData(toArr(pwd));
       setAllUsers(idx||[]);
       setLoading(false);
     })();
