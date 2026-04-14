@@ -6,11 +6,10 @@
 <title>Momentum</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<!-- Firebase compat (must be before Babel) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// Init Firebase
+// ── FIREBASE ──
 try {
   firebase.initializeApp({
     apiKey:"AIzaSyBBIQtMPM14OEF1QhAcZ6yRzregv0xX8sk",
@@ -23,14 +22,16 @@ try {
   });
   window._db = firebase.database();
   window._fbOk = true;
-  console.log("Firebase OK");
 } catch(e) {
   window._fbOk = false;
   console.warn("Firebase failed:", e.message);
 }
 
-// Storage helpers - all shared via Firebase
-function dbKey(k) { return k.replace(/[.#$\[\]]/g,"_"); }
+// ── STORAGE ──
+// Session is localStorage only (device-local — never shared)
+// All other data goes to Firebase (shared across devices)
+function dbKey(k) { return k.replace(/[.#$\[\]]/g, "_"); }
+
 async function sg(k) {
   try {
     if (window._fbOk) {
@@ -39,8 +40,9 @@ async function sg(k) {
     }
     var v = localStorage.getItem(k);
     return v ? JSON.parse(v) : null;
-  } catch(e) { console.warn("sg",k,e.message); return null; }
+  } catch(e) { console.warn("sg", k, e.message); return null; }
 }
+
 async function ss(k, v) {
   try {
     if (window._fbOk) {
@@ -49,10 +51,8 @@ async function ss(k, v) {
     }
     if (v === null) localStorage.removeItem(k);
     else localStorage.setItem(k, JSON.stringify(v));
-  } catch(e) { console.warn("ss",k,e.message); }
+  } catch(e) { console.warn("ss", k, e.message); }
 }
-// Firebase can return objects instead of arrays — convert safely
-
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
@@ -68,64 +68,30 @@ input,select,button,textarea{font-family:inherit;}
 <script type="text/babel">
 const {useState, useEffect, useMemo} = React;
 
-// These helpers need to be in Babel scope too
+// ── UTILS ──
+// Convert Firebase object-keyed arrays back to real arrays
 function toArr(v) {
   if (!v) return [];
   if (Array.isArray(v)) return v;
-  return Object.values(v);
+  if (typeof v === "object") return Object.values(v);
+  return [];
 }
+
+// Global social keys — same for ALL users regardless of sprint start date
 function globalWeekKey() {
   const now = new Date();
   const mon = new Date(now);
-  mon.setDate(now.getDate() - (now.getDay()===0?6:now.getDay()-1));
-  const yr = mon.getFullYear();
-  const mm = String(mon.getMonth()+1).padStart(2,'0');
-  const dd = String(mon.getDate()).padStart(2,'0');
-  return `social_week_${yr}${mm}${dd}`;
+  mon.setDate(now.getDate() - (now.getDay()===0 ? 6 : now.getDay()-1));
+  return "social_week_" + mon.getFullYear() +
+    String(mon.getMonth()+1).padStart(2,"0") +
+    String(mon.getDate()).padStart(2,"0");
 }
 function globalSprintKey() {
   const now = new Date();
   const q = Math.floor(now.getMonth()/3)+1;
-  return `social_sprint_${now.getFullYear()}_Q${q}`;
+  return "social_sprint_" + now.getFullYear() + "_Q" + q;
 }
 
-// ── THEME ──
-const T = {
-  bg:"#f2f2f7", surface:"#ffffff", card:"#ffffff",
-  border:"rgba(0,0,0,0.09)", text:"#1c1c1e", muted:"#8e8e93",
-  faint:"#d1d1d6", accent:"#007aff", green:"#30d158",
-  amber:"#ff9500", red:"#ff3b30"
-};
-const SH = "0 2px 14px rgba(0,0,0,0.07)";
-const ISX = {
-  background:"rgba(0,0,0,0.04)", border:"1px solid rgba(0,0,0,0.1)",
-  borderRadius:10, color:T.text, fontSize:16,
-  padding:"10px 14px", width:"100%", boxSizing:"border-box"
-};
-
-const ADMIN_EMAILS = ["manu.manubens@gmail.com"];
-
-// ── BAR COLOR (opacity-based blue) ──
-function barColor(s) {
-  if (s >= 85) return "rgba(0,122,255,1.0)";
-  if (s >= 75) return "rgba(0,122,255,0.70)";
-  if (s >= 60) return "rgba(0,122,255,0.45)";
-  return "rgba(0,122,255,0.22)";
-}
-function scoreColor(s) {
-  if (s >= 85) return T.green;
-  if (s >= 75) return "#5ac87a";
-  if (s >= 60) return T.amber;
-  return T.red;
-}
-function statusLabel(s) {
-  if (s >= 85) return "Excellent";
-  if (s >= 75) return "Bien";
-  if (s >= 60) return "OK";
-  return "En retard";
-}
-
-// ── UTILS ──
 function hashStr(s) {
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h<<5)+h)^s.charCodeAt(i);
@@ -134,16 +100,18 @@ function hashStr(s) {
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 
 function weekNum(sd) {
-  const start = new Date(sd);
-  const toMon = d => { const day = d.getDay()===0?6:d.getDay()-1; return new Date(d.getFullYear(),d.getMonth(),d.getDate()-day); };
-  const weeks = Math.round((toMon(new Date())-toMon(start))/(7*24*60*60*1000))+1;
+  const toMon = d => {
+    const day = d.getDay()===0 ? 6 : d.getDay()-1;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()-day);
+  };
+  const weeks = Math.round((toMon(new Date())-toMon(new Date(sd)))/(7*24*60*60*1000))+1;
   return Math.min(Math.max(weeks,1),12);
 }
 
 function scoreOne(raw, h) {
   if (raw===null||raw===undefined||raw==="") return 0;
-  const v = h.type==="boolean" ? (raw?1:0) : Math.max(parseFloat(raw)||0,0);
-  const t = Math.max(parseFloat(h.target)||1,0.001);
+  const v = h.type==="boolean" ? (raw?1:0) : Math.max(parseFloat(raw)||0, 0);
+  const t = Math.max(parseFloat(h.target)||1, 0.001);
   return h.targetType==="max" ? Math.min(t/Math.max(v,0.001),1) : Math.min(v/t,1);
 }
 
@@ -152,8 +120,7 @@ function calcScores(habits, logs) {
   const bon = (habits||[]).filter(h=>h.isBonus);
   let tW=0, tS=0;
   const byCat = {};
-  const CATS_IDS = ["health","growth","career","finance","social","fun"];
-  CATS_IDS.forEach(id => {
+  ["health","growth","career","finance","social","fun"].forEach(id => {
     const ch = reg.filter(h=>h.catId===id && (parseFloat(h.weight)||0)>0);
     if (!ch.length) { byCat[id]=null; return; }
     let cW=0, cS=0;
@@ -195,29 +162,28 @@ function catAvgs(habits, weekLogs, upTo, paused=[]) {
   return res;
 }
 
-function globalWeekKey() {
-  // Use ISO week of today — completely independent of sprint start
-  // All users saving this week share this exact key
-  const now = new Date();
-  const mon = new Date(now);
-  mon.setDate(now.getDate() - (now.getDay()===0?6:now.getDay()-1));
-  const yr = mon.getFullYear();
-  const mm = String(mon.getMonth()+1).padStart(2,'0');
-  const dd = String(mon.getDate()).padStart(2,'0');
-  return `social_week_${yr}${mm}${dd}`;
+function barColor(s) {
+  if (s>=85) return "rgba(0,122,255,1.0)";
+  if (s>=75) return "rgba(0,122,255,0.70)";
+  if (s>=60) return "rgba(0,122,255,0.45)";
+  return "rgba(0,122,255,0.22)";
 }
-function globalSprintKey() {
-  // Use current year+quarter — all users in same quarter share this key
-  const now = new Date();
-  const q = Math.floor(now.getMonth()/3)+1;
-  return `social_sprint_${now.getFullYear()}_Q${q}`;
+function scoreColor(s) {
+  if (s>=85) return "#30d158";
+  if (s>=75) return "#5ac87a";
+  if (s>=60) return "#ff9500";
+  return "#ff3b30";
+}
+function statusLabel(s) {
+  if (s>=85) return "Excellent";
+  if (s>=75) return "Bien";
+  if (s>=60) return "OK";
+  return "En retard";
 }
 function fmtDate(iso) { return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}); }
 function initials(n) { return (n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
-
 const AV_COLORS = ["#007aff","#30d158","#ff9500","#ff3b30","#5856d6","#ff6b00","#a78bfa"];
 function avColor(id) { let n=0; for(let i=0;i<(id||"").length;i++) n=(n+id.charCodeAt(i))%AV_COLORS.length; return AV_COLORS[n]; }
-
 // ── CATS ──
 const CATS = [
   {id:"health", name:"Santé", radar:"SANTÉ", color:"#ff3b30", subs:["Sport","Sommeil","Nutrition","Santé mentale"],
@@ -791,6 +757,858 @@ function HabitRow({habit, value, onChange, isBonus=false}) {
     </div>
   );
 }
+
+// ── UI ATOMS ──
+function Scroll({children}) {
+  return <div style={{padding:"16px 16px 96px",maxWidth:560,margin:"0 auto"}}>{children}</div>;
+}
+function Card({children,style:xs={}}) {
+  return <div style={{background:T.card,borderRadius:18,boxShadow:SH,padding:"16px 18px",...xs}}>{children}</div>;
+}
+function Btn({onClick,children,variant="primary",small,full,disabled,style:xs={}}) {
+  const styles = {
+    primary:{background:T.accent,color:"#fff",border:"none"},
+    secondary:{background:"rgba(0,0,0,0.06)",color:T.text,border:"none"},
+    ghost:{background:"transparent",color:T.muted,border:"none"},
+    danger:{background:"rgba(255,59,48,0.12)",color:T.red,border:"none"},
+    success:{background:"rgba(48,209,88,0.12)",color:T.green,border:"none"},
+    amber:{background:"rgba(255,149,0,0.12)",color:T.amber,border:"none"},
+  };
+  const s = styles[variant]||styles.primary;
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      ...s, borderRadius:12, fontWeight:600, cursor:disabled?"not-allowed":"pointer",
+      fontSize:small?13:15, padding:small?"8px 14px":"12px 22px",
+      width:full?"100%":undefined, opacity:disabled?0.5:1, ...xs
+    }}>{children}</button>
+  );
+}
+function Notice({children, color}) {
+  return (
+    <div style={{background:color+"18",border:`1px solid ${color}33`,borderRadius:12,padding:"12px 16px",marginBottom:16}}>
+      <p style={{margin:0,fontSize:13,color,lineHeight:1.55,fontWeight:500}}>{children}</p>
+    </div>
+  );
+}
+function Avatar({name, userId, email, size=36}) {
+  const [err, setErr] = useState(false);
+  const url = email && !err ? `https://www.gravatar.com/avatar/${hashStr(email.trim().toLowerCase())}?s=${size*2}&d=404` : null;
+  if (url) return <img src={url} onError={()=>setErr(true)} style={{width:size,height:size,borderRadius:size*0.3,flexShrink:0,objectFit:"cover"}} alt={name}/>;
+  return <div style={{width:size,height:size,borderRadius:size*0.3,background:avColor(userId||"x"),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.36,fontWeight:700,color:"#fff"}}>{initials(name)}</div>;
+}
+function Ring({score=0, size=80, color}) {
+  const col = color||scoreColor(score);
+  const r = (size-8)/2, circ = 2*Math.PI*r, fill = (Math.min(score,100)/100)*circ;
+  return (
+    <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
+      <svg width={size} height={size} style={{transform:"rotate(-90deg)",display:"block"}}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={5}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={5} strokeLinecap="round" strokeDasharray={`${fill} ${circ}`}/>
+      </svg>
+      <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontSize:size*0.2,fontWeight:800,color:T.text,letterSpacing:-1}}>{score}<span style={{fontSize:size*0.12,fontWeight:500,color:T.muted}}>%</span></span>
+      </div>
+    </div>
+  );
+}
+function Inp({label,...p}) {
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:5}}>
+      {label && <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>{label}</label>}
+      <input {...p} style={{...ISX,...(p.style||{})}}/>
+    </div>
+  );
+}
+function Sel({label,options,...p}) {
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:5}}>
+      {label && <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>{label}</label>}
+      <select {...p} style={{...ISX,...(p.style||{})}}>
+        {options.map(o=><option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}
+      </select>
+    </div>
+  );
+}
+
+// ── RADAR CHART ──
+function RadarChart({cats, datasets}) {
+  const n = cats.length;
+  if (n < 3) return null;
+  // Asymmetric viewBox: extra space on right (for INTELLECT/CARRIERE labels)
+  // and left (for SOCIAL/FUN). Center polygon at (210,200) in a 480x400 canvas.
+  const VBW=480, VBH=400, cx=210, cy=200, R=110, LR=150;
+  const angle = (i) => (i/n)*2*Math.PI - Math.PI/2;
+  const pt = (a, v) => [cx+R*Math.cos(a)*v/100, cy+R*Math.sin(a)*v/100];
+  const angles = cats.map((_,i)=>angle(i));
+  const displayW = typeof window!=="undefined" ? Math.min(window.innerWidth-48, 460) : 400;
+  const displayH = Math.round(displayW * VBH/VBW);
+  return (
+    <svg width={displayW} height={displayH} viewBox={`0 0 ${VBW} ${VBH}`}>
+      {[25,50,75,100].map(lv=>{
+        const pts = angles.map(a=>pt(a,lv));
+        return <polygon key={lv} points={pts.map(p=>p.join(",")).join(" ")} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={lv===100?1:0.5}/>;
+      })}
+      {angles.map((a,i)=>{ const [x,y]=pt(a,100); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(0,0,0,0.08)" strokeWidth={0.5}/>; })}
+      {datasets.map((ds,di)=>{
+        const pts = angles.map((a,i)=>pt(a,ds.values[i]||0));
+        return <g key={di}>
+          <polygon points={pts.map(p=>p.join(",")).join(" ")} fill={ds.color+"22"} stroke={ds.color} strokeWidth={1.5}/>
+          {pts.map(([x,y],i)=><circle key={i} cx={x} cy={y} r={4} fill={ds.color}/>)}
+        </g>;
+      })}
+      {angles.map((a,i)=>{
+        const a2 = angle(i);
+        const lx = cx + LR*Math.cos(a2);
+        const ly = cy + LR*Math.sin(a2);
+        const anchor = Math.cos(a2)>0.15?"start":Math.cos(a2)<-0.15?"end":"middle";
+        const label = (cats[i].radar||cats[i].name).toUpperCase();
+        return <text key={i} x={lx} y={ly} textAnchor={anchor} fontSize={17} fill={cats[i].color} dominantBaseline="middle" fontWeight="700">{label}</text>;
+      })}
+    </svg>
+  );
+}
+
+// ── ONBOARDING ──
+function OnboardingView({name, onDone}) {
+  const [slide, setSlide] = useState(0);
+  const s = ONBOARDING[slide];
+  const isLast = slide===ONBOARDING.length-1;
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
+      <div style={{display:"flex",gap:6,marginBottom:40}}>
+        {ONBOARDING.map((_,i)=><div key={i} style={{width:i===slide?20:6,height:6,borderRadius:3,background:i===slide?T.accent:i<slide?T.accent+"55":T.faint,transition:"all 0.3s"}}/>)}
+      </div>
+      <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+        <div style={{fontSize:60,marginBottom:24}}>{s.emoji}</div>
+        <h1 style={{color:T.text,fontSize:22,fontWeight:800,margin:"0 0 14px",lineHeight:1.2}}>{s.title}</h1>
+        <p style={{color:T.text,fontSize:14,lineHeight:1.7,margin:"0 0 10px"}}>{s.body}</p>
+        <p style={{color:T.muted,fontSize:13,lineHeight:1.6,margin:"0 0 32px"}}>{s.sub}</p>
+        <Btn full onClick={()=>isLast?onDone():setSlide(i=>i+1)}>
+          {slide===0?`Salut ${name.split(" ")[0]}, ${s.cta}`:s.cta}
+        </Btn>
+        {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:12,background:"none",border:"none",color:T.faint,fontSize:13,cursor:"pointer"}}>← Retour</button>}
+      </div>
+    </div>
+  );
+}
+
+// ── AUTH ──
+function AuthView({onAuth}) {
+  const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (busy) return;
+    setErr("");
+    if (mode==="register"&&!name.trim()) { setErr("Merci d'entrer ton nom."); return; }
+    if (!email.trim()) { setErr("Merci d'entrer ton email."); return; }
+    if (!password) { setErr("Merci d'entrer un mot de passe."); return; }
+    if (mode==="register"&&password.length<6) { setErr("Mot de passe : 6 caractères minimum."); return; }
+    setBusy(true);
+    try {
+      const em = email.trim().toLowerCase();
+      if (mode==="register") {
+        const idx = (await sg("userIndex"))||[];
+        if (idx.find(u=>u.email===em)) { setErr("Email déjà enregistré."); setBusy(false); return; }
+        const user = {id:uid(), name:name.trim(), email:em, passwordHash:hashStr(password), createdAt:Date.now(), isNew:true};
+        await ss(`user_${user.id}`, user);
+        await ss("userIndex", [...idx, {id:user.id,email:user.email,name:user.name}]);
+        onAuth(user);
+      } else {
+        const idx = (await sg("userIndex"))||[];
+        const found = idx.find(u=>u.email===em);
+        if (!found) { setErr("Aucun compte avec cet email."); setBusy(false); return; }
+        const user = await sg(`user_${found.id}`);
+        if (!user||user.passwordHash!==hashStr(password)) { setErr("Mot de passe incorrect."); setBusy(false); return; }
+        onAuth(user);
+      }
+    } catch(e) { setErr("Erreur: "+e.message); }
+    setBusy(false);
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 20px"}}>
+      <div style={{width:"100%",maxWidth:400}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{width:60,height:60,borderRadius:18,background:T.text,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:24,fontWeight:800,color:"#fff"}}>M</div>
+          <h1 style={{color:T.text,fontSize:26,fontWeight:800,margin:0}}>Momentum</h1>
+          <p style={{color:T.muted,margin:"8px 0 0",fontSize:14}}>Construis la vie que tu veux, un sprint à la fois.</p>
+        </div>
+        <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:14,padding:4,marginBottom:24}}>
+          {[["login","Se connecter"],["register","Créer un compte"]].map(([m,l])=>(
+            <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:mode===m?T.card:"transparent",color:mode===m?T.text:T.muted,fontSize:14,fontWeight:600,boxShadow:mode===m?SH:"none",transition:"all 0.2s"}}>{l}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {mode==="register"&&<Inp label="Nom complet" value={name} onChange={e=>setName(e.target.value)} placeholder="Ton prénom et nom"/>}
+          <Inp label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="toi@exemple.com"/>
+          <Inp label="Mot de passe" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/>
+          {err&&<Notice color={T.red}>{err}</Notice>}
+          <button onClick={submit} disabled={busy} style={{background:busy?T.faint:T.accent,color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:15,padding:"13px",cursor:busy?"not-allowed":"pointer",opacity:busy?0.7:1}}>
+            {busy?"Patiente…":mode==="login"?"Se connecter":"Créer mon compte"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── HABIT FORM ──
+function HabitForm({habit, cat, remaining, onChange, onSave, onCancel, saveLabel="Enregistrer"}) {
+  const set = (k,v) => onChange(h=>({...h,[k]:v}));
+  const isBool = habit.type==="boolean";
+  const canSave = habit.name.trim() && (isBool||habit.target!=="") && (parseFloat(habit.weight)||0)>0;
+  return (
+    <div style={{background:T.bg,border:`1px solid ${T.accent}44`,borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:cat.subs?"1fr 1fr":"1fr",gap:10}}>
+        <Inp label="Nom" value={habit.name} placeholder="ex: Séances de sport" onChange={e=>set("name",e.target.value)}/>
+        {cat.subs&&<Sel label="Sous-catégorie" value={habit.subCat||cat.subs[0]} onChange={e=>set("subCat",e.target.value)} options={cat.subs.map(s=>({value:s,label:s}))}/>}
+      </div>
+      <Sel label="Type de métrique" value={habit.type} onChange={e=>set("type",e.target.value)} options={HABIT_TYPES.map(t=>({value:t.id,label:t.label}))}/>
+      {!isBool&&<>
+        <Sel label="Direction" value={habit.targetType} onChange={e=>set("targetType",e.target.value)} options={[{value:"min",label:"Au moins (minimum)"},{value:"max",label:"Au plus (maximum)"}]}/>
+        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+          <Inp label="Objectif" type="number" value={habit.target} placeholder="ex: 4" onChange={e=>set("target",e.target.value)}/>
+          <Inp label="Unité" value={habit.unit} placeholder="hrs" onChange={e=>set("unit",e.target.value)}/>
+        </div>
+      </>}
+      <div>
+        <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6,fontWeight:600,display:"block",marginBottom:5}}>
+          Poids % <span style={{fontWeight:400,letterSpacing:0,textTransform:"none",color:T.faint,fontSize:10}}>(budget restant: {Math.max(0,remaining).toFixed(0)}%)</span>
+        </label>
+        <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} style={{...ISX}}/>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <Btn variant="ghost" small onClick={onCancel}>Annuler</Btn>
+        <Btn small full disabled={!canSave} onClick={onSave}>{saveLabel}</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ── SPRINT SETUP ──
+function SprintSetupView({user, onDone, isFirstSprint=false}) {
+  const [step, setStep] = useState(0);
+  const [catW, setCatW] = useState({health:25,growth:20,career:20,finance:15,social:10,fun:10});
+  const [habits, setHabits] = useState({});
+  const [catIdx, setCatIdx] = useState(0);
+  const [formOpen, setFormOpen] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [bonus, setBonus] = useState(null);
+  const [bonusForm, setBonusForm] = useState(false);
+  const [bonusDraft, setBonusDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const activeCats = CATS.filter(c=>(parseFloat(catW[c.id])||0)>0);
+  const totalW = Object.values(catW).reduce((a,v)=>a+(parseFloat(v)||0),0);
+  const weightOk = Math.abs(totalW-100)<0.6;
+  const usedW = (catId) => (habits[catId]||[]).filter(h=>!h.isBonus).reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+
+  function openNew(cat, remaining) {
+    setDraft({id:uid(),catId:cat.id,subCat:cat.subs?.[0]||"",name:"",type:"numeric",targetType:"min",target:"",unit:"",weight:Math.max(0,remaining).toFixed(0)});
+    setFormOpen(true); setEditingId(null);
+  }
+  function openTemplate(cat, t, remaining) {
+    setDraft({...t, id:uid(), catId:cat.id, subCat:t.subCat||cat.subs?.[0]||"", weight:remaining>0?Math.max(0,remaining).toFixed(0):t.weight.toString()});
+    setFormOpen(true); setEditingId(null);
+  }
+  function openEdit(h, remaining) {
+    setDraft({...h}); setFormOpen(true); setEditingId(h.id);
+  }
+  function saveForm(cat) {
+    if (editingId) {
+      setHabits(p=>({...p,[cat.id]:p[cat.id].map(h=>h.id===editingId?{...draft,weight:parseFloat(draft.weight)||0}:h)}));
+    } else {
+      setHabits(p=>({...p,[cat.id]:[...(p[cat.id]||[]),{...draft,id:uid()}]}));
+    }
+    setDraft(null); setFormOpen(false); setEditingId(null);
+  }
+  async function launch() {
+    setSaving(true);
+    const allH = CATS.flatMap(c=>habits[c.id]||[]);
+    if (bonus) allH.push(bonus);
+    const sprint = {id:uid(),userId:user.id,startDate:new Date().toISOString().split("T")[0],habits:allH,catWeights:catW,pausedWeeks:[],createdAt:Date.now()};
+    await ss(`sprint_${user.id}`, sprint);
+    setSaving(false); onDone(sprint);
+  }
+
+  // Step 0 — weights
+  if (step===0) return (
+    <Scroll>
+      <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 4px"}}>Configuration du sprint</h2>
+      <p style={{color:T.muted,fontSize:13,margin:"0 0 16px"}}>Étape 1 sur 3 — répartis ton attention</p>
+      <Card style={{marginBottom:16}}>
+        <p style={{color:T.text,fontSize:13,lineHeight:1.65,margin:0}}>
+          Assigne un <strong style={{color:T.accent}}>pourcentage</strong> à chaque catégorie. Tout doit faire <strong style={{color:T.green}}>exactement 100%</strong>. Mets 0% pour ignorer une catégorie.
+        </p>
+      </Card>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {CATS.map(cat=>(
+          <div key={cat.id} style={{background:T.card,borderRadius:14,boxShadow:SH,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:10,height:10,borderRadius:3,background:cat.color,flexShrink:0}}/>
+            <div style={{flex:1}}>
+              <div style={{color:T.text,fontSize:14,fontWeight:600}}>{cat.name}</div>
+              <div style={{color:T.muted,fontSize:11,marginTop:2,lineHeight:1.4}}>{cat.desc.slice(0,60)}…</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:5}}>
+              <input type="number" min={0} max={100} step={1} value={catW[cat.id]??0} onChange={e=>setCatW(p=>({...p,[cat.id]:Math.min(100,Math.max(0,parseFloat(e.target.value)||0))}))} style={{...ISX,width:58,textAlign:"center",fontWeight:700,padding:"6px"}}/>
+              <span style={{color:T.muted,fontSize:13}}>%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <span style={{color:T.muted}}>Total :</span>
+        <span style={{fontSize:20,fontWeight:800,color:weightOk?T.green:T.red}}>{totalW.toFixed(0)}%</span>
+      </div>
+      <Btn full disabled={!weightOk} onClick={()=>setStep(1)}>Définir les habitudes →</Btn>
+    </Scroll>
+  );
+
+  // Step 1 — habits per category
+  if (step===1) {
+    const cat = activeCats[catIdx];
+    if (!cat) { setStep(2); return null; }
+    const catH = habits[cat.id]||[];
+    const regH = catH.filter(h=>!h.isBonus);
+    const used = usedW(cat.id);
+    const budget = parseFloat(catW[cat.id])||0;
+    const remaining = budget-used;
+    const usedNames = new Set(regH.map(h=>h.name));
+    const tpls = (TEMPLATES[cat.id]||[]).filter(t=>!usedNames.has(t.name));
+    return (
+      <Scroll>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:0}}>{cat.name}</h2></div>
+        <p style={{color:T.muted,fontSize:13,margin:"4px 0 12px"}}>Étape 2 sur 3</p>
+
+        {/* Category description */}
+        <div style={{background:cat.color+"12",border:`1px solid ${cat.color}33`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+          <p style={{margin:0,fontSize:13,color:T.text,lineHeight:1.6}}>{cat.desc}</p>
+        </div>
+
+        {/* First sprint guidance */}
+        {isFirstSprint&&<Notice color={T.accent}>Commencer simple, c'est commencer fort — <strong>1 habitude par catégorie</strong> recommandée pour ton premier sprint.</Notice>}
+
+        {/* Weight guidance */}
+        <Card style={{marginBottom:12,padding:"12px 14px"}}>
+          <p style={{margin:0,fontSize:12,color:T.muted,lineHeight:1.6}}>
+            <strong style={{color:T.text}}>Budget :</strong> {budget}% — toutes tes habitudes dans cette catégorie doivent totaliser <strong style={{color:cat.color}}>{budget}%</strong>. Le poids suggéré est le budget restant.
+          </p>
+        </Card>
+
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+          <span style={{color:T.muted,fontSize:12}}>Utilisé : <strong style={{color:remaining<0?T.red:T.text}}>{used.toFixed(0)}%</strong></span>
+          <span style={{color:remaining<0?T.red:T.green,fontSize:12,fontWeight:600}}>Restant : {remaining.toFixed(0)}%</span>
+        </div>
+        <div style={{height:5,background:"rgba(0,0,0,0.06)",borderRadius:3,marginBottom:16}}>
+          <div style={{height:"100%",borderRadius:3,background:remaining<0?T.red:cat.color,width:`${Math.min((used/budget)*100,100)}%`,transition:"width 0.3s"}}/>
+        </div>
+
+        {/* Templates */}
+        {tpls.length>0&&<div style={{marginBottom:14}}>
+          <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px",fontWeight:600}}>Ajout rapide — clique pour personnaliser</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {tpls.map(t=><button key={t.name} onClick={()=>openTemplate(cat,t,remaining)} style={{background:cat.color+"15",border:`1px solid ${cat.color}44`,color:cat.color,borderRadius:8,fontSize:12,padding:"6px 10px",cursor:"pointer",fontWeight:500}}>+ {t.name}</button>)}
+          </div>
+        </div>}
+
+        {/* Habit list */}
+        {regH.map(h=>{
+          if (editingId===h.id&&formOpen) return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Mettre à jour" onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setEditingId(null);setDraft(null);}}/></div>;
+          return <div key={h.id} style={{background:T.card,borderRadius:12,boxShadow:SH,padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div><div style={{color:T.text,fontSize:14,fontWeight:500}}>{h.name}</div><div style={{color:T.muted,fontSize:12,marginTop:2}}>{h.subCat&&`${h.subCat} · `}{h.type}{h.target?` · ${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""}`:""} · <strong style={{color:cat.color}}>{h.weight}%</strong></div></div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>openEdit(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:`1px solid ${T.faint}`,color:T.muted,borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Modifier</button>
+              <button onClick={()=>setHabits(p=>({...p,[cat.id]:p[cat.id].filter(x=>x.id!==h.id)}))} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 4px"}}>×</button>
+            </div>
+          </div>;
+        })}
+
+        {/* Add custom */}
+        {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:`1.5px dashed ${T.faint}`,borderRadius:12,color:T.muted,fontSize:14,cursor:"pointer",marginTop:4}}>+ Ajouter une habitude</button>}
+        {formOpen&&!editingId&&<HabitForm habit={draft} cat={cat} remaining={remaining} onChange={setDraft} onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setDraft(null);}}/>}
+
+        <div style={{display:"flex",gap:10,marginTop:20}}>
+          <Btn variant="secondary" onClick={()=>catIdx===0?setStep(0):setCatIdx(i=>i-1)}>← Retour</Btn>
+          <Btn full onClick={()=>catIdx<activeCats.length-1?setCatIdx(i=>i+1):setStep(2)}>{catIdx<activeCats.length-1?`Suivant : ${activeCats[catIdx+1].name} →`:"Révision →"}</Btn>
+        </div>
+        <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:12}}>
+          {activeCats.map((c,i)=><div key={c.id} style={{width:6,height:6,borderRadius:3,background:i===catIdx?c.color:i<catIdx?T.green:T.faint,transition:"background 0.3s"}}/>)}
+        </div>
+      </Scroll>
+    );
+  }
+
+  // Step 2 — review + bonus
+  const allH = CATS.flatMap(c=>habits[c.id]||[]);
+  const totalHW = allH.filter(h=>!h.isBonus).reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+  const bonusCatOptions = activeCats.map(c=>({value:c.id,label:c.name}));
+  return (
+    <Scroll>
+      <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 4px"}}>Révision du sprint</h2>
+      <p style={{color:T.muted,fontSize:13,margin:"0 0 16px"}}>Étape 3 sur 3 — confirme ton plan</p>
+      <Card style={{marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{color:T.muted,fontSize:13}}>Poids total des habitudes :</span>
+        <span style={{fontWeight:800,fontSize:18,color:Math.abs(totalHW-100)<2?T.green:T.amber}}>{totalHW.toFixed(0)}%</span>
+      </Card>
+      {CATS.filter(c=>(habits[c.id]||[]).length>0).map(cat=>{
+        const reg = (habits[cat.id]||[]).filter(h=>!h.isBonus);
+        return <div key={cat.id} style={{marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><div style={{width:8,height:8,borderRadius:2,background:cat.color}}/><span style={{color:cat.color,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span></div>
+          {reg.map(h=><div key={h.id} style={{background:T.card,borderRadius:10,boxShadow:SH,padding:"8px 12px",marginBottom:4,display:"flex",justifyContent:"space-between"}}>
+            <span style={{color:T.text,fontSize:13}}>{h.name}{h.subCat&&<span style={{color:T.muted}}> · {h.subCat}</span>}</span>
+            <span style={{color:T.muted,fontSize:12}}>{h.weight}%</span>
+          </div>)}
+        </div>;
+      })}
+      {/* Bonus habit */}
+      <div style={{borderTop:`1px solid ${T.faint}`,paddingTop:14,marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          <span style={{fontSize:14}}>⭐</span>
+          <span style={{color:T.amber,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Habitude bonus</span>
+          <span style={{color:T.faint,fontSize:11}}>— +5% si accomplie</span>
+        </div>
+        {!bonus&&!bonusForm&&<button onClick={()=>{setBonusDraft({id:uid(),catId:activeCats[0]?.id||"health",name:"",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true});setBonusForm(true);}} style={{width:"100%",padding:12,background:"rgba(255,149,0,0.08)",border:`1.5px dashed ${T.amber}55`,borderRadius:12,color:T.amber,fontSize:13,cursor:"pointer",fontWeight:500}}>+ Définir une habitude bonus</button>}
+        {bonusForm&&bonusDraft&&<div style={{background:"rgba(255,149,0,0.06)",border:`1px solid ${T.amber}44`,borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <Inp label="Nom" value={bonusDraft.name} placeholder="ex: Courir 10km" onChange={e=>setBonusDraft(p=>({...p,name:e.target.value}))}/>
+            <Sel label="Catégorie" value={bonusDraft.catId} onChange={e=>setBonusDraft(p=>({...p,catId:e.target.value}))} options={bonusCatOptions}/>
+          </div>
+          <Sel label="Type" value={bonusDraft.type} onChange={e=>setBonusDraft(p=>({...p,type:e.target.value}))} options={HABIT_TYPES.map(t=>({value:t.id,label:t.label}))}/>
+          {bonusDraft.type!=="boolean"&&<div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+            <Inp label="Objectif" type="number" value={bonusDraft.target} onChange={e=>setBonusDraft(p=>({...p,target:e.target.value}))}/>
+            <Inp label="Unité" value={bonusDraft.unit} onChange={e=>setBonusDraft(p=>({...p,unit:e.target.value}))}/>
+          </div>}
+          <div style={{display:"flex",gap:8}}>
+            <Btn variant="ghost" small onClick={()=>{setBonusForm(false);setBonusDraft(null);}}>Annuler</Btn>
+            <Btn small full disabled={!bonusDraft.name.trim()} onClick={()=>{setBonus({...bonusDraft,weight:5,isBonus:true});setBonusForm(false);setBonusDraft(null);}} style={{background:T.amber,border:"none",color:"#fff"}}>Enregistrer le bonus</Btn>
+          </div>
+        </div>}
+        {bonus&&!bonusForm&&<div style={{background:"rgba(255,149,0,0.1)",border:`1px solid ${T.amber}44`,borderRadius:12,padding:"11px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{color:T.amber,fontSize:14,fontWeight:600}}>⭐ {bonus.name}</div><div style={{color:T.muted,fontSize:11,marginTop:2}}>{CATS.find(c=>c.id===bonus.catId)?.name} · {bonus.type} · +5%</div></div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>{setBonusDraft({...bonus});setBonusForm(true);}} style={{background:"none",border:`1px solid ${T.faint}`,color:T.muted,borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>Modifier</button>
+            <button onClick={()=>setBonus(null)} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 2px"}}>×</button>
+          </div>
+        </div>}
+      </div>
+      {allH.length===0&&<Notice color={T.amber}>Aucune habitude ajoutée. Reviens en arrière.</Notice>}
+      <div style={{display:"flex",gap:10,marginTop:16}}>
+        <Btn variant="secondary" onClick={()=>{setStep(1);setCatIdx(activeCats.length-1);}}>← Modifier</Btn>
+        <Btn full disabled={allH.length===0||saving} onClick={launch}>{saving?"Lancement…":"Lancer le sprint"}</Btn>
+      </div>
+    </Scroll>
+  );
+}
+
+// ── HABIT ROW (log) ──
+function HabitRow({habit, value, onChange, isBonus=false}) {
+  const isBool = habit.type==="boolean";
+  const s = scoreOne(isBool?(value?1:0):value, habit);
+  const hasVal = value!==undefined&&value!==null&&value!=="";
+  const col = hasVal ? barColor(Math.round(s*100)) : "rgba(0,0,0,0.08)";
+  return (
+    <div style={{background:isBonus?"rgba(255,149,0,0.07)":T.card,borderRadius:14,boxShadow:SH,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+      <div style={{width:4,height:36,borderRadius:2,background:isBonus?T.amber:col,flexShrink:0,transition:"background 0.3s"}}/>
+      <div style={{flex:1}}>
+        <div style={{color:isBonus?T.amber:T.text,fontSize:14,fontWeight:500}}>{isBonus?"⭐ ":""}{habit.name}</div>
+        <div style={{color:T.muted,fontSize:11,marginTop:2}}>
+          {habit.subCat&&`${habit.subCat} · `}
+          {habit.type!=="boolean"&&`${habit.targetType==="min"?"≥":"≤"} ${habit.target}${habit.unit?` ${habit.unit}`:""} · `}
+          {isBonus?"+5% bonus":`${habit.weight}%`}
+          {hasVal&&<span style={{marginLeft:6,color:isBonus?T.amber:col,fontWeight:700}}>{Math.round(s*100)}%</span>}
+        </div>
+      </div>
+      {isBool
+        ?<button onClick={()=>onChange(!value)} style={{width:52,height:32,borderRadius:16,border:"none",cursor:"pointer",flexShrink:0,background:value?(isBonus?T.amber:T.green):"rgba(0,0,0,0.1)",transition:"background 0.2s",position:"relative"}}>
+            <div style={{width:26,height:26,borderRadius:13,background:"#fff",position:"absolute",top:3,left:value?23:3,transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
+          </button>
+        :<input type="number" step={habit.type==="duration"?0.5:1} min={habit.type==="rating"?1:0} max={habit.type==="rating"?5:undefined} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={habit.type==="rating"?"1–5":"0"} style={{...ISX,width:80,textAlign:"center",fontWeight:700,flexShrink:0,padding:"9px 6px"}}/>
+      }
+    </div>
+  );
+}
+
+// ── ONBOARDING ──
+function OnboardingView({name, onDone}) {
+  const [slide, setSlide] = useState(0);
+  const s = ONBOARDING[slide];
+  const isLast = slide===ONBOARDING.length-1;
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
+      <div style={{display:"flex",gap:6,marginBottom:40}}>
+        {ONBOARDING.map((_,i)=><div key={i} style={{width:i===slide?20:6,height:6,borderRadius:3,background:i===slide?T.accent:i<slide?T.accent+"55":T.faint,transition:"all 0.3s"}}/>)}
+      </div>
+      <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+        <div style={{fontSize:60,marginBottom:24}}>{s.emoji}</div>
+        <h1 style={{color:T.text,fontSize:22,fontWeight:800,margin:"0 0 14px",lineHeight:1.2}}>{s.title}</h1>
+        <p style={{color:T.text,fontSize:14,lineHeight:1.7,margin:"0 0 10px"}}>{s.body}</p>
+        <p style={{color:T.muted,fontSize:13,lineHeight:1.6,margin:"0 0 32px"}}>{s.sub}</p>
+        <Btn full onClick={()=>isLast?onDone():setSlide(i=>i+1)}>
+          {slide===0?`Salut ${name.split(" ")[0]}, ${s.cta}`:s.cta}
+        </Btn>
+        {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:12,background:"none",border:"none",color:T.faint,fontSize:13,cursor:"pointer"}}>← Retour</button>}
+      </div>
+    </div>
+  );
+}
+
+// ── AUTH ──
+function AuthView({onAuth}) {
+  const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (busy) return;
+    setErr("");
+    if (mode==="register"&&!name.trim()) { setErr("Merci d'entrer ton nom."); return; }
+    if (!email.trim()) { setErr("Merci d'entrer ton email."); return; }
+    if (!password) { setErr("Merci d'entrer un mot de passe."); return; }
+    if (mode==="register"&&password.length<6) { setErr("Mot de passe : 6 caractères minimum."); return; }
+    setBusy(true);
+    try {
+      const em = email.trim().toLowerCase();
+      if (mode==="register") {
+        const idx = (await sg("userIndex"))||[];
+        if (idx.find(u=>u.email===em)) { setErr("Email déjà enregistré."); setBusy(false); return; }
+        const user = {id:uid(), name:name.trim(), email:em, passwordHash:hashStr(password), createdAt:Date.now(), isNew:true};
+        await ss(`user_${user.id}`, user);
+        await ss("userIndex", [...idx, {id:user.id,email:user.email,name:user.name}]);
+        onAuth(user);
+      } else {
+        const idx = (await sg("userIndex"))||[];
+        const found = idx.find(u=>u.email===em);
+        if (!found) { setErr("Aucun compte avec cet email."); setBusy(false); return; }
+        const user = await sg(`user_${found.id}`);
+        if (!user||user.passwordHash!==hashStr(password)) { setErr("Mot de passe incorrect."); setBusy(false); return; }
+        onAuth(user);
+      }
+    } catch(e) { setErr("Erreur: "+e.message); }
+    setBusy(false);
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 20px"}}>
+      <div style={{width:"100%",maxWidth:400}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{width:60,height:60,borderRadius:18,background:T.text,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:24,fontWeight:800,color:"#fff"}}>M</div>
+          <h1 style={{color:T.text,fontSize:26,fontWeight:800,margin:0}}>Momentum</h1>
+          <p style={{color:T.muted,margin:"8px 0 0",fontSize:14}}>Construis la vie que tu veux, un sprint à la fois.</p>
+        </div>
+        <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:14,padding:4,marginBottom:24}}>
+          {[["login","Se connecter"],["register","Créer un compte"]].map(([m,l])=>(
+            <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:mode===m?T.card:"transparent",color:mode===m?T.text:T.muted,fontSize:14,fontWeight:600,boxShadow:mode===m?SH:"none",transition:"all 0.2s"}}>{l}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {mode==="register"&&<Inp label="Nom complet" value={name} onChange={e=>setName(e.target.value)} placeholder="Ton prénom et nom"/>}
+          <Inp label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="toi@exemple.com"/>
+          <Inp label="Mot de passe" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/>
+          {err&&<Notice color={T.red}>{err}</Notice>}
+          <button onClick={submit} disabled={busy} style={{background:busy?T.faint:T.accent,color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:15,padding:"13px",cursor:busy?"not-allowed":"pointer",opacity:busy?0.7:1}}>
+            {busy?"Patiente…":mode==="login"?"Se connecter":"Créer mon compte"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── HABIT FORM ──
+function HabitForm({habit, cat, remaining, onChange, onSave, onCancel, saveLabel="Enregistrer"}) {
+  const set = (k,v) => onChange(h=>({...h,[k]:v}));
+  const isBool = habit.type==="boolean";
+  const canSave = habit.name.trim() && (isBool||habit.target!=="") && (parseFloat(habit.weight)||0)>0;
+  return (
+    <div style={{background:T.bg,border:`1px solid ${T.accent}44`,borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:cat.subs?"1fr 1fr":"1fr",gap:10}}>
+        <Inp label="Nom" value={habit.name} placeholder="ex: Séances de sport" onChange={e=>set("name",e.target.value)}/>
+        {cat.subs&&<Sel label="Sous-catégorie" value={habit.subCat||cat.subs[0]} onChange={e=>set("subCat",e.target.value)} options={cat.subs.map(s=>({value:s,label:s}))}/>}
+      </div>
+      <Sel label="Type de métrique" value={habit.type} onChange={e=>set("type",e.target.value)} options={HABIT_TYPES.map(t=>({value:t.id,label:t.label}))}/>
+      {!isBool&&<>
+        <Sel label="Direction" value={habit.targetType} onChange={e=>set("targetType",e.target.value)} options={[{value:"min",label:"Au moins (minimum)"},{value:"max",label:"Au plus (maximum)"}]}/>
+        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+          <Inp label="Objectif" type="number" value={habit.target} placeholder="ex: 4" onChange={e=>set("target",e.target.value)}/>
+          <Inp label="Unité" value={habit.unit} placeholder="hrs" onChange={e=>set("unit",e.target.value)}/>
+        </div>
+      </>}
+      <div>
+        <label style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:0.6,fontWeight:600,display:"block",marginBottom:5}}>
+          Poids % <span style={{fontWeight:400,letterSpacing:0,textTransform:"none",color:T.faint,fontSize:10}}>(budget restant: {Math.max(0,remaining).toFixed(0)}%)</span>
+        </label>
+        <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} style={{...ISX}}/>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <Btn variant="ghost" small onClick={onCancel}>Annuler</Btn>
+        <Btn small full disabled={!canSave} onClick={onSave}>{saveLabel}</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ── SPRINT SETUP ──
+function SprintSetupView({user, onDone, isFirstSprint=false}) {
+  const [step, setStep] = useState(0);
+  const [catW, setCatW] = useState({health:25,growth:20,career:20,finance:15,social:10,fun:10});
+  const [habits, setHabits] = useState({});
+  const [catIdx, setCatIdx] = useState(0);
+  const [formOpen, setFormOpen] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [bonus, setBonus] = useState(null);
+  const [bonusForm, setBonusForm] = useState(false);
+  const [bonusDraft, setBonusDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const activeCats = CATS.filter(c=>(parseFloat(catW[c.id])||0)>0);
+  const totalW = Object.values(catW).reduce((a,v)=>a+(parseFloat(v)||0),0);
+  const weightOk = Math.abs(totalW-100)<0.6;
+  const usedW = (catId) => (habits[catId]||[]).filter(h=>!h.isBonus).reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+
+  function openNew(cat, remaining) {
+    setDraft({id:uid(),catId:cat.id,subCat:cat.subs?.[0]||"",name:"",type:"numeric",targetType:"min",target:"",unit:"",weight:Math.max(0,remaining).toFixed(0)});
+    setFormOpen(true); setEditingId(null);
+  }
+  function openTemplate(cat, t, remaining) {
+    setDraft({...t, id:uid(), catId:cat.id, subCat:t.subCat||cat.subs?.[0]||"", weight:remaining>0?Math.max(0,remaining).toFixed(0):t.weight.toString()});
+    setFormOpen(true); setEditingId(null);
+  }
+  function openEdit(h, remaining) {
+    setDraft({...h}); setFormOpen(true); setEditingId(h.id);
+  }
+  function saveForm(cat) {
+    if (editingId) {
+      setHabits(p=>({...p,[cat.id]:p[cat.id].map(h=>h.id===editingId?{...draft,weight:parseFloat(draft.weight)||0}:h)}));
+    } else {
+      setHabits(p=>({...p,[cat.id]:[...(p[cat.id]||[]),{...draft,id:uid()}]}));
+    }
+    setDraft(null); setFormOpen(false); setEditingId(null);
+  }
+  async function launch() {
+    setSaving(true);
+    const allH = CATS.flatMap(c=>habits[c.id]||[]);
+    if (bonus) allH.push(bonus);
+    const sprint = {id:uid(),userId:user.id,startDate:new Date().toISOString().split("T")[0],habits:allH,catWeights:catW,pausedWeeks:[],createdAt:Date.now()};
+    await ss(`sprint_${user.id}`, sprint);
+    setSaving(false); onDone(sprint);
+  }
+
+  // Step 0 — weights
+  if (step===0) return (
+    <Scroll>
+      <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 4px"}}>Configuration du sprint</h2>
+      <p style={{color:T.muted,fontSize:13,margin:"0 0 16px"}}>Étape 1 sur 3 — répartis ton attention</p>
+      <Card style={{marginBottom:16}}>
+        <p style={{color:T.text,fontSize:13,lineHeight:1.65,margin:0}}>
+          Assigne un <strong style={{color:T.accent}}>pourcentage</strong> à chaque catégorie. Tout doit faire <strong style={{color:T.green}}>exactement 100%</strong>. Mets 0% pour ignorer une catégorie.
+        </p>
+      </Card>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {CATS.map(cat=>(
+          <div key={cat.id} style={{background:T.card,borderRadius:14,boxShadow:SH,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:10,height:10,borderRadius:3,background:cat.color,flexShrink:0}}/>
+            <div style={{flex:1}}>
+              <div style={{color:T.text,fontSize:14,fontWeight:600}}>{cat.name}</div>
+              <div style={{color:T.muted,fontSize:11,marginTop:2,lineHeight:1.4}}>{cat.desc.slice(0,60)}…</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:5}}>
+              <input type="number" min={0} max={100} step={1} value={catW[cat.id]??0} onChange={e=>setCatW(p=>({...p,[cat.id]:Math.min(100,Math.max(0,parseFloat(e.target.value)||0))}))} style={{...ISX,width:58,textAlign:"center",fontWeight:700,padding:"6px"}}/>
+              <span style={{color:T.muted,fontSize:13}}>%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <span style={{color:T.muted}}>Total :</span>
+        <span style={{fontSize:20,fontWeight:800,color:weightOk?T.green:T.red}}>{totalW.toFixed(0)}%</span>
+      </div>
+      <Btn full disabled={!weightOk} onClick={()=>setStep(1)}>Définir les habitudes →</Btn>
+    </Scroll>
+  );
+
+  // Step 1 — habits per category
+  if (step===1) {
+    const cat = activeCats[catIdx];
+    if (!cat) { setStep(2); return null; }
+    const catH = habits[cat.id]||[];
+    const regH = catH.filter(h=>!h.isBonus);
+    const used = usedW(cat.id);
+    const budget = parseFloat(catW[cat.id])||0;
+    const remaining = budget-used;
+    const usedNames = new Set(regH.map(h=>h.name));
+    const tpls = (TEMPLATES[cat.id]||[]).filter(t=>!usedNames.has(t.name));
+    return (
+      <Scroll>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:0}}>{cat.name}</h2></div>
+        <p style={{color:T.muted,fontSize:13,margin:"4px 0 12px"}}>Étape 2 sur 3</p>
+
+        {/* Category description */}
+        <div style={{background:cat.color+"12",border:`1px solid ${cat.color}33`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+          <p style={{margin:0,fontSize:13,color:T.text,lineHeight:1.6}}>{cat.desc}</p>
+        </div>
+
+        {/* First sprint guidance */}
+        {isFirstSprint&&<Notice color={T.accent}>Commencer simple, c'est commencer fort — <strong>1 habitude par catégorie</strong> recommandée pour ton premier sprint.</Notice>}
+
+        {/* Weight guidance */}
+        <Card style={{marginBottom:12,padding:"12px 14px"}}>
+          <p style={{margin:0,fontSize:12,color:T.muted,lineHeight:1.6}}>
+            <strong style={{color:T.text}}>Budget :</strong> {budget}% — toutes tes habitudes dans cette catégorie doivent totaliser <strong style={{color:cat.color}}>{budget}%</strong>. Le poids suggéré est le budget restant.
+          </p>
+        </Card>
+
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+          <span style={{color:T.muted,fontSize:12}}>Utilisé : <strong style={{color:remaining<0?T.red:T.text}}>{used.toFixed(0)}%</strong></span>
+          <span style={{color:remaining<0?T.red:T.green,fontSize:12,fontWeight:600}}>Restant : {remaining.toFixed(0)}%</span>
+        </div>
+        <div style={{height:5,background:"rgba(0,0,0,0.06)",borderRadius:3,marginBottom:16}}>
+          <div style={{height:"100%",borderRadius:3,background:remaining<0?T.red:cat.color,width:`${Math.min((used/budget)*100,100)}%`,transition:"width 0.3s"}}/>
+        </div>
+
+        {/* Templates */}
+        {tpls.length>0&&<div style={{marginBottom:14}}>
+          <p style={{color:T.muted,fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px",fontWeight:600}}>Ajout rapide — clique pour personnaliser</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {tpls.map(t=><button key={t.name} onClick={()=>openTemplate(cat,t,remaining)} style={{background:cat.color+"15",border:`1px solid ${cat.color}44`,color:cat.color,borderRadius:8,fontSize:12,padding:"6px 10px",cursor:"pointer",fontWeight:500}}>+ {t.name}</button>)}
+          </div>
+        </div>}
+
+        {/* Habit list */}
+        {regH.map(h=>{
+          if (editingId===h.id&&formOpen) return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Mettre à jour" onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setEditingId(null);setDraft(null);}}/></div>;
+          return <div key={h.id} style={{background:T.card,borderRadius:12,boxShadow:SH,padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div><div style={{color:T.text,fontSize:14,fontWeight:500}}>{h.name}</div><div style={{color:T.muted,fontSize:12,marginTop:2}}>{h.subCat&&`${h.subCat} · `}{h.type}{h.target?` · ${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""}`:""} · <strong style={{color:cat.color}}>{h.weight}%</strong></div></div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>openEdit(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:`1px solid ${T.faint}`,color:T.muted,borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Modifier</button>
+              <button onClick={()=>setHabits(p=>({...p,[cat.id]:p[cat.id].filter(x=>x.id!==h.id)}))} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 4px"}}>×</button>
+            </div>
+          </div>;
+        })}
+
+        {/* Add custom */}
+        {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:`1.5px dashed ${T.faint}`,borderRadius:12,color:T.muted,fontSize:14,cursor:"pointer",marginTop:4}}>+ Ajouter une habitude</button>}
+        {formOpen&&!editingId&&<HabitForm habit={draft} cat={cat} remaining={remaining} onChange={setDraft} onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setDraft(null);}}/>}
+
+        <div style={{display:"flex",gap:10,marginTop:20}}>
+          <Btn variant="secondary" onClick={()=>catIdx===0?setStep(0):setCatIdx(i=>i-1)}>← Retour</Btn>
+          <Btn full onClick={()=>catIdx<activeCats.length-1?setCatIdx(i=>i+1):setStep(2)}>{catIdx<activeCats.length-1?`Suivant : ${activeCats[catIdx+1].name} →`:"Révision →"}</Btn>
+        </div>
+        <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:12}}>
+          {activeCats.map((c,i)=><div key={c.id} style={{width:6,height:6,borderRadius:3,background:i===catIdx?c.color:i<catIdx?T.green:T.faint,transition:"background 0.3s"}}/>)}
+        </div>
+      </Scroll>
+    );
+  }
+
+  // Step 2 — review + bonus
+  const allH = CATS.flatMap(c=>habits[c.id]||[]);
+  const totalHW = allH.filter(h=>!h.isBonus).reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
+  const bonusCatOptions = activeCats.map(c=>({value:c.id,label:c.name}));
+  return (
+    <Scroll>
+      <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:"0 0 4px"}}>Révision du sprint</h2>
+      <p style={{color:T.muted,fontSize:13,margin:"0 0 16px"}}>Étape 3 sur 3 — confirme ton plan</p>
+      <Card style={{marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{color:T.muted,fontSize:13}}>Poids total des habitudes :</span>
+        <span style={{fontWeight:800,fontSize:18,color:Math.abs(totalHW-100)<2?T.green:T.amber}}>{totalHW.toFixed(0)}%</span>
+      </Card>
+      {CATS.filter(c=>(habits[c.id]||[]).length>0).map(cat=>{
+        const reg = (habits[cat.id]||[]).filter(h=>!h.isBonus);
+        return <div key={cat.id} style={{marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><div style={{width:8,height:8,borderRadius:2,background:cat.color}}/><span style={{color:cat.color,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span></div>
+          {reg.map(h=><div key={h.id} style={{background:T.card,borderRadius:10,boxShadow:SH,padding:"8px 12px",marginBottom:4,display:"flex",justifyContent:"space-between"}}>
+            <span style={{color:T.text,fontSize:13}}>{h.name}{h.subCat&&<span style={{color:T.muted}}> · {h.subCat}</span>}</span>
+            <span style={{color:T.muted,fontSize:12}}>{h.weight}%</span>
+          </div>)}
+        </div>;
+      })}
+      {/* Bonus habit */}
+      <div style={{borderTop:`1px solid ${T.faint}`,paddingTop:14,marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          <span style={{fontSize:14}}>⭐</span>
+          <span style={{color:T.amber,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Habitude bonus</span>
+          <span style={{color:T.faint,fontSize:11}}>— +5% si accomplie</span>
+        </div>
+        {!bonus&&!bonusForm&&<button onClick={()=>{setBonusDraft({id:uid(),catId:activeCats[0]?.id||"health",name:"",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true});setBonusForm(true);}} style={{width:"100%",padding:12,background:"rgba(255,149,0,0.08)",border:`1.5px dashed ${T.amber}55`,borderRadius:12,color:T.amber,fontSize:13,cursor:"pointer",fontWeight:500}}>+ Définir une habitude bonus</button>}
+        {bonusForm&&bonusDraft&&<div style={{background:"rgba(255,149,0,0.06)",border:`1px solid ${T.amber}44`,borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <Inp label="Nom" value={bonusDraft.name} placeholder="ex: Courir 10km" onChange={e=>setBonusDraft(p=>({...p,name:e.target.value}))}/>
+            <Sel label="Catégorie" value={bonusDraft.catId} onChange={e=>setBonusDraft(p=>({...p,catId:e.target.value}))} options={bonusCatOptions}/>
+          </div>
+          <Sel label="Type" value={bonusDraft.type} onChange={e=>setBonusDraft(p=>({...p,type:e.target.value}))} options={HABIT_TYPES.map(t=>({value:t.id,label:t.label}))}/>
+          {bonusDraft.type!=="boolean"&&<div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+            <Inp label="Objectif" type="number" value={bonusDraft.target} onChange={e=>setBonusDraft(p=>({...p,target:e.target.value}))}/>
+            <Inp label="Unité" value={bonusDraft.unit} onChange={e=>setBonusDraft(p=>({...p,unit:e.target.value}))}/>
+          </div>}
+          <div style={{display:"flex",gap:8}}>
+            <Btn variant="ghost" small onClick={()=>{setBonusForm(false);setBonusDraft(null);}}>Annuler</Btn>
+            <Btn small full disabled={!bonusDraft.name.trim()} onClick={()=>{setBonus({...bonusDraft,weight:5,isBonus:true});setBonusForm(false);setBonusDraft(null);}} style={{background:T.amber,border:"none",color:"#fff"}}>Enregistrer le bonus</Btn>
+          </div>
+        </div>}
+        {bonus&&!bonusForm&&<div style={{background:"rgba(255,149,0,0.1)",border:`1px solid ${T.amber}44`,borderRadius:12,padding:"11px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{color:T.amber,fontSize:14,fontWeight:600}}>⭐ {bonus.name}</div><div style={{color:T.muted,fontSize:11,marginTop:2}}>{CATS.find(c=>c.id===bonus.catId)?.name} · {bonus.type} · +5%</div></div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>{setBonusDraft({...bonus});setBonusForm(true);}} style={{background:"none",border:`1px solid ${T.faint}`,color:T.muted,borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>Modifier</button>
+            <button onClick={()=>setBonus(null)} style={{background:"none",border:"none",color:T.red,cursor:"pointer",fontSize:20,padding:"0 2px"}}>×</button>
+          </div>
+        </div>}
+      </div>
+      {allH.length===0&&<Notice color={T.amber}>Aucune habitude ajoutée. Reviens en arrière.</Notice>}
+      <div style={{display:"flex",gap:10,marginTop:16}}>
+        <Btn variant="secondary" onClick={()=>{setStep(1);setCatIdx(activeCats.length-1);}}>← Modifier</Btn>
+        <Btn full disabled={allH.length===0||saving} onClick={launch}>{saving?"Lancement…":"Lancer le sprint"}</Btn>
+      </div>
+    </Scroll>
+  );
+}
+
+// ── HABIT ROW (log) ──
+function HabitRow({habit, value, onChange, isBonus=false}) {
+  const isBool = habit.type==="boolean";
+  const s = scoreOne(isBool?(value?1:0):value, habit);
+  const hasVal = value!==undefined&&value!==null&&value!=="";
+  const col = hasVal ? barColor(Math.round(s*100)) : "rgba(0,0,0,0.08)";
+  return (
+    <div style={{background:isBonus?"rgba(255,149,0,0.07)":T.card,borderRadius:14,boxShadow:SH,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+      <div style={{width:4,height:36,borderRadius:2,background:isBonus?T.amber:col,flexShrink:0,transition:"background 0.3s"}}/>
+      <div style={{flex:1}}>
+        <div style={{color:isBonus?T.amber:T.text,fontSize:14,fontWeight:500}}>{isBonus?"⭐ ":""}{habit.name}</div>
+        <div style={{color:T.muted,fontSize:11,marginTop:2}}>
+          {habit.subCat&&`${habit.subCat} · `}
+          {habit.type!=="boolean"&&`${habit.targetType==="min"?"≥":"≤"} ${habit.target}${habit.unit?` ${habit.unit}`:""} · `}
+          {isBonus?"+5% bonus":`${habit.weight}%`}
+          {hasVal&&<span style={{marginLeft:6,color:isBonus?T.amber:col,fontWeight:700}}>{Math.round(s*100)}%</span>}
+        </div>
+      </div>
+      {isBool
+        ?<button onClick={()=>onChange(!value)} style={{width:52,height:32,borderRadius:16,border:"none",cursor:"pointer",flexShrink:0,background:value?(isBonus?T.amber:T.green):"rgba(0,0,0,0.1)",transition:"background 0.2s",position:"relative"}}>
+            <div style={{width:26,height:26,borderRadius:13,background:"#fff",position:"absolute",top:3,left:value?23:3,transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
+          </button>
+        :<input type="number" step={habit.type==="duration"?0.5:1} min={habit.type==="rating"?1:0} max={habit.type==="rating"?5:undefined} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={habit.type==="rating"?"1–5":"0"} style={{...ISX,width:80,textAlign:"center",fontWeight:700,flexShrink:0,padding:"9px 6px"}}/>
+      }
+    </div>
+  );
+}
+
+// ── TIPS (feature 6) ──
+const TIPS = {
+  health:{emoji:"💤",title:"Optimise ton sommeil",tip:"Le sommeil est ton levier n°1. Vise 7h30 minimum cette semaine — chaque heure supplémentaire améliore la récupération musculaire de 20% et booste ta motivation."},
+  growth:{emoji:"📚",title:"Compacte ton apprentissage",tip:"30 minutes de lecture ciblée par jour suffisent pour maîtriser un sujet en 6 mois. Bloque un créneau fixe chaque matin avant de regarder ton téléphone."},
+  career:{emoji:"⚡",title:"Active le mode travail profond",tip:"90 minutes de travail ininterrompu valent 3 heures fragmentées. Désactive les notifications, ferme les onglets — une session suffit à changer ta semaine."},
+  finance:{emoji:"💰",title:"Automatise ta discipline",tip:"Configure un virement automatique le jour de ton salaire. Ce que tu ne vois pas, tu ne le dépenses pas. L'automatisation élimine la friction de la volonté."},
+  social:{emoji:"❤️",title:"Investis dans la qualité",tip:"Une conversation profonde de 20 minutes vaut mieux que 5 échanges superficiels. Planifie un moment intentionnel avec quelqu'un qui compte pour toi."},
+  fun:{emoji:"🎯",title:"Protège ton temps de jeu",tip:"Le jeu et la récupération active améliorent la créativité de 50%. Traite tes loisirs comme un rendez-vous professionnel — ils rechargent tout le reste."},
+};
 
 // ── TIPS (feature 6) ──
 const TIPS = {
@@ -2011,6 +2829,7 @@ function App() {
     </div>
   );
 }
+
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
