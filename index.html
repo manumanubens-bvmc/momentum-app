@@ -41,6 +41,12 @@ const ADMIN_EMAILS=["manu.manubens@gmail.com"];
 function toArr(v){if(!v)return[];if(Array.isArray(v))return v;if(typeof v==="object")return Object.values(v);return[];}
 function globalWeekKey(){const now=new Date();const mon=new Date(now);mon.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));return"social_week_"+mon.getFullYear()+String(mon.getMonth()+1).padStart(2,"0")+String(mon.getDate()).padStart(2,"0");}
 function globalSprintKey(){const now=new Date();const q=Math.floor(now.getMonth()/3)+1;return"social_sprint_"+now.getFullYear()+"_Q"+q;}
+function prevGlobalWeekKey(){
+  const now=new Date();
+  const mon=new Date(now);
+  mon.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)-7); // go back 7 more days
+  return"social_week_"+mon.getFullYear()+String(mon.getMonth()+1).padStart(2,"0")+String(mon.getDate()).padStart(2,"0");
+}
 function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);return(h>>>0).toString(16);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function weekNum(sd){const toMon=d=>{const day=d.getDay()===0?6:d.getDay()-1;return new Date(d.getFullYear(),d.getMonth(),d.getDate()-day);};const weeks=Math.round((toMon(new Date())-toMon(new Date(sd)))/(7*24*60*60*1000))+1;return Math.min(Math.max(weeks,1),12);}
@@ -802,7 +808,7 @@ function SocialView({user,sprint}){
       setLoading(true);
       const [wd,sd,pwd,idx]=await Promise.all([
         sg(globalWeekKey()),sg(globalSprintKey()),
-        wk>1?sg(globalWeekKey()+"_prev"):Promise.resolve(null),
+        sg(prevGlobalWeekKey()),
         sg("userIndex"),
       ]);
       setWkData(toArr(wd).sort((a,b)=>b.overall-a.overall));
@@ -812,7 +818,19 @@ function SocialView({user,sprint}){
   },[sprint,wk]);
   const entries=tab==="week"?wkData:spData;const top3=entries.slice(0,3);
   function getStreak(entry){if(!entry.weekScores)return 0;let s=0;for(let w=wk;w>=1;w--){const sc=entry.weekScores[w];if(sc===undefined||sc===null)break;if(sc>=75)s++;else break;}return s;}
-  function getMovement(entry){if(tab!=="week"||!prevWkData.length)return null;const prev=prevWkData.find(e=>e.userId===entry.userId);if(!prev)return null;return entry.overall-prev.overall;}
+  // Compute rank delta: positive = moved up (improved position)
+  function getRankDelta(userId){
+    if(tab!=="week")return null;
+    // Current rank (1-based)
+    const curRank=wkData.findIndex(e=>e.userId===userId);
+    if(curRank===-1)return{type:"new"}; // not in current week
+    // Previous rank
+    const prevSorted=toArr(prevWkData).sort((a,b)=>b.overall-a.overall);
+    const prevRank=prevSorted.findIndex(e=>e.userId===userId);
+    if(prevRank===-1)return{type:"new"}; // wasn't in leaderboard last week
+    const delta=prevRank-curRank; // positive = moved up (lower rank index = better)
+    return{type:"delta",delta};
+  }
   const membersList=allUsers.map(u=>{
     const wkEntry=wkData.find(e=>e.userId===u.id);const spEntry=spData.find(e=>e.userId===u.id);
     return{id:u.id,name:u.name,email:u.email,weekScore:wkEntry?.overall??null,sprintScore:spEntry?.sprintAvg??null,byCat:wkEntry?.byCat||null,weeksLogged:spEntry?.weeksLogged||0,weekScores:spEntry?.weekScores||null};
@@ -857,7 +875,7 @@ function SocialView({user,sprint}){
         const isMe=member.id===user.id;const isExp=expanded===member.id;
         const wkEntry=wkData.find(e=>e.userId===member.id);
         const streak=getStreak(wkEntry||{});
-        const mov=wkEntry?getMovement(wkEntry):null;
+        const rankDelta=getRankDelta(member.id);
         return <div key={member.id} onClick={()=>setExpanded(isExp?null:member.id)} style={{background:isMe?"rgba(0,122,255,0.06)":"#ffffff",borderRadius:16,border:isMe?"1.5px solid rgba(0,122,255,0.25)":"none",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",overflow:"hidden",cursor:"pointer"}}>
           <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:26,height:26,borderRadius:8,background:i<3?"rgba(0,122,255,0.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -874,7 +892,13 @@ function SocialView({user,sprint}){
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
               {score!==null&&score!==undefined?<span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>:<span style={{fontSize:13,color:"#d1d1d6",fontWeight:500}}>—</span>}
-              {mov!==null&&<span style={{fontSize:10,fontWeight:600,color:mov>0?"#30d158":mov<0?"#ff3b30":"#8e8e93"}}>{mov>0?`↑ +${mov}pp`:mov<0?`↓ ${mov}pp`:"→"}</span>}
+              {tab==="week"&&rankDelta&&(
+                rankDelta.type==="new"
+                  ?<span style={{fontSize:9,fontWeight:700,color:"#007aff",background:"rgba(0,122,255,0.12)",padding:"2px 6px",borderRadius:6}}>NEW</span>
+                  :rankDelta.delta!==0&&<span style={{fontSize:10,fontWeight:700,color:rankDelta.delta>0?"#30d158":"#ff3b30"}}>
+                      {rankDelta.delta>0?`↑${rankDelta.delta}`:`↓${Math.abs(rankDelta.delta)}`}
+                    </span>
+              )}
             </div>
             <div style={{color:"#8e8e93",fontSize:14,transform:isExp?"rotate(180deg)":"rotate(0)",transition:"transform 0.2s",marginLeft:4}}>⌄</div>
           </div>
