@@ -450,6 +450,8 @@ function HomeView({sprint,weekLogs,quote,userId}){
   const [chartMode,setChartMode]=useState("bars");
   const [history,setHistory]=useState(null);
   const [insight,setInsight]=useState(null);
+  const [pr,setPr]=useState(null);
+  useEffect(()=>{sg(`pr_${userId}`).then(d=>setPr(d||null));},[userId]);
   const paused=sprint.pausedWeeks||[];
   useEffect(()=>{sg(`sprint_history_${userId}`).then(h=>setHistory(h||[]));},[userId]);
   useEffect(()=>{sg(`insight_${userId}_${sprint.id}_w${wk}`).then(d=>setInsight(d||null));},[userId,sprint.id,wk]);
@@ -513,6 +515,14 @@ function HomeView({sprint,weekLogs,quote,userId}){
         </div>
       </div>
     </Card>
+    {/* PR badge */}
+    {pr&&pr.overall&&wkScore>=pr.overall&&<div style={{background:"rgba(255,149,0,0.10)",border:"1px solid rgba(255,149,0,0.3)",borderRadius:16,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+      <span style={{fontSize:24}}>🏆</span>
+      <div>
+        <div style={{fontSize:13,fontWeight:700,color:"#ff9500"}}>Personal Record !</div>
+        <div style={{fontSize:12,color:"#8e8e93",marginTop:2}}>Nouveau meilleur score global — {pr.overall}% battu cette semaine</div>
+      </div>
+    </div>}
     {/* AI insight */}
     {insight&&<Card style={{marginBottom:12,padding:"14px 16px",borderLeft:"3px solid #007aff",borderRadius:"0 16px 16px 0"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
@@ -688,6 +698,15 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
       const ssk=globalSprintKey();
       sg(ssk).then(se=>{ss(ssk,[...toArr(se).filter(e=>e.userId!==userId),{userId,name:uname,email,sprintAvg:spAvgVal,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.sc]))}]);});
       generateInsight(userId,sprint.id,selWk,ov,byCat);
+      // Update personal records
+      sg(`pr_${userId}`).then(pr=>{
+        const cur=pr||{};let updated=false;const newPr={...cur};
+        if(ov>(cur.overall||0)){newPr.overall=ov;newPr.overallWeek=selWk;updated=true;}
+        Object.keys(byCat).forEach(catId=>{
+          if(byCat[catId]!==null&&byCat[catId]>(cur[catId]||0)){newPr[catId]=byCat[catId];newPr[catId+"Week"]=selWk;updated=true;}
+        });
+        if(updated)ss(`pr_${userId}`,newPr);
+      });
     });
   }
   async function generateInsight(userId,sprintId,week,score,byCat){
@@ -843,6 +862,60 @@ function SocialView({user,sprint}){
         <button key={t} onClick={()=>{setTab(t);setExpanded(null);}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:tab===t?"#ffffff":"transparent",color:tab===t?"#1c1c1e":"#8e8e93",fontSize:13,fontWeight:600,boxShadow:tab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
       ))}
     </div>
+    {/* Weekly recap card */}
+    {tab==="week"&&prevWkData.length>0&&(()=>{
+      const sorted=toArr(prevWkData).sort((a,b)=>b.overall-a.overall);
+      const p1=sorted[0],p2=sorted[1],p3=sorted[2];
+      // Who maxed each category
+      const catStars={};CATS.forEach(cat=>{
+        const best=sorted.reduce((a,e)=>{const s=e.byCat?.[cat.id]??0;return s>=(a.score||0)?{name:e.name,score:s}:a},{});
+        if(best.score>=85)catStars[cat.id]=best;
+      });
+      const healthStar=catStars["health"];
+      return <div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.08),rgba(48,209,88,0.08))",border:"1px solid rgba(0,122,255,0.15)",borderRadius:18,padding:"16px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <span style={{fontSize:16}}>📊</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:"#1c1c1e"}}>Récap de la semaine passée</div>
+            <div style={{fontSize:11,color:"#8e8e93"}}>Voici comment le groupe s'en est sorti 💪</div>
+          </div>
+        </div>
+        {/* Podium line */}
+        {p1&&<div style={{background:"rgba(255,255,255,0.7)",borderRadius:12,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#8e8e93",marginBottom:8}}>Podium</div>
+          <div style={{display:"flex",gap:6}}>
+            {[p1,p2,p3].filter(Boolean).map((e,i)=><div key={e.userId} style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
+              <span style={{fontSize:14}}>{i===0?"🥇":i===1?"🥈":"🥉"}</span>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:"#1c1c1e"}}>{e.name.split(" ")[0]}</div>
+                <div style={{fontSize:11,fontWeight:600,color:scoreColor(e.overall)}}>{e.overall}%</div>
+              </div>
+            </div>)}
+          </div>
+        </div>}
+        {/* Health spotlight */}
+        {healthStar&&<div style={{background:"rgba(255,59,48,0.07)",borderRadius:12,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#ff3b30",marginBottom:6}}>❤️ Spotlight Santé</div>
+          <div style={{fontSize:12,color:"#1c1c1e"}}>
+            <strong>{healthStar.name.split(" ")[0]}</strong> a dominé la catégorie Santé avec <strong style={{color:"#ff3b30"}}>{healthStar.score}%</strong> — respect 🙌
+          </div>
+        </div>}
+        {/* Category stars */}
+        {Object.keys(catStars).filter(id=>id!=="health").length>0&&<div style={{background:"rgba(255,255,255,0.7)",borderRadius:12,padding:"10px 12px"}}>
+          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#8e8e93",marginBottom:8}}>⭐ Meilleurs par catégorie</div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {Object.entries(catStars).filter(([id])=>id!=="health").map(([catId,star])=>{
+              const cat=CATS.find(c=>c.id===catId);
+              return <div key={catId} style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:6,height:6,borderRadius:3,background:cat.color,flexShrink:0}}/>
+                <span style={{fontSize:11,color:"#8e8e93",flex:1}}>{cat.name}</span>
+                <span style={{fontSize:11,fontWeight:600,color:cat.color}}>{star.name.split(" ")[0]} · {star.score}%</span>
+              </div>;
+            })}
+          </div>
+        </div>}
+      </div>;
+    })()}
     <Card style={{marginBottom:16,padding:"13px 16px"}}>
       <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Inviter des amis</p>
       <p style={{color:"#1c1c1e",fontSize:12,lineHeight:1.6,margin:"0 0 10px"}}>Envoie ce lien — il mène directement à la création de compte :</p>
@@ -887,6 +960,7 @@ function SocialView({user,sprint}){
                 <span style={{fontSize:14,fontWeight:600,color:"#1c1c1e"}}>{member.name}</span>
                 {isMe&&<span style={{fontSize:9,color:"#007aff",background:"rgba(0,122,255,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>toi</span>}
                 {streak>=3&&<span style={{fontSize:9,color:"#30d158",background:"rgba(48,209,88,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>🔥 {streak} sem.</span>}
+                {(()=>{const prevSorted=toArr(prevWkData).sort((a,b)=>b.overall-a.overall);const prevRank=prevSorted.findIndex(e=>e.userId===member.id);return prevRank>=0&&prevRank<3?<span style={{fontSize:9,fontWeight:700,color:prevRank===0?"#007aff":prevRank===1?"#8e8e93":"#ff9500",background:prevRank===0?"rgba(0,122,255,0.1)":prevRank===1?"rgba(0,0,0,0.06)":"rgba(255,149,0,0.1)",padding:"2px 7px",borderRadius:10}}>{prevRank===0?"🥇 S-1":prevRank===1?"🥈 S-1":"🥉 S-1"}</span>:null;})()}
               </div>
               <div style={{fontSize:11,color:"#8e8e93",marginTop:2}}>{tab==="sprint"?`${member.weeksLogged||0} sem. saisies`:`S${wk}`}</div>
             </div>
