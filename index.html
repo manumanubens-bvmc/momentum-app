@@ -925,8 +925,8 @@ function SocialView({user,sprint}){
       </div>
     </Card>
     {loading&&<div style={{textAlign:"center",padding:40,color:"#8e8e93"}}>Chargement…</div>}
-    {!loading&&top3.length>=2&&<div style={{marginBottom:16}}>
-      <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:8,marginBottom:14,height:110}}>
+    {!loading&&top3.length>=2&&<div style={{marginBottom:16,marginTop:8}}>
+      <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:8,marginBottom:14,height:130,paddingTop:20}}>
         {[1,0,2].map(rank=>{
           const e=top3[rank];if(!e)return <div key={rank} style={{flex:1}}/>;
           const heights=[68,50,38];const isFirst=rank===0;
