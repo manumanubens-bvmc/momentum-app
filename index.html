@@ -514,6 +514,19 @@ function HomeView({sprint,weekLogs,quote,userId}){
   const benchLabel=prevSprint?`Q1-26 · ${benchScore}%`:"Objectif · 80%";
   const loggedWeeks=weekData.filter(d=>d.logged&&d.score!==null);
   return <Scroll>
+    {/* Weekly tip */}
+    {tip&&<Card style={{marginTop:0,padding:"16px",borderLeft:"3px solid #30d158",borderRadius:"0 16px 16px 0"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <span style={{fontSize:20}}>{tip.emoji}</span>
+        <div><div style={{fontSize:12,fontWeight:700,color:"#1c1c1e"}}>{tip.title}</div><div style={{fontSize:10,color:"#8e8e93"}}>Focus · {weakest&&CATS.find(c=>c.id===weakest.id)?.name}</div></div>
+      </div>
+      <p style={{fontSize:12,color:"#8e8e93",lineHeight:1.65,margin:0}}>{tip.tip}</p>
+    </Card>}
+    {/* Quote */}
+    <div style={{borderLeft:"3px solid #007aff",background:"#ffffff",borderRadius:"0 14px 14px 0",padding:"14px 16px",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",marginTop:0}}>
+      <p style={{color:"#8e8e93",fontSize:12,lineHeight:1.65,margin:"0 0 6px",fontStyle:"italic"}}>"{quote[0]}"</p>
+      <span style={{color:"#007aff",fontSize:10,fontWeight:600}}>— {quote[1]}</span>
+    </div>
     {history!==null&&history.length===0&&<div style={{background:"rgba(0,122,255,0.08)",borderRadius:16,padding:"14px 16px",marginBottom:12,borderLeft:"3px solid #007aff"}}>
       <div style={{fontSize:12,fontWeight:700,color:"#007aff",marginBottom:4}}>🧠 Les 21 premiers jours sont décisifs</div>
       <p style={{fontSize:12,color:"#8e8e93",lineHeight:1.6,margin:0}}>Les neurosciences montrent que les habitudes se câblent dans le cerveau pendant les 3 premières semaines. La discipline que tu construis maintenant se multiplie sur tout le sprint.</p>
@@ -644,19 +657,6 @@ function HomeView({sprint,weekLogs,quote,userId}){
         </div>
       </Card>}
     </>}
-    {/* Weekly tip */}
-    {tip&&<Card style={{marginTop:12,padding:"16px",borderLeft:"3px solid #30d158",borderRadius:"0 16px 16px 0"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <span style={{fontSize:20}}>{tip.emoji}</span>
-        <div><div style={{fontSize:12,fontWeight:700,color:"#1c1c1e"}}>{tip.title}</div><div style={{fontSize:10,color:"#8e8e93"}}>Focus · {weakest&&CATS.find(c=>c.id===weakest.id)?.name}</div></div>
-      </div>
-      <p style={{fontSize:12,color:"#8e8e93",lineHeight:1.65,margin:0}}>{tip.tip}</p>
-    </Card>}
-    {/* Quote */}
-    <div style={{borderLeft:"3px solid #007aff",background:"#ffffff",borderRadius:"0 14px 14px 0",padding:"14px 16px",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",marginTop:12}}>
-      <p style={{color:"#8e8e93",fontSize:12,lineHeight:1.65,margin:"0 0 6px",fontStyle:"italic"}}>"{quote[0]}"</p>
-      <span style={{color:"#007aff",fontSize:10,fontWeight:600}}>— {quote[1]}</span>
-    </div>
 
     {/* Saturday nudge */}
     {saturdayNudge&&<div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.09),rgba(48,209,88,0.06))",border:"1px solid rgba(0,122,255,0.2)",borderRadius:16,padding:"14px 16px",marginBottom:12}}>
