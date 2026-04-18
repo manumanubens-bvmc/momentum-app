@@ -74,6 +74,16 @@ function initials(n){return(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).
 const AV_COLORS=["#007aff","#30d158","#ff9500","#ff3b30","#5856d6","#ff6b00","#a78bfa"];
 function avColor(id){let n=0;for(let i=0;i<(id||"").length;i++)n=(n+id.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[n];}
 
+function dayKey(d=new Date()){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+async function recordPing(userId){
+  try{
+    const key="pings_"+dayKey();
+    const existing=toArr(await sg(key));
+    const already=existing.find(p=>p.userId===userId);
+    if(!already){await ss(key,[...existing,{userId,ts:Date.now()}]);}
+  }catch(e){}
+}
+
 // ── CATS ──
 const CATS=[
   {id:"health",name:"Santé",radar:"SANTÉ",color:"#ff3b30",subs:["Sport","Sommeil","Nutrition","Santé mentale"],desc:"Ta fondation physique et mentale. La règle n°1 de Bryan Johnson : le sommeil d'abord — sans lui tout s'effondre."},
@@ -1159,10 +1169,116 @@ function ProfileView({user,sprint,weekLogs,onLogout}){
 }
 
 // ── ADMIN ──
+function AnalyticsView({users}){
+  const [pings,setPings]=useState({});
+  const [socialData,setSocialData]=useState([]);
+  const [loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    (async()=>{
+      // Load last 14 days of pings
+      const pingData={};
+      const today=new Date();
+      for(let i=0;i<14;i++){
+        const d=new Date(today);d.setDate(today.getDate()-i);
+        const key="pings_"+dayKey(d);
+        const data=toArr(await sg(key));
+        pingData[dayKey(d)]=data;
+      }
+      setPings(pingData);
+      // Load sprint social data for group scores
+      const sd=toArr(await sg(globalSprintKey()));
+      setSocialData(sd);
+      setLoading(false);
+    })();
+  },[]);
+
+  // Build last 14 days array
+  const days=Array.from({length:14},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(13-i));
+    const k=dayKey(d);
+    const count=(pings[k]||[]).length;
+    const label=d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"}).slice(0,5);
+    return{key:k,label,count,isToday:i===13};
+  });
+
+  const maxPings=Math.max(...days.map(d=>d.count),1);
+  const totalUsers=users.length;
+  const activeThisSprint=socialData.length;
+  const avgScore=socialData.length?Math.round(socialData.reduce((a,e)=>a+(e.sprintAvg||0),0)/socialData.length):0;
+  const topContributor=socialData.sort((a,b)=>(b.weeksLogged||0)-(a.weeksLogged||0))[0];
+  const todayPings=(pings[dayKey()]||[]).length;
+
+  // Weekly active users (last 7 days)
+  const last7=days.slice(7);
+  const uniqueWeekly=new Set(last7.flatMap(d=>(pings[d.key]||[]).map(p=>p.userId))).size;
+
+  return <div>
+    <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:"#ff9500",marginBottom:16}}>📊 Analytics</div>
+
+    {loading&&<div style={{textAlign:"center",padding:20,color:"#8e8e93"}}>Chargement…</div>}
+    {!loading&&<>
+      {/* KPI grid */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[
+          {label:"Membres total",value:totalUsers,icon:"👥",color:"#007aff"},
+          {label:"Actifs ce sprint",value:activeThisSprint,icon:"⚡",color:"#30d158"},
+          {label:"Score moy. groupe",value:avgScore?avgScore+"%":"—",icon:"🏆",color:"#ff9500"},
+          {label:"Connexions auj.",value:todayPings,icon:"📱",color:"#5856d6"},
+          {label:"Actifs 7 jours",value:uniqueWeekly,icon:"🔥",color:"#ff3b30"},
+          {label:"Meilleur contributeur",value:topContributor?topContributor.name.split(" ")[0]+" ("+topContributor.weeksLogged+"sem.)":"—",icon:"⭐",color:"#ff9500"},
+        ].map(({label,value,icon,color})=>(
+          <div key={label} style={{background:"rgba(0,0,0,0.03)",borderRadius:14,padding:"12px 14px"}}>
+            <div style={{fontSize:18,marginBottom:6}}>{icon}</div>
+            <div style={{fontSize:20,fontWeight:800,color,letterSpacing:-0.5}}>{value}</div>
+            <div style={{fontSize:10,color:"#8e8e93",marginTop:3,lineHeight:1.3}}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Connections bar chart */}
+      <div style={{background:"rgba(0,0,0,0.03)",borderRadius:14,padding:"14px"}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#1c1c1e",marginBottom:14}}>Connexions · 14 derniers jours</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:80}}>
+          {days.map(({key,label,count,isToday})=>{
+            const h=count>0?Math.max((count/maxPings)*68,8):3;
+            return <div key={key} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              <div style={{position:"relative",width:"100%",display:"flex",justifyContent:"center"}}>
+                {count>0&&<span style={{position:"absolute",top:-16,fontSize:8,fontWeight:700,color:isToday?"#007aff":"#8e8e93"}}>{count}</span>}
+                <div style={{width:"100%",height:h,borderRadius:"3px 3px 0 0",background:isToday?"#007aff":count>0?"rgba(0,122,255,0.45)":"rgba(0,0,0,0.08)",transition:"height 0.4s"}}/>
+              </div>
+              <span style={{fontSize:7,color:isToday?"#007aff":"#8e8e93",fontWeight:isToday?700:400,textAlign:"center",lineHeight:1.2}}>{label}</span>
+            </div>;
+          })}
+        </div>
+      </div>
+
+      {/* Group score trend */}
+      {socialData.length>0&&<div style={{background:"rgba(0,0,0,0.03)",borderRadius:14,padding:"14px",marginTop:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#1c1c1e",marginBottom:10}}>Scores du groupe · sprint en cours</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {[...socialData].sort((a,b)=>(b.sprintAvg||0)-(a.sprintAvg||0)).map(e=>(
+            <div key={e.userId}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                <span style={{fontSize:12,color:"#1c1c1e",fontWeight:500}}>{e.name}</span>
+                <span style={{fontSize:12,fontWeight:700,color:scoreColor(e.sprintAvg||0)}}>{e.sprintAvg||0}%</span>
+              </div>
+              <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:2}}>
+                <div style={{height:"100%",borderRadius:2,background:barColor(e.sprintAvg||0),width:`${e.sprintAvg||0}%`,transition:"width 0.5s"}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>}
+    </>}
+  </div>;
+}
+
 function AdminView({currentUser,onHistoryUpdated}){
   const [users,setUsers]=useState([]);const [loading,setLoading]=useState(true);
   const [expanded,setExpanded]=useState(null);const [details,setDetails]=useState({});
   const [msg,setMsg]=useState(null);const [newPwds,setNewPwds]=useState({});const [importing,setImporting]=useState(false);
+  const [adminTab,setAdminTab]=useState("analytics");
   useEffect(()=>{(async()=>{setLoading(true);const idx=await sg("userIndex");setUsers(idx||[]);setLoading(false);})();},[]);
   async function loadDetails(uid){
     if(details[uid])return setExpanded(expanded===uid?null:uid);
@@ -1197,26 +1313,27 @@ function AdminView({currentUser,onHistoryUpdated}){
     const existingIds=new Set(existing.map(s=>s.sprintId));const toAdd=HIST_DATA.filter(s=>!existingIds.has(s.sprintId));
     if(!toAdd.length){setMsg("Historique déjà importé.");setImporting(false);setTimeout(()=>setMsg(null),3000);return;}
     await ss(`sprint_history_${currentUser.id}`,[...existing,...toAdd]);
-    setMsg(`${toAdd.length} sprint${toAdd.length>1?"s":""} importés : Q3-25, Q4-25, Q1-26.`);setImporting(false);setTimeout(()=>setMsg(null),5000);
+    setMsg(`${toAdd.length} sprint${toAdd.length>1?"s":""} importés.`);setImporting(false);setTimeout(()=>setMsg(null),5000);
     if(onHistoryUpdated)onHistoryUpdated(currentUser.id);
   }
   return <Scroll>
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}><div style={{width:8,height:8,borderRadius:2,background:"#ff9500"}}/><h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:0}}>Panneau admin</h2></div>
-    <p style={{color:"#8e8e93",fontSize:13,margin:"0 0 16px"}}>{users.length} utilisateur{users.length!==1?"s":""}</p>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+      <div style={{width:8,height:8,borderRadius:2,background:"#ff9500"}}/>
+      <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:0}}>Admin</h2>
+    </div>
+    {/* Tab toggle */}
+    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:20}}>
+      {[["analytics","📊 Analytics"],["users","👥 Utilisateurs"],["import","⬇️ Import"]].map(([t,l])=>(
+        <button key={t} onClick={()=>setAdminTab(t)} style={{flex:1,padding:"8px 4px",border:"none",borderRadius:10,cursor:"pointer",background:adminTab===t?"#ffffff":"transparent",color:adminTab===t?"#1c1c1e":"#8e8e93",fontSize:12,fontWeight:600,boxShadow:adminTab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
+      ))}
+    </div>
     {msg&&<Notice color="#30d158">{msg}</Notice>}
-    {currentUser.email==="manu.manubens@gmail.com"&&<>
-      <Card style={{marginBottom:14,border:"1px solid rgba(0,122,255,0.2)"}}>
-        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer le sprint en cours</p>
-        <p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Recrée ton sprint Q2-26 (30 mars 2026) avec 9 habitudes + bonus.</p>
-        <Btn full variant="secondary" disabled={importing} onClick={importSprint}>Importer le sprint en cours →</Btn>
-      </Card>
-      <Card style={{marginBottom:14,border:"1px solid rgba(255,149,0,0.3)"}}>
-        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer mon historique</p>
-        <p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Importe tes sprints Q3-25 (80%), Q4-25 (79%) et Q1-26 (73%).</p>
-        <Btn full variant="amber" disabled={importing} onClick={importHistory}>{importing?"Importation…":"Importer mon historique →"}</Btn>
-      </Card>
-    </>}
-    <Card style={{overflow:"hidden",padding:0}}>
+
+    {/* Analytics tab */}
+    {adminTab==="analytics"&&<AnalyticsView users={users}/>}
+
+    {/* Users tab */}
+    {adminTab==="users"&&<Card style={{overflow:"hidden",padding:0}}>
       {loading&&<div style={{padding:20,textAlign:"center",color:"#8e8e93"}}>Chargement…</div>}
       {users.map((u,i)=>{
         const det=details[u.id];const isOpen=expanded===u.id;
@@ -1246,9 +1363,24 @@ function AdminView({currentUser,onHistoryUpdated}){
           </div>}
         </div>;
       })}
-    </Card>
+    </Card>}
+
+    {/* Import tab */}
+    {adminTab==="import"&&currentUser.email==="manu.manubens@gmail.com"&&<>
+      <Card style={{marginBottom:14,border:"1px solid rgba(0,122,255,0.2)"}}>
+        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer le sprint en cours</p>
+        <p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Recrée ton sprint Q2-26 (30 mars 2026) avec 9 habitudes + bonus.</p>
+        <Btn full variant="secondary" disabled={importing} onClick={importSprint}>Importer le sprint en cours →</Btn>
+      </Card>
+      <Card style={{marginBottom:14,border:"1px solid rgba(255,149,0,0.3)"}}>
+        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer mon historique</p>
+        <p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Importe tes sprints Q3-25 (80%), Q4-25 (79%) et Q1-26 (73%).</p>
+        <Btn full variant="amber" disabled={importing} onClick={importHistory}>{importing?"Importation…":"Importer mon historique →"}</Btn>
+      </Card>
+    </>}
   </Scroll>;
 }
+
 
 // ── RECAP ──
 function RecapView({user,sprint,weekLogs,onArchive}){
@@ -1300,7 +1432,7 @@ function App(){
       const session=JSON.parse(localStorage.getItem("session")||"null");
       if(!session?.userId){setBooting(false);return;}
       const u=await sg(`user_${session.userId}`);if(!u){setBooting(false);return;}
-      setUser(u);await loadHistory(u.id);
+      setUser(u);recordPing(u.id);await loadHistory(u.id);
       const sp=await sg(`sprint_${u.id}`);if(sp){setSprint(sp);await loadLogs(u.id,sp);}
       setBooting(false);
     })();
@@ -1308,6 +1440,7 @@ function App(){
   useEffect(()=>{if(sprint&&weekNum(sprint.startDate)>=12)setShowRecap(true);},[sprint]);
   async function onAuth(u){
     localStorage.setItem("session",JSON.stringify({userId:u.id}));
+    recordPing(u.id);
     if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated);setUser(updated);setShowOnboarding(true);return;}
     setUser(u);await loadHistory(u.id);const sp=await sg(`sprint_${u.id}`);if(sp){setSprint(sp);await loadLogs(u.id,sp);}
   }
