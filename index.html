@@ -287,13 +287,13 @@ function HabitForm({habit,cat,remaining,onChange,onSave,onCancel,saveLabel="Enre
     {!isBool&&<>
       <Sel label="Direction" value={habit.targetType} onChange={e=>set("targetType",e.target.value)} options={[{value:"min",label:"Au moins (minimum)"},{value:"max",label:"Au plus (maximum)"}]}/>
       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
-        <Inp label="Objectif" type="number" value={habit.target} placeholder="ex: 4" onChange={e=>set("target",e.target.value)}/>
+        <Inp label="Objectif" type="number" value={habit.target} placeholder="ex: 4" onChange={e=>set("target",e.target.value)} onFocus={e=>e.target.select()}/>
         <Inp label="Unité" value={habit.unit} placeholder="hrs" onChange={e=>set("unit",e.target.value)}/>
       </div>
     </>}
     <div>
       <label style={{fontSize:11,color:"#8e8e93",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600,display:"block",marginBottom:5}}>Poids % <span style={{fontWeight:400,letterSpacing:0,textTransform:"none",color:"#d1d1d6",fontSize:10}}>(restant: {Math.max(0,remaining).toFixed(0)}%)</span></label>
-      <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} style={{...ISX}}/>
+      <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} onFocus={e=>e.target.select()} style={{...ISX}}/>
     </div>
     <div style={{display:"flex",gap:8}}>
       <Btn variant="ghost" small onClick={onCancel}>Annuler</Btn>
@@ -447,7 +447,7 @@ function HabitRow({habit,value,onChange,isBonus=false}){
       ?<button onClick={()=>onChange(!value)} style={{width:52,height:32,borderRadius:16,border:"none",cursor:"pointer",flexShrink:0,background:value?(isBonus?"#ff9500":"#30d158"):"rgba(0,0,0,0.1)",transition:"background 0.2s",position:"relative"}}>
           <div style={{width:26,height:26,borderRadius:13,background:"#fff",position:"absolute",top:3,left:value?23:3,transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
         </button>
-      :<input type="number" step={habit.type==="duration"?0.5:1} min={habit.type==="rating"?1:0} max={habit.type==="rating"?5:undefined} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={habit.type==="rating"?"1–5":"0"} style={{...ISX,width:80,textAlign:"center",fontWeight:700,flexShrink:0,padding:"9px 6px"}}/>
+      :<input type="number" step={habit.type==="duration"?0.5:1} min={habit.type==="rating"?1:0} max={habit.type==="rating"?5:undefined} value={value??""} onChange={e=>onChange(e.target.value)} onFocus={e=>{e.target.select();}} placeholder={habit.type==="rating"?"1–5":""} style={{...ISX,width:80,textAlign:"center",fontWeight:700,flexShrink:0,padding:"9px 6px"}}/>
     }
   </div>;
 }
