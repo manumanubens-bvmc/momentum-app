@@ -345,6 +345,14 @@ function SprintSetupView({user,onDone,isFirstSprint=false}){
     const used=usedW(cat.id);const budget=parseFloat(catW[cat.id])||0;const remaining=budget-used;
     const usedNames=new Set(regH.map(h=>h.name));const tpls=(TEMPLATES[cat.id]||[]).filter(t=>!usedNames.has(t.name));
     return <Scroll>
+    {/* Saturday nudge */}
+    {saturdayNudge&&<div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.09),rgba(48,209,88,0.06))",border:"1px solid rgba(0,122,255,0.2)",borderRadius:16,padding:"14px 16px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+        <span style={{fontSize:18}}>📣</span>
+        <span style={{fontSize:12,fontWeight:700,color:"#007aff"}}>Dernier push du week-end</span>
+      </div>
+      <p style={{fontSize:13,color:"#1c1c1e",lineHeight:1.65,margin:0}}>{saturdayNudge}</p>
+    </div>}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:0}}>{cat.name}</h2></div>
       <p style={{color:"#8e8e93",fontSize:13,margin:"4px 0 12px"}}>Étape 2 sur 3</p>
       {isFirstSprint&&<Notice color="#007aff">Commencer simple, c'est commencer fort — <strong>1 habitude par catégorie</strong> recommandée pour ton premier sprint.</Notice>}
@@ -658,14 +666,6 @@ function HomeView({sprint,weekLogs,quote,userId}){
       </Card>}
     </>}
 
-    {/* Saturday nudge */}
-    {saturdayNudge&&<div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.09),rgba(48,209,88,0.06))",border:"1px solid rgba(0,122,255,0.2)",borderRadius:16,padding:"14px 16px",marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-        <span style={{fontSize:18}}>📣</span>
-        <span style={{fontSize:12,fontWeight:700,color:"#007aff"}}>Dernier push du week-end</span>
-      </div>
-      <p style={{fontSize:13,color:"#1c1c1e",lineHeight:1.65,margin:0}}>{saturdayNudge}</p>
-    </div>}
 
     {/* Detail toggle */}
     <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:12}}>
