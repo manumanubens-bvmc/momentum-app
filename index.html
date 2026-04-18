@@ -478,36 +478,24 @@ function HomeView({sprint,weekLogs,quote,userId}){
   const weakest=catScores.length?catScores.sort((a,b)=>a.score-b.score)[0]:null;
   const tip=weakest?TIPS[weakest.id]:null;
 
-  // Saturday nudge — find highest-weight habit not yet at target
-  const isSaturday = now.getDay()===6;
-  const saturdayNudge = useMemo(()=>{
-    if(!isSaturday) return null;
-    const regHabits = sprint.habits.filter(h=>!h.isBonus);
-    // Find habits with room to improve: score < 80% and weight >= 5
-    const candidates = regHabits.map(h=>{
-      const val = logs[h.id];
-      const s = scoreOne(h.type==="boolean"?(val?1:0):val, h);
-      const pct = Math.round(s*100);
-      const weight = parseFloat(h.weight)||0;
-      return {h, val, pct, weight};
-    }).filter(c=>c.pct<90&&c.weight>=5)
-      .sort((a,b)=>b.weight-a.weight); // highest weight first
-    if(!candidates.length) return null;
-    const {h, pct, weight} = candidates[0];
-    // Compute score impact: how many points would maxing this habit add overall?
-    const totalWeight = regHabits.reduce((a,x)=>a+(parseFloat(x.weight)||0),0)||100;
-    const currentScore = calcScores(sprint.habits, logs).overall;
-    const scoreGain = Math.round(((100-pct)/100)*(weight/totalWeight)*100);
-    const projectedScore = Math.min(currentScore+scoreGain, 100);
-    // Build message
-    const isBool = h.type==="boolean";
-    const target = h.target;
-    const unit = h.unit||"";
-    const action = isBool
-      ? `Fais ${h.name.toLowerCase()} aujourd'hui`
-      : `Ajoute ${h.targetType==="min"?"une séance de plus":""} ${h.name.toLowerCase()}${unit?` (objectif: ${target} ${unit})`:""}`;
-    return `${action} — ça pourrait te faire gagner ~${scoreGain}% et te porter à ${projectedScore}% cette semaine. Tu peux le faire ! 💪`;
-  }, [isSaturday, logs, sprint.habits]);
+  const isSaturday=now.getDay()===6;
+  const saturdayNudge=useMemo(()=>{
+    if(!isSaturday)return null;
+    const reg=sprint.habits.filter(h=>!h.isBonus);
+    const cands=reg.map(h=>{
+      const val=logs[h.id];const s=scoreOne(h.type==="boolean"?(val?1:0):val,h);
+      return{h,pct:Math.round(s*100),weight:parseFloat(h.weight)||0};
+    }).filter(c=>c.pct<90&&c.weight>=5).sort((a,b)=>b.weight-a.weight);
+    if(!cands.length)return null;
+    const{h,pct,weight}=cands[0];
+    const totW=reg.reduce((a,x)=>a+(parseFloat(x.weight)||0),0)||100;
+    const curScore=calcScores(sprint.habits,logs).overall;
+    const gain=Math.round(((100-pct)/100)*(weight/totW)*100);
+    const proj=Math.min(curScore+gain,100);
+    const action=h.type==="boolean"?`Accomplis "${h.name}" aujourd'hui`:`Progresse sur "${h.name}"${h.target?` (objectif: ${h.target}${h.unit?" "+h.unit:""})`:""}`; 
+    return `${action} — tu pourrais gagner ~${gain}% et atteindre ${proj}% cette semaine. Tu peux le faire ! 💪`;
+  },[isSaturday,logs,sprint.habits]);
+
   const weekData=Array.from({length:12},(_,i)=>{
     const w=i+1;
     if(paused.includes(w))return{w,score:null,paused:true,logged:false};
