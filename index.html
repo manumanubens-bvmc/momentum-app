@@ -92,6 +92,30 @@ function initials(n){return(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).
 const AV_COLORS=["#1D6CF6","#16A34A","#D97706","#DC2626","#5856d6","#ff6b00","#a78bfa"];
 function avColor(id){let n=0;for(let i=0;i<(id||"").length;i++)n=(n+id.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[n];}
 
+// ── AVATARS ──
+const AVATAR_LIST=[
+  {id:"a1", label:"Lion",     bg:"#D97706", emoji:"🦁"},
+  {id:"a2", label:"Loup",     bg:"#1E293B", emoji:"🐺"},
+  {id:"a3", label:"Aigle",    bg:"#1D4ED8", emoji:"🦅"},
+  {id:"a4", label:"Tigre",    bg:"#DC2626", emoji:"🐯"},
+  {id:"a5", label:"Dragon",   bg:"#6D28D9", emoji:"🐉"},
+  {id:"a6", label:"Requin",   bg:"#0369A1", emoji:"🦈"},
+  {id:"a7", label:"Panthère", bg:"#0F0F14", emoji:"🐆"},
+  {id:"a8", label:"Rhino",    bg:"#475569", emoji:"🦏"},
+  {id:"a9", label:"Gorille",  bg:"#292524", emoji:"🦍"},
+  {id:"a10",label:"Faucon",   bg:"#92400E", emoji:"🦉"},
+  {id:"a11",label:"Éclair",   bg:"#B45309", emoji:"⚡"},
+  {id:"a12",label:"Flamme",   bg:"#C2410C", emoji:"🔥"},
+  {id:"a13",label:"Guerrier", bg:"#991B1B", emoji:"⚔️"},
+  {id:"a14",label:"Champion", bg:"#78350F", emoji:"🏆"},
+  {id:"a15",label:"Titan",    bg:"#14532D", emoji:"💪"},
+  {id:"a16",label:"Ninja",    bg:"#1E1B4B", emoji:"🥷"},
+  {id:"a17",label:"Cosmos",   bg:"#4C1D95", emoji:"☄️"},
+  {id:"a18",label:"Diamant",  bg:"#075985", emoji:"💎"},
+  {id:"a19",label:"Cyclone",  bg:"#134E4A", emoji:"🌪️"},
+  {id:"a20",label:"Phénix",   bg:"#7C2D12", emoji:"🦚"},
+];
+
 function dayKey(d=new Date()){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 async function recordPing(userId){
   try{
@@ -185,10 +209,22 @@ function Btn({onClick,children,variant="primary",small,full,disabled,style:xs={}
   return <button onClick={onClick} disabled={disabled} style={{...s,borderRadius:12,fontWeight:600,cursor:disabled?"not-allowed":"pointer",fontSize:small?13:15,padding:small?"8px 14px":"12px 22px",width:full?"100%":undefined,opacity:disabled?0.5:1,...xs}}>{children}</button>;
 }
 function Notice({children,color}){return <div style={{background:color+"12",border:`1px solid ${color}25`,borderRadius:14,padding:"13px 16px",marginBottom:16}}><p style={{margin:0,fontSize:13,color,lineHeight:1.6,fontWeight:500}}>{children}</p></div>;}
-function Avatar({name,userId,email,size=36}){
+function AvatarEmoji({av,size}){
+  if(!av)return null;
+  return <div style={{width:size,height:size,borderRadius:Math.round(size*0.28),background:av.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:Math.round(size*0.52),flexShrink:0,userSelect:"none",lineHeight:1}}>{av.emoji}</div>;
+}
+
+function Avatar({name,userId,email,size=36,avatarId}){
   const [err,setErr]=useState(false);
+  // If user has chosen an avatar
+  if(avatarId){
+    const av=AVATAR_LIST.find(a=>a.id===avatarId);
+    if(av)return <AvatarEmoji av={av} size={size}/>;
+  }
+  // Gravatar fallback
   const url=email&&!err?`https://www.gravatar.com/avatar/${hashStr(email.trim().toLowerCase())}?s=${size*2}&d=404`:null;
   if(url)return <img src={url} onError={()=>setErr(true)} style={{width:size,height:size,borderRadius:size*0.3,flexShrink:0,objectFit:"cover"}} alt={name}/>;
+  // Initials fallback
   return <div style={{width:size,height:size,borderRadius:size*0.3,background:avColor(userId||"x"),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.36,fontWeight:700,color:"#fff"}}>{initials(name)}</div>;
 }
 function Ring({score=0,size=80,color}){
@@ -499,7 +535,7 @@ function HomeView({sprint,weekLogs,quote,userId}){
   const weakest=catScores.length?catScores.sort((a,b)=>a.score-b.score)[0]:null;
   const tip=weakest?TIPS[weakest.id]:null;
 
-  const isSaturday=now.getDay()===6;
+  const isSaturday=now.getDay()===6||now.getDay()===0; // Sat or Sun
   const saturdayNudge=useMemo(()=>{
     if(!isSaturday)return null;
     const reg=sprint.habits.filter(h=>!h.isBonus);
@@ -535,7 +571,7 @@ function HomeView({sprint,weekLogs,quote,userId}){
     {saturdayNudge&&<div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.09),rgba(48,209,88,0.06))",border:"1px solid rgba(0,122,255,0.2)",borderRadius:16,padding:"14px 16px",marginBottom:16}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
         <span style={{fontSize:18}}>📣</span>
-        <span style={{fontSize:12,fontWeight:700,color:"#1D6CF6",letterSpacing:0.1}}>Dernier push du week-end</span>
+        <span style={{fontSize:12,fontWeight:700,color:"#1D6CF6",letterSpacing:0.1}}>{now.getDay()===6?"Dernier push — Samedi":"Dernier push — Dimanche"}</span>
       </div>
       <p style={{fontSize:13,color:"#0F0F14",lineHeight:1.65,margin:0}}>{saturdayNudge}</p>
     </div>}
@@ -745,7 +781,9 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
       const uname=u?.name||"User";const email=u?.email||"";
       const{overall:ov,byCat}=calcScores(sprint.habits,local);
       const wsk=globalWeekKey();
-      sg(wsk).then(we=>{ss(wsk,[...toArr(we).filter(e=>e.userId!==userId),{userId,name:uname,email,overall:ov,byCat}]);});
+      sg(wsk).then(we=>{sg(`user_${userId}`).then(uu=>{
+          ss(wsk,[...toArr(we).filter(e=>e.userId!==userId),{userId,name:uname,email,overall:ov,byCat,avatarId:uu?.avatarId||null}]);
+        });});
       const allSaved={...weekLogs,[selWk]:local};
       const entries=Object.entries(allSaved).map(([w,lg])=>{
         if(paused.includes(parseInt(w)))return null;
@@ -981,13 +1019,13 @@ function SocialView({user,sprint}){
         <div style={{flex:1,background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:"#1D6CF6",wordBreak:"break-all"}}>manumanubens-bvmc.github.io/momentum-app</div>
         <button onClick={()=>{navigator.clipboard.writeText("https://manumanubens-bvmc.github.io/momentum-app").then(()=>{const btn=document.getElementById("copy-btn");if(btn){btn.textContent="Copié ✓";btn.style.color="#16A34A";setTimeout(()=>{btn.textContent="Copier";btn.style.color="#1D6CF6";},2000);}}).catch(()=>{});}} id="copy-btn" style={{background:"rgba(29,108,246,0.1)",border:"none",borderRadius:10,padding:"10px 14px",color:"#1D6CF6",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Copier</button>
       </div>
-      <a href="https://t.me/+fPXlWNJvKZo4NjU0" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:10,background:"rgba(41,182,246,0.08)",border:"1px solid rgba(41,182,246,0.18)",borderRadius:12,padding:"11px 14px",textDecoration:"none"}}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#29B6F6"/><path d="M5.5 11.8l11-4.5-1.5 9-3.5-2.5-2 2v-3l5-4.5-6.5 3.5-2.5-1z" fill="white"/></svg>
+      <a href="https://t.me/+fPXlWNJvKZo4NjU0" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:12,background:"linear-gradient(135deg,#0088CC,#29B6F6)",borderRadius:14,padding:"14px 16px",textDecoration:"none",marginTop:2,boxShadow:"0 4px 16px rgba(0,136,204,0.3)"}}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><circle cx="12" cy="12" r="12" fill="rgba(255,255,255,0.2)"/><path d="M5.5 11.8l11-4.5-1.5 9-3.5-2.5-2 2v-3l5-4.5-6.5 3.5-2.5-1z" fill="white"/></svg>
         <div style={{flex:1}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#0288D1"}}>Rejoindre le groupe Telegram</div>
-          <div style={{fontSize:11,color:"#6B7280",marginTop:1}}>Échanges, motivation et updates</div>
+          <div style={{fontSize:13,fontWeight:800,color:"#fff",letterSpacing:-0.2}}>Rejoindre le groupe Telegram</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.75)",marginTop:2}}>Échanges, questions, motivation 💬</div>
         </div>
-        <span style={{fontSize:13,color:"#9CA3AF"}}>→</span>
+        <span style={{fontSize:18,color:"rgba(255,255,255,0.8)"}}>→</span>
       </a>
     </Card>
     {loading&&<div style={{textAlign:"center",padding:"40px 20px",color:"#9CA3AF",fontSize:14}}>Chargement…</div>}
@@ -1020,7 +1058,7 @@ function SocialView({user,sprint}){
             <div style={{width:26,height:26,borderRadius:8,background:i<3?"rgba(0,122,255,0.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <span style={{fontSize:i<3?14:11,fontWeight:700,color:i===0?"#1D6CF6":i===1?"#6B7280":i===2?"#D97706":"#C4C4CC"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span>
             </div>
-            <Avatar name={member.name} userId={member.id} email={member.email} size={34}/>
+            <Avatar name={member.name} userId={member.id} email={member.email} size={34} avatarId={wkData.find(e=>e.userId===member.id)?.avatarId||spData.find(e=>e.userId===member.id)?.avatarId}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 <span style={{fontSize:14,fontWeight:600,color:"#0F0F14"}}>{member.name}</span>
@@ -1158,19 +1196,45 @@ function DuelsView({user,sprint,onPendingCount}){
 }
 
 // ── PROFILE ──
-function ProfileView({user,sprint,weekLogs,onLogout}){
+function ProfileView({user,sprint,weekLogs,onLogout,onUserUpdate}){
   const [history,setHistory]=useState([]);
+  const [showAvatarPicker,setShowAvatarPicker]=useState(false);
   useEffect(()=>{sg(`sprint_history_${user.id}`).then(h=>setHistory((toArr(h)).slice().reverse()));},[user.id]);
+  async function pickAvatar(avatarId){
+    const updated={...user,avatarId};
+    await ss(`user_${user.id}`,updated);
+    // Update userIndex name stays same
+    if(onUserUpdate)onUserUpdate(updated);
+    setShowAvatarPicker(false);
+  }
   const wk=sprint?weekNum(sprint.startDate):0;
   const {overall}=sprint?calcScores(sprint.habits,weekLogs[wk]||{}):{overall:0};
   const allAvgs=history.map(s=>s.avgScore).filter(Boolean);
   const lifetimeAvg=allAvgs.length?Math.round(allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length):null;
   return <Scroll>
+    {/* Avatar picker */}
     <Card style={{textAlign:"center",marginBottom:14}}>
-      <div style={{display:"flex",justifyContent:"center",marginBottom:14}}><Avatar name={user.name} userId={user.id} email={user.email} size={72}/></div>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:14,position:"relative"}}>
+        <Avatar name={user.name} userId={user.id} email={user.email} size={80} avatarId={user.avatarId}/>
+        <button onClick={()=>setShowAvatarPicker(p=>!p)} style={{position:"absolute",bottom:0,right:"calc(50% - 48px)",background:"#1D6CF6",border:"2px solid #FFFFFF",borderRadius:10,width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:SH}}>
+          <span style={{fontSize:12}}>✏️</span>
+        </button>
+      </div>
       <h2 style={{color:"#0F0F14",fontSize:20,fontWeight:800,margin:"0 0 4px"}}>{user.name}</h2>
       <p style={{color:"#6B7280",fontSize:13,margin:0}}>{user.email}</p>
       <p style={{color:"#C4C4CC",fontSize:12,marginTop:6}}>Membre depuis {new Date(user.createdAt).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</p>
+      {showAvatarPicker&&<div style={{marginTop:16,borderTop:"1px solid rgba(0,0,0,0.07)",paddingTop:14}}>
+        <p style={{fontSize:11,fontWeight:700,color:"#9CA3AF",textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>Choisis ton avatar</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+          {AVATAR_LIST.map(av=>(
+            <button key={av.id} onClick={()=>pickAvatar(av.id)} style={{background:"none",border:user.avatarId===av.id?"2.5px solid #1D6CF6":"2px solid transparent",borderRadius:14,padding:3,cursor:"pointer",transition:"all 0.15s"}}>
+              <AvatarEmoji av={av} size={48}/>
+              <div style={{fontSize:8,color:"#9CA3AF",marginTop:3,textAlign:"center",fontWeight:500}}>{av.label}</div>
+            </button>
+          ))}
+        </div>
+        <button onClick={()=>{setShowAvatarPicker(false);}} style={{marginTop:12,background:"none",border:"none",color:"#9CA3AF",fontSize:12,cursor:"pointer"}}>Fermer</button>
+      </div>}
     </Card>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
       {[{l:"Sprints",v:history.length},{l:"Moy. globale",v:lifetimeAvg!==null?`${lifetimeAvg}%`:"—"},{l:"Sem. saisies",v:history.reduce((a,s)=>a+(s.weeksLogged||0),0)}].map(({l,v})=>(
@@ -1490,7 +1554,7 @@ function App(){
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         {sprint&&<span style={{color:"#6B7280",fontSize:11,fontWeight:600,background:"rgba(0,0,0,0.05)",padding:"3px 8px",borderRadius:6,letterSpacing:0.2}}>S{wk}/12</span>}
         {isAdmin&&<span style={{fontSize:9,color:"#D97706",background:"rgba(217,119,6,0.12)",padding:"2px 8px",borderRadius:6,fontWeight:700,letterSpacing:0.3}}>ADMIN</span>}
-        <Avatar name={user.name} userId={user.id} email={user.email} size={28}/>
+        <Avatar name={user.name} userId={user.id} email={user.email} size={28} avatarId={user.avatarId}/>
       </div>
     </div>
     {!sprint&&view!=="sprint"&&<div style={{background:"rgba(29,108,246,0.07)",borderBottom:"1px solid rgba(29,108,246,0.12)",padding:"10px 20px",textAlign:"center"}}>
@@ -1502,7 +1566,7 @@ function App(){
       {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsUpdated={sp=>setSprint(sp)} history={history}/>}
       {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:"#6B7280"}}>Configure d'abord un sprint.</div>)}
       {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint} onPendingCount={setPendingDuels}/>:<div style={{textAlign:"center",padding:64,color:"#6B7280"}}>Configure d'abord un sprint.</div>)}
-      {view==="profile"&&<ProfileView user={user} sprint={sprint} weekLogs={weekLogs} onLogout={onLogout}/>}
+      {view==="profile"&&<ProfileView user={user} sprint={sprint} weekLogs={weekLogs} onLogout={onLogout} onUserUpdate={u=>setUser(u)}/>}
       {view==="admin"&&isAdmin&&<AdminView currentUser={user} onHistoryUpdated={loadHistory}/>}
     </div>
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(240,240,245,0.94)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:"1px solid rgba(0,0,0,0.07)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
