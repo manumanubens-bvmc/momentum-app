@@ -18,12 +18,18 @@ async function sg(k){try{if(window._fbOk){var s=await window._db.ref(dbKey(k)).o
 async function ss(k,v){try{if(window._fbOk){await window._db.ref(dbKey(k)).set(v===null?null:v);return;}if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#f2f2f7;font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,sans-serif;color:#1c1c1e;}
+body{background:#F0F0F5;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:#0F0F14;-webkit-font-smoothing:antialiased;}
 input,select,button,textarea{font-family:inherit;}
 ::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-thumb{background:#d1d1d6;border-radius:2px;}
+::-webkit-scrollbar-thumb{background:#C4C4CC;border-radius:2px;}
+::selection{background:rgba(29,108,246,0.2);color:#0F0F14;}
+button:active{opacity:0.85;}
+input:focus{border-color:rgba(29,108,246,0.5)!important;box-shadow:0 0 0 3px rgba(29,108,246,0.12)!important;}
 </style>
 </head>
 <body>
@@ -32,9 +38,21 @@ input,select,button,textarea{font-family:inherit;}
 const {useState,useEffect,useMemo}=React;
 
 // ── THEME ──
-const T={bg:"#f2f2f7",surface:"#ffffff",card:"#ffffff",border:"rgba(0,0,0,0.09)",text:"#1c1c1e",muted:"#8e8e93",faint:"#d1d1d6",accent:"#007aff",green:"#30d158",amber:"#ff9500",red:"#ff3b30"};
-const SH="0 2px 14px rgba(0,0,0,0.07)";
-const ISX={background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:10,color:"#1c1c1e",fontSize:16,padding:"10px 14px",width:"100%",boxSizing:"border-box"};
+const T={
+  bg:"#F0F0F5",
+  surface:"#FFFFFF",
+  card:"#FFFFFF",
+  border:"rgba(0,0,0,0.07)",
+  text:"#0F0F14",
+  muted:"#6B7280",
+  faint:"#C4C4CC",
+  accent:"#1D6CF6",
+  green:"#16A34A",
+  amber:"#D97706",
+  red:"#DC2626",
+};
+const SH="0 1px 2px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.07)";
+const ISX={background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.08)",borderRadius:12,color:"#0F0F14",fontSize:16,padding:"12px 16px",width:"100%",boxSizing:"border-box",outline:"none",transition:"border-color 0.15s"};
 const ADMIN_EMAILS=["manu.manubens@gmail.com"];
 
 // ── UTILS ──
@@ -66,12 +84,12 @@ function calcScores(habits,logs){
 }
 function sprintAvg(habits,weekLogs,upTo,paused=[]){let sum=0,count=0;for(let w=1;w<=upTo;w++){if(paused.includes(w))continue;const ll=weekLogs[w]||{};if(!habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!==""))continue;sum+=calcScores(habits,ll).overall;count++;}return count?Math.round(sum/count):0;}
 function catAvgs(habits,weekLogs,upTo,paused=[]){const sums={},counts={};for(let w=1;w<=upTo;w++){if(paused.includes(w))continue;const ll=weekLogs[w]||{};if(!habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!==""))continue;const{byCat}=calcScores(habits,ll);Object.keys(byCat).forEach(id=>{if(byCat[id]!==null){sums[id]=(sums[id]||0)+byCat[id];counts[id]=(counts[id]||0)+1;}});}const res={};["health","growth","career","finance","social","fun"].forEach(id=>{res[id]=counts[id]?Math.round(sums[id]/counts[id]):null;});return res;}
-function barColor(s){if(s>=85)return"rgba(0,122,255,1.0)";if(s>=75)return"rgba(0,122,255,0.70)";if(s>=60)return"rgba(0,122,255,0.45)";return"rgba(0,122,255,0.22)";}
-function scoreColor(s){if(s>=85)return"#30d158";if(s>=75)return"#5ac87a";if(s>=60)return"#ff9500";return"#ff3b30";}
+function barColor(s){if(s>=85)return"#1D6CF6";if(s>=75)return"rgba(29,108,246,0.65)";if(s>=60)return"rgba(29,108,246,0.40)";return"rgba(29,108,246,0.18)";}
+function scoreColor(s){if(s>=85)return"#16A34A";if(s>=75)return"#2D9A50";if(s>=60)return"#D97706";return"#DC2626";}
 function statusLabel(s){if(s>=85)return"Excellent";if(s>=75)return"Bien";if(s>=60)return"OK";return"En retard";}
 function fmtDate(iso){return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"});}
 function initials(n){return(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();}
-const AV_COLORS=["#007aff","#30d158","#ff9500","#ff3b30","#5856d6","#ff6b00","#a78bfa"];
+const AV_COLORS=["#1D6CF6","#16A34A","#D97706","#DC2626","#5856d6","#ff6b00","#a78bfa"];
 function avColor(id){let n=0;for(let i=0;i<(id||"").length;i++)n=(n+id.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[n];}
 
 function dayKey(d=new Date()){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
@@ -86,11 +104,11 @@ async function recordPing(userId){
 
 // ── CATS ──
 const CATS=[
-  {id:"health",name:"Santé",radar:"SANTÉ",color:"#ff3b30",subs:["Sport","Sommeil","Nutrition","Santé mentale"],desc:"Ta fondation physique et mentale. La règle n°1 de Bryan Johnson : le sommeil d'abord — sans lui tout s'effondre."},
+  {id:"health",name:"Santé",radar:"SANTÉ",color:"#DC2626",subs:["Sport","Sommeil","Nutrition","Santé mentale"],desc:"Ta fondation physique et mentale. La règle n°1 de Bryan Johnson : le sommeil d'abord — sans lui tout s'effondre."},
   {id:"growth",name:"Stimulation intellectuelle",radar:"INTEL.",color:"#5856d6",desc:"Compétences, connaissances et développement intellectuel. Les habitudes qui se transforment en expertise au fil des années."},
-  {id:"career",name:"Carrière",radar:"CARR.",color:"#007aff",desc:"Performance professionnelle et impact. Ta capacité à être présent, concentré, à livrer et à développer ton influence."},
-  {id:"finance",name:"Finance",radar:"FINANCE",color:"#ff9500",desc:"Construire sa richesse par la discipline. Épargner, investir, et éviter les décisions impulsives."},
-  {id:"social",name:"Social",radar:"SOCIAL",color:"#30d158",desc:"La qualité de tes relations. Une connexion profonde avec les personnes que tu aimes."},
+  {id:"career",name:"Carrière",radar:"CARR.",color:"#1D6CF6",desc:"Performance professionnelle et impact. Ta capacité à être présent, concentré, à livrer et à développer ton influence."},
+  {id:"finance",name:"Finance",radar:"FINANCE",color:"#D97706",desc:"Construire sa richesse par la discipline. Épargner, investir, et éviter les décisions impulsives."},
+  {id:"social",name:"Social",radar:"SOCIAL",color:"#16A34A",desc:"La qualité de tes relations. Une connexion profonde avec les personnes que tu aimes."},
   {id:"fun",name:"Fun",radar:"FUN",color:"#ff6b00",desc:"La joie, le jeu et les nouvelles expériences. Une vie équilibrée a besoin de récupération et de plaisir."},
 ];
 const HABIT_TYPES=[{id:"boolean",label:"Fait / Non fait"},{id:"numeric",label:"Nombre"},{id:"duration",label:"Durée (hrs)"},{id:"rating",label:"Note 1–5"}];
@@ -159,14 +177,14 @@ const TIPS={
 };
 
 // ── UI ATOMS ──
-function Scroll({children}){return <div style={{padding:"16px 16px 96px",maxWidth:560,margin:"0 auto"}}>{children}</div>;}
+function Scroll({children}){return <div style={{padding:"20px 18px 100px",maxWidth:560,margin:"0 auto"}}>{children}</div>;}
 function Card({children,style:xs={}}){return <div style={{background:"#ffffff",borderRadius:18,boxShadow:"0 2px 14px rgba(0,0,0,0.07)",padding:"16px 18px",...xs}}>{children}</div>;}
 function Btn({onClick,children,variant="primary",small,full,disabled,style:xs={}}){
-  const styles={primary:{background:"#007aff",color:"#fff",border:"none"},secondary:{background:"rgba(0,0,0,0.06)",color:"#1c1c1e",border:"none"},ghost:{background:"transparent",color:"#8e8e93",border:"none"},danger:{background:"rgba(255,59,48,0.12)",color:"#ff3b30",border:"none"},success:{background:"rgba(48,209,88,0.12)",color:"#30d158",border:"none"},amber:{background:"rgba(255,149,0,0.12)",color:"#ff9500",border:"none"}};
+  const styles={primary:{background:"#1D6CF6",color:"#fff",border:"none"},secondary:{background:"rgba(0,0,0,0.06)",color:"#0F0F14",border:"none"},ghost:{background:"transparent",color:"#6B7280",border:"none"},danger:{background:"rgba(255,59,48,0.12)",color:"#DC2626",border:"none"},success:{background:"rgba(48,209,88,0.12)",color:"#16A34A",border:"none"},amber:{background:"rgba(255,149,0,0.12)",color:"#D97706",border:"none"}};
   const s=styles[variant]||styles.primary;
   return <button onClick={onClick} disabled={disabled} style={{...s,borderRadius:12,fontWeight:600,cursor:disabled?"not-allowed":"pointer",fontSize:small?13:15,padding:small?"8px 14px":"12px 22px",width:full?"100%":undefined,opacity:disabled?0.5:1,...xs}}>{children}</button>;
 }
-function Notice({children,color}){return <div style={{background:color+"18",border:`1px solid ${color}33`,borderRadius:12,padding:"12px 16px",marginBottom:16}}><p style={{margin:0,fontSize:13,color,lineHeight:1.55,fontWeight:500}}>{children}</p></div>;}
+function Notice({children,color}){return <div style={{background:color+"12",border:`1px solid ${color}25`,borderRadius:14,padding:"13px 16px",marginBottom:16}}><p style={{margin:0,fontSize:13,color,lineHeight:1.6,fontWeight:500}}>{children}</p></div>;}
 function Avatar({name,userId,email,size=36}){
   const [err,setErr]=useState(false);
   const url=email&&!err?`https://www.gravatar.com/avatar/${hashStr(email.trim().toLowerCase())}?s=${size*2}&d=404`:null;
@@ -179,15 +197,15 @@ function Ring({score=0,size=80,color}){
   return <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
     <svg width={size} height={size} style={{transform:"rotate(-90deg)",display:"block"}}>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={5}/>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={5} strokeLinecap="round" strokeDasharray={`${fill} ${circ}`}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={5} strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} style={{transition:"stroke-dasharray 0.5s ease"}}/>
     </svg>
     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <span style={{fontSize:size*0.2,fontWeight:800,color:"#1c1c1e",letterSpacing:-1}}>{score}<span style={{fontSize:size*0.12,fontWeight:500,color:"#8e8e93"}}>%</span></span>
+      <span style={{fontSize:size*0.2,fontWeight:800,color:"#0F0F14",letterSpacing:-1}}>{score}<span style={{fontSize:size*0.12,fontWeight:500,color:"#6B7280"}}>%</span></span>
     </div>
   </div>;
 }
-function Inp({label,...p}){return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<label style={{fontSize:11,color:"#8e8e93",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>{label}</label>}<input {...p} style={{...ISX,...(p.style||{})}}/></div>;}
-function Sel({label,options,...p}){return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<label style={{fontSize:11,color:"#8e8e93",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>{label}</label>}<select {...p} style={{...ISX,...(p.style||{})}}>{options.map(o=><option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}</select></div>;}
+function Inp({label,...p}){return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<label style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>{label}</label>}<input {...p} style={{...ISX,...(p.style||{})}}/></div>;}
+function Sel({label,options,...p}){return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<label style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>{label}</label>}<select {...p} style={{...ISX,...(p.style||{})}}>{options.map(o=><option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}</select></div>;}
 function RadarChart({cats,datasets}){
   const n=cats.length;if(n<3)return null;
   const VB=300,cx=150,cy=150,R=90,LR=122;
@@ -207,15 +225,15 @@ function RadarChart({cats,datasets}){
 function OnboardingView({name,onDone}){
   const [slide,setSlide]=useState(0);
   const s=ONBOARDING[slide];const isLast=slide===ONBOARDING.length-1;
-  return <div style={{minHeight:"100vh",background:"#f2f2f7",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
-    <div style={{display:"flex",gap:6,marginBottom:40}}>{ONBOARDING.map((_,i)=><div key={i} style={{width:i===slide?20:6,height:6,borderRadius:3,background:i===slide?"#007aff":i<slide?"rgba(0,122,255,0.4)":"#d1d1d6",transition:"all 0.3s"}}/>)}</div>
+  return <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#F8F8FB 0%,#EEEEF5 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
+    <div style={{display:"flex",gap:6,marginBottom:40}}>{ONBOARDING.map((_,i)=><div key={i} style={{width:i===slide?20:6,height:6,borderRadius:3,background:i===slide?"#1D6CF6":i<slide?"rgba(0,122,255,0.4)":"#C4C4CC",transition:"all 0.3s"}}/>)}</div>
     <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
       <div style={{fontSize:60,marginBottom:24}}>{s.emoji}</div>
-      <h1 style={{color:"#1c1c1e",fontSize:22,fontWeight:800,margin:"0 0 14px",lineHeight:1.2}}>{s.title}</h1>
-      <p style={{color:"#1c1c1e",fontSize:14,lineHeight:1.7,margin:"0 0 10px"}}>{s.body}</p>
-      <p style={{color:"#8e8e93",fontSize:13,lineHeight:1.6,margin:"0 0 32px"}}>{s.sub}</p>
+      <h1 style={{color:"#0F0F14",fontSize:24,fontWeight:800,margin:"0 0 14px",lineHeight:1.2,letterSpacing:-0.6}}>{s.title}</h1>
+      <p style={{color:"#0F0F14",fontSize:14,lineHeight:1.7,margin:"0 0 10px"}}>{s.body}</p>
+      <p style={{color:"#6B7280",fontSize:13,lineHeight:1.6,margin:"0 0 32px"}}>{s.sub}</p>
       <Btn full onClick={()=>isLast?onDone():setSlide(i=>i+1)}>{slide===0?`Salut ${name.split(" ")[0]}, ${s.cta}`:s.cta}</Btn>
-      {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:12,background:"none",border:"none",color:"#d1d1d6",fontSize:13,cursor:"pointer"}}>← Retour</button>}
+      {slide>0&&<button onClick={()=>setSlide(i=>i-1)} style={{marginTop:12,background:"none",border:"none",color:"#C4C4CC",fontSize:13,cursor:"pointer"}}>← Retour</button>}
     </div>
   </div>;
 }
@@ -250,24 +268,24 @@ function AuthView({onAuth}){
     }catch(e){setErr("Erreur: "+e.message);}
     setBusy(false);
   }
-  return <div style={{minHeight:"100vh",background:"#f2f2f7",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 20px"}}>
+  return <div style={{minHeight:"100vh",background:"#F0F0F5",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 20px"}}>
     <div style={{width:"100%",maxWidth:400}}>
       <div style={{textAlign:"center",marginBottom:36}}>
-        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" style={{margin:"0 auto 14px",display:"block"}}><rect width="60" height="60" rx="18" fill="#1c1c1e"/><polyline points="8,46 22,18 32,32 40,22 52,46" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round"/></svg>
-        <h1 style={{color:"#1c1c1e",fontSize:26,fontWeight:800,margin:0}}>Momentum</h1>
-        <p style={{color:"#8e8e93",margin:"8px 0 0",fontSize:14}}>Construis la vie que tu veux, un sprint à la fois.</p>
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style={{margin:"0 auto 16px",display:"block",filter:"drop-shadow(0 4px 16px rgba(29,108,246,0.25))"}}><rect width="64" height="64" rx="20" fill="#0F0F14"/><polyline points="8,50 22,20 33,34 42,24 56,50" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round"/><polyline points="8,50 22,20 33,34 42,24 56,50" fill="none" stroke="rgba(29,108,246,0.5)" strokeWidth="6" strokeLinejoin="round" strokeLinecap="round" style={{filter:"blur(4px)"}}/></svg>
+        <h1 style={{color:"#0F0F14",fontSize:28,fontWeight:800,margin:0,letterSpacing:-0.8}}>Momentum</h1>
+        <p style={{color:"#6B7280",margin:"8px 0 0",fontSize:14,lineHeight:1.5}}>Construis la vie que tu veux,<br/>un sprint à la fois.</p>
       </div>
       <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:14,padding:4,marginBottom:24}}>
         {[["login","Se connecter"],["register","Créer un compte"]].map(([m,l])=>(
-          <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:mode===m?"#ffffff":"transparent",color:mode===m?"#1c1c1e":"#8e8e93",fontSize:14,fontWeight:600,boxShadow:mode===m?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
+          <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"10px 0",border:"none",borderRadius:10,cursor:"pointer",background:mode===m?"#ffffff":"transparent",color:mode===m?"#0F0F14":"#9CA3AF",fontSize:14,fontWeight:600,boxShadow:mode===m?SH:"none",transition:"all 0.2s"}}>{l}</button>
         ))}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {mode==="register"&&<Inp label="Nom complet" value={name} onChange={e=>setName(e.target.value)} placeholder="Ton prénom et nom"/>}
         <Inp label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="toi@exemple.com"/>
         <Inp label="Mot de passe" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"/>
-        {err&&<Notice color="#ff3b30">{err}</Notice>}
-        <button onClick={submit} disabled={busy} style={{background:busy?"#d1d1d6":"#007aff",color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:15,padding:"13px",cursor:busy?"not-allowed":"pointer"}}>{busy?"Patiente…":mode==="login"?"Se connecter":"Créer mon compte"}</button>
+        {err&&<Notice color="#DC2626">{err}</Notice>}
+        <button onClick={submit} disabled={busy} style={{background:busy?"#C4C4CC":"#1D6CF6",color:"#fff",border:"none",borderRadius:14,fontWeight:700,fontSize:15,padding:"14px",cursor:busy?"not-allowed":"pointer",letterSpacing:-0.2}}>{busy?"Patiente…":mode==="login"?"Se connecter":"Créer mon compte"}</button>
       </div>
     </div>
   </div>;
@@ -278,7 +296,7 @@ function HabitForm({habit,cat,remaining,onChange,onSave,onCancel,saveLabel="Enre
   const set=(k,v)=>onChange(h=>({...h,[k]:v}));
   const isBool=habit.type==="boolean";
   const canSave=habit.name.trim()&&(isBool||habit.target!=="")&&(parseFloat(habit.weight)||0)>0;
-  return <div style={{background:"#f2f2f7",border:"1px solid rgba(0,122,255,0.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+  return <div style={{background:"#F0F0F5",border:"1px solid rgba(0,122,255,0.3)",borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:12}}>
     <div style={{display:"grid",gridTemplateColumns:cat.subs?"1fr 1fr":"1fr",gap:10}}>
       <Inp label="Nom" value={habit.name} placeholder="ex: Séances de sport" onChange={e=>set("name",e.target.value)}/>
       {cat.subs&&<Sel label="Sous-catégorie" value={habit.subCat||cat.subs[0]} onChange={e=>set("subCat",e.target.value)} options={cat.subs.map(s=>({value:s,label:s}))}/>}
@@ -292,7 +310,7 @@ function HabitForm({habit,cat,remaining,onChange,onSave,onCancel,saveLabel="Enre
       </div>
     </>}
     <div>
-      <label style={{fontSize:11,color:"#8e8e93",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600,display:"block",marginBottom:5}}>Poids % <span style={{fontWeight:400,letterSpacing:0,textTransform:"none",color:"#d1d1d6",fontSize:10}}>(restant: {Math.max(0,remaining).toFixed(0)}%)</span></label>
+      <label style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",letterSpacing:0.6,fontWeight:600,display:"block",marginBottom:5}}>Poids % <span style={{fontWeight:400,letterSpacing:0,textTransform:"none",color:"#C4C4CC",fontSize:10}}>(restant: {Math.max(0,remaining).toFixed(0)}%)</span></label>
       <input type="number" min={0} step={0.5} value={habit.weight} placeholder={Math.max(0,remaining).toFixed(0)} onChange={e=>set("weight",e.target.value)} onFocus={e=>e.target.select()} style={{...ISX}}/>
     </div>
     <div style={{display:"flex",gap:8}}>
@@ -330,22 +348,22 @@ function SprintSetupView({user,onDone,isFirstSprint=false}){
     await ss(`sprint_${user.id}`,sprint);setSaving(false);onDone(sprint);
   }
   if(step===0)return <Scroll>
-    <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:"0 0 4px"}}>Configuration du sprint</h2>
-    <p style={{color:"#8e8e93",fontSize:13,margin:"0 0 16px"}}>Étape 1 sur 3 — répartis ton attention</p>
-    <Card style={{marginBottom:16}}><p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.65,margin:0}}>Assigne un <strong style={{color:"#007aff"}}>pourcentage</strong> à chaque catégorie. Tout doit faire <strong style={{color:"#30d158"}}>exactement 100%</strong>.</p></Card>
+    <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:"0 0 4px",letterSpacing:-0.5}}>Configuration du sprint</h2>
+    <p style={{color:"#6B7280",fontSize:13,margin:"0 0 16px"}}>Étape 1 sur 3 — répartis ton attention</p>
+    <Card style={{marginBottom:16}}><p style={{color:"#0F0F14",fontSize:13,lineHeight:1.65,margin:0}}>Assigne un <strong style={{color:"#1D6CF6"}}>pourcentage</strong> à chaque catégorie. Tout doit faire <strong style={{color:"#16A34A"}}>exactement 100%</strong>.</p></Card>
     <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
       {CATS.map(cat=><div key={cat.id} style={{background:"#ffffff",borderRadius:14,boxShadow:"0 2px 14px rgba(0,0,0,0.07)",padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:10,height:10,borderRadius:3,background:cat.color,flexShrink:0}}/>
-        <div style={{flex:1}}><div style={{color:"#1c1c1e",fontSize:14,fontWeight:600}}>{cat.name}</div></div>
+        <div style={{flex:1}}><div style={{color:"#0F0F14",fontSize:14,fontWeight:600}}>{cat.name}</div></div>
         <div style={{display:"flex",alignItems:"center",gap:5}}>
           <input type="number" min={0} max={100} step={1} value={catW[cat.id]??0} onChange={e=>setCatW(p=>({...p,[cat.id]:Math.min(100,Math.max(0,parseFloat(e.target.value)||0))}))} style={{...ISX,width:58,textAlign:"center",fontWeight:700,padding:"6px"}}/>
-          <span style={{color:"#8e8e93",fontSize:13}}>%</span>
+          <span style={{color:"#6B7280",fontSize:13}}>%</span>
         </div>
       </div>)}
     </div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <span style={{color:"#8e8e93"}}>Total :</span>
-      <span style={{fontSize:20,fontWeight:800,color:weightOk?"#30d158":"#ff3b30"}}>{totalW.toFixed(0)}%</span>
+      <span style={{color:"#6B7280"}}>Total :</span>
+      <span style={{fontSize:20,fontWeight:800,color:weightOk?"#16A34A":"#DC2626"}}>{totalW.toFixed(0)}%</span>
     </div>
     <Btn full disabled={!weightOk} onClick={()=>setStep(1)}>Définir les habitudes →</Btn>
   </Scroll>;
@@ -356,31 +374,31 @@ function SprintSetupView({user,onDone,isFirstSprint=false}){
     const usedNames=new Set(regH.map(h=>h.name));const tpls=(TEMPLATES[cat.id]||[]).filter(t=>!usedNames.has(t.name));
     return <Scroll>
 
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:0}}>{cat.name}</h2></div>
-      <p style={{color:"#8e8e93",fontSize:13,margin:"4px 0 12px"}}>Étape 2 sur 3</p>
-      {isFirstSprint&&<Notice color="#007aff">Commencer simple, c'est commencer fort — <strong>1 habitude par catégorie</strong> recommandée pour ton premier sprint.</Notice>}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}><div style={{width:12,height:12,borderRadius:3,background:cat.color}}/><h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:0,letterSpacing:-0.5}}>{cat.name}</h2></div>
+      <p style={{color:"#6B7280",fontSize:13,margin:"4px 0 12px"}}>Étape 2 sur 3</p>
+      {isFirstSprint&&<Notice color="#1D6CF6">Commencer simple, c'est commencer fort — <strong>1 habitude par catégorie</strong> recommandée pour ton premier sprint.</Notice>}
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-        <span style={{color:"#8e8e93",fontSize:12}}>Utilisé : <strong style={{color:remaining<0?"#ff3b30":"#1c1c1e"}}>{used.toFixed(0)}%</strong></span>
-        <span style={{color:remaining<0?"#ff3b30":"#30d158",fontSize:12,fontWeight:600}}>Restant : {remaining.toFixed(0)}%</span>
+        <span style={{color:"#6B7280",fontSize:12}}>Utilisé : <strong style={{color:remaining<0?"#DC2626":"#0F0F14"}}>{used.toFixed(0)}%</strong></span>
+        <span style={{color:remaining<0?"#DC2626":"#16A34A",fontSize:12,fontWeight:600}}>Restant : {remaining.toFixed(0)}%</span>
       </div>
-      <div style={{height:5,background:"rgba(0,0,0,0.06)",borderRadius:3,marginBottom:16}}>
-        <div style={{height:"100%",borderRadius:3,background:remaining<0?"#ff3b30":cat.color,width:`${Math.min((used/budget)*100,100)}%`,transition:"width 0.3s"}}/>
+      <div style={{height:6,background:"rgba(0,0,0,0.06)",borderRadius:4,marginBottom:16}}>
+        <div style={{height:"100%",borderRadius:3,background:remaining<0?"#DC2626":cat.color,width:`${Math.min((used/budget)*100,100)}%`,transition:"width 0.3s"}}/>
       </div>
       {tpls.length>0&&<div style={{marginBottom:14}}>
-        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px",fontWeight:600}}>Ajout rapide</p>
+        <p style={{color:"#6B7280",fontSize:11,textTransform:"uppercase",letterSpacing:0.6,margin:"0 0 8px",fontWeight:600}}>Ajout rapide</p>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{tpls.map(t=><button key={t.name} onClick={()=>openTemplate(cat,t,remaining)} style={{background:cat.color+"15",border:`1px solid ${cat.color}44`,color:cat.color,borderRadius:8,fontSize:12,padding:"6px 10px",cursor:"pointer",fontWeight:500}}>+ {t.name}</button>)}</div>
       </div>}
       {regH.map(h=>{
         if(editingId===h.id&&formOpen)return <div key={h.id} style={{marginBottom:8}}><HabitForm habit={draft} cat={cat} remaining={remaining+(parseFloat(h.weight)||0)} onChange={setDraft} saveLabel="Mettre à jour" onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setEditingId(null);setDraft(null);}}/></div>;
         return <div key={h.id} style={{background:"#ffffff",borderRadius:12,boxShadow:"0 2px 14px rgba(0,0,0,0.07)",padding:"11px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div><div style={{color:"#1c1c1e",fontSize:14,fontWeight:500}}>{h.name}</div><div style={{color:"#8e8e93",fontSize:12,marginTop:2}}>{h.type}{h.target?` · ${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""}`:""} · <strong style={{color:cat.color}}>{h.weight}%</strong></div></div>
+          <div><div style={{color:"#0F0F14",fontSize:14,fontWeight:500}}>{h.name}</div><div style={{color:"#6B7280",fontSize:12,marginTop:2}}>{h.type}{h.target?` · ${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""}`:""} · <strong style={{color:cat.color}}>{h.weight}%</strong></div></div>
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>openEdit(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:"1px solid #d1d1d6",color:"#8e8e93",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>Modifier</button>
-            <button onClick={()=>setHabits(p=>({...p,[cat.id]:p[cat.id].filter(x=>x.id!==h.id)}))} style={{background:"none",border:"none",color:"#ff3b30",cursor:"pointer",fontSize:20,padding:"0 4px"}}>×</button>
+            <button onClick={()=>openEdit(h,remaining+(parseFloat(h.weight)||0))} style={{background:"none",border:"1px solid rgba(0,0,0,0.1)",color:"#6B7280",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>Modifier</button>
+            <button onClick={()=>setHabits(p=>({...p,[cat.id]:p[cat.id].filter(x=>x.id!==h.id)}))} style={{background:"none",border:"none",color:"#DC2626",cursor:"pointer",fontSize:20,padding:"0 4px"}}>×</button>
           </div>
         </div>;
       })}
-      {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:"1.5px dashed #d1d1d6",borderRadius:12,color:"#8e8e93",fontSize:14,cursor:"pointer",marginTop:4}}>+ Ajouter une habitude</button>}
+      {(!formOpen||editingId)&&<button onClick={()=>openNew(cat,remaining)} style={{width:"100%",padding:12,background:"transparent",border:"1.5px dashed rgba(0,0,0,0.15)",borderRadius:12,color:"#6B7280",fontSize:14,cursor:"pointer",marginTop:4}}>+ Ajouter une habitude</button>}
       {formOpen&&!editingId&&<HabitForm habit={draft} cat={cat} remaining={remaining} onChange={setDraft} onSave={()=>saveForm(cat)} onCancel={()=>{setFormOpen(false);setDraft(null);}}/>}
       <div style={{display:"flex",gap:10,marginTop:20}}>
         <Btn variant="secondary" onClick={()=>catIdx===0?setStep(0):setCatIdx(i=>i-1)}>← Retour</Btn>
@@ -390,35 +408,35 @@ function SprintSetupView({user,onDone,isFirstSprint=false}){
   }
   const allH=CATS.flatMap(c=>habits[c.id]||[]);
   return <Scroll>
-    <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:"0 0 4px"}}>Révision du sprint</h2>
-    <p style={{color:"#8e8e93",fontSize:13,margin:"0 0 16px"}}>Étape 3 sur 3</p>
+    <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:"0 0 4px",letterSpacing:-0.5}}>Révision du sprint</h2>
+    <p style={{color:"#6B7280",fontSize:13,margin:"0 0 16px"}}>Étape 3 sur 3</p>
     {CATS.filter(c=>(habits[c.id]||[]).length>0).map(cat=>{
       const reg=(habits[cat.id]||[]).filter(h=>!h.isBonus);
       return <div key={cat.id} style={{marginBottom:14}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><div style={{width:8,height:8,borderRadius:2,background:cat.color}}/><span style={{color:cat.color,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span></div>
         {reg.map(h=><div key={h.id} style={{background:"#ffffff",borderRadius:10,boxShadow:"0 2px 14px rgba(0,0,0,0.07)",padding:"8px 12px",marginBottom:4,display:"flex",justifyContent:"space-between"}}>
-          <span style={{color:"#1c1c1e",fontSize:13}}>{h.name}</span><span style={{color:"#8e8e93",fontSize:12}}>{h.weight}%</span>
+          <span style={{color:"#0F0F14",fontSize:13}}>{h.name}</span><span style={{color:"#6B7280",fontSize:12}}>{h.weight}%</span>
         </div>)}
       </div>;
     })}
-    <div style={{borderTop:"1px solid #d1d1d6",paddingTop:14,marginBottom:14}}>
+    <div style={{borderTop:"1px solid rgba(0,0,0,0.1)",paddingTop:14,marginBottom:14}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <span style={{fontSize:14}}>⭐</span><span style={{color:"#ff9500",fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Habitude bonus</span><span style={{color:"#d1d1d6",fontSize:11}}>— +5% si accomplie</span>
+        <span style={{fontSize:14}}>⭐</span><span style={{color:"#D97706",fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Habitude bonus</span><span style={{color:"#C4C4CC",fontSize:11}}>— +5% si accomplie</span>
       </div>
-      {!bonus&&!bonusForm&&<button onClick={()=>{setBonusDraft({id:uid(),catId:activeCats[0]?.id||"health",name:"",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true});setBonusForm(true);}} style={{width:"100%",padding:12,background:"rgba(255,149,0,0.08)",border:"1.5px dashed rgba(255,149,0,0.4)",borderRadius:12,color:"#ff9500",fontSize:13,cursor:"pointer",fontWeight:500}}>+ Définir une habitude bonus</button>}
+      {!bonus&&!bonusForm&&<button onClick={()=>{setBonusDraft({id:uid(),catId:activeCats[0]?.id||"health",name:"",type:"boolean",targetType:"min",target:"1",unit:"",weight:5,isBonus:true});setBonusForm(true);}} style={{width:"100%",padding:12,background:"rgba(255,149,0,0.08)",border:"1.5px dashed rgba(255,149,0,0.4)",borderRadius:12,color:"#D97706",fontSize:13,cursor:"pointer",fontWeight:500}}>+ Définir une habitude bonus</button>}
       {bonusForm&&bonusDraft&&<div style={{background:"rgba(255,149,0,0.06)",border:"1px solid rgba(255,149,0,0.3)",borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:10}}>
         <Inp label="Nom" value={bonusDraft.name} placeholder="ex: Courir 10km" onChange={e=>setBonusDraft(p=>({...p,name:e.target.value}))}/>
         <div style={{display:"flex",gap:8}}>
           <Btn variant="ghost" small onClick={()=>{setBonusForm(false);setBonusDraft(null);}}>Annuler</Btn>
-          <Btn small full disabled={!bonusDraft.name.trim()} onClick={()=>{setBonus({...bonusDraft,weight:5,isBonus:true});setBonusForm(false);setBonusDraft(null);}} style={{background:"#ff9500",border:"none",color:"#fff"}}>Enregistrer le bonus</Btn>
+          <Btn small full disabled={!bonusDraft.name.trim()} onClick={()=>{setBonus({...bonusDraft,weight:5,isBonus:true});setBonusForm(false);setBonusDraft(null);}} style={{background:"#D97706",border:"none",color:"#fff"}}>Enregistrer le bonus</Btn>
         </div>
       </div>}
       {bonus&&!bonusForm&&<div style={{background:"rgba(255,149,0,0.1)",border:"1px solid rgba(255,149,0,0.3)",borderRadius:12,padding:"11px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div><div style={{color:"#ff9500",fontSize:14,fontWeight:600}}>⭐ {bonus.name}</div></div>
-        <button onClick={()=>setBonus(null)} style={{background:"none",border:"none",color:"#ff3b30",cursor:"pointer",fontSize:20,padding:"0 2px"}}>×</button>
+        <div><div style={{color:"#D97706",fontSize:14,fontWeight:600}}>⭐ {bonus.name}</div></div>
+        <button onClick={()=>setBonus(null)} style={{background:"none",border:"none",color:"#DC2626",cursor:"pointer",fontSize:20,padding:"0 2px"}}>×</button>
       </div>}
     </div>
-    {allH.length===0&&<Notice color="#ff9500">Aucune habitude ajoutée. Reviens en arrière.</Notice>}
+    {allH.length===0&&<Notice color="#D97706">Aucune habitude ajoutée. Reviens en arrière.</Notice>}
     <div style={{display:"flex",gap:10,marginTop:16}}>
       <Btn variant="secondary" onClick={()=>{setStep(1);setCatIdx(activeCats.length-1);}}>← Modifier</Btn>
       <Btn full disabled={allH.length===0||saving} onClick={launch}>{saving?"Lancement…":"Lancer le sprint"}</Btn>
@@ -432,19 +450,19 @@ function HabitRow({habit,value,onChange,isBonus=false}){
   const s=scoreOne(isBool?(value?1:0):value,habit);
   const hasVal=value!==undefined&&value!==null&&value!=="";
   const col=hasVal?barColor(Math.round(s*100)):"rgba(0,0,0,0.08)";
-  return <div style={{background:isBonus?"rgba(255,149,0,0.07)":"#ffffff",borderRadius:14,boxShadow:"0 2px 14px rgba(0,0,0,0.07)",padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
-    <div style={{width:4,height:36,borderRadius:2,background:isBonus?"#ff9500":col,flexShrink:0,transition:"background 0.3s"}}/>
+  return <div style={{background:isBonus?"rgba(217,119,6,0.06)":"#FFFFFF",borderRadius:16,boxShadow:SH,border:"1px solid rgba(0,0,0,0.055)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+    <div style={{width:4,height:36,borderRadius:2,background:isBonus?"#D97706":col,flexShrink:0,transition:"background 0.3s"}}/>
     <div style={{flex:1}}>
-      <div style={{color:isBonus?"#ff9500":"#1c1c1e",fontSize:14,fontWeight:500}}>{isBonus?"⭐ ":""}{habit.name}</div>
-      <div style={{color:"#8e8e93",fontSize:11,marginTop:2}}>
+      <div style={{color:isBonus?"#D97706":"#0F0F14",fontSize:14,fontWeight:500}}>{isBonus?"⭐ ":""}{habit.name}</div>
+      <div style={{color:"#6B7280",fontSize:11,marginTop:2}}>
         {habit.subCat&&`${habit.subCat} · `}
         {habit.type!=="boolean"&&`${habit.targetType==="min"?"≥":"≤"} ${habit.target}${habit.unit?` ${habit.unit}`:""} · `}
         {isBonus?"+5% bonus":`${habit.weight}%`}
-        {hasVal&&<span style={{marginLeft:6,color:isBonus?"#ff9500":col,fontWeight:700}}>{Math.round(s*100)}%</span>}
+        {hasVal&&<span style={{marginLeft:6,color:isBonus?"#D97706":col,fontWeight:700}}>{Math.round(s*100)}%</span>}
       </div>
     </div>
     {isBool
-      ?<button onClick={()=>onChange(!value)} style={{width:52,height:32,borderRadius:16,border:"none",cursor:"pointer",flexShrink:0,background:value?(isBonus?"#ff9500":"#30d158"):"rgba(0,0,0,0.1)",transition:"background 0.2s",position:"relative"}}>
+      ?<button onClick={()=>onChange(!value)} style={{width:52,height:32,borderRadius:16,border:"none",cursor:"pointer",flexShrink:0,background:value?(isBonus?"#D97706":"#16A34A"):"rgba(0,0,0,0.1)",transition:"background 0.2s",position:"relative"}}>
           <div style={{width:26,height:26,borderRadius:13,background:"#fff",position:"absolute",top:3,left:value?23:3,transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
         </button>
       :<input type="number" step={habit.type==="duration"?0.5:1} min={habit.type==="rating"?1:0} max={habit.type==="rating"?5:undefined} value={value??""} onChange={e=>onChange(e.target.value)} onFocus={e=>{e.target.select();}} placeholder={habit.type==="rating"?"1–5":""} style={{...ISX,width:80,textAlign:"center",fontWeight:700,flexShrink:0,padding:"9px 6px"}}/>
@@ -517,26 +535,26 @@ function HomeView({sprint,weekLogs,quote,userId}){
     {saturdayNudge&&<div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.09),rgba(48,209,88,0.06))",border:"1px solid rgba(0,122,255,0.2)",borderRadius:16,padding:"14px 16px",marginBottom:16}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
         <span style={{fontSize:18}}>📣</span>
-        <span style={{fontSize:12,fontWeight:700,color:"#007aff"}}>Dernier push du week-end</span>
+        <span style={{fontSize:12,fontWeight:700,color:"#1D6CF6",letterSpacing:0.1}}>Dernier push du week-end</span>
       </div>
-      <p style={{fontSize:13,color:"#1c1c1e",lineHeight:1.65,margin:0}}>{saturdayNudge}</p>
+      <p style={{fontSize:13,color:"#0F0F14",lineHeight:1.65,margin:0}}>{saturdayNudge}</p>
     </div>}
     {/* Weekly tip */}
-    {tip&&<Card style={{marginTop:0,marginBottom:12,padding:"16px",borderLeft:"3px solid #30d158",borderRadius:"0 16px 16px 0"}}>
+    {tip&&<Card style={{marginTop:0,marginBottom:12,padding:"16px",borderLeft:"3px solid #16A34A",borderRadius:"0 16px 16px 0"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
         <span style={{fontSize:20}}>{tip.emoji}</span>
-        <div><div style={{fontSize:12,fontWeight:700,color:"#1c1c1e"}}>{tip.title}</div><div style={{fontSize:10,color:"#8e8e93"}}>Focus · {weakest&&CATS.find(c=>c.id===weakest.id)?.name}</div></div>
+        <div><div style={{fontSize:12,fontWeight:700,color:"#0F0F14"}}>{tip.title}</div><div style={{fontSize:10,color:"#6B7280"}}>Focus · {weakest&&CATS.find(c=>c.id===weakest.id)?.name}</div></div>
       </div>
-      <p style={{fontSize:12,color:"#8e8e93",lineHeight:1.65,margin:0}}>{tip.tip}</p>
+      <p style={{fontSize:12,color:"#6B7280",lineHeight:1.65,margin:0}}>{tip.tip}</p>
     </Card>}
     {/* Quote */}
-    <div style={{borderLeft:"3px solid #007aff",background:"#ffffff",borderRadius:"0 14px 14px 0",padding:"14px 16px",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",marginTop:0,marginBottom:12}}>
-      <p style={{color:"#8e8e93",fontSize:12,lineHeight:1.65,margin:"0 0 6px",fontStyle:"italic"}}>"{quote[0]}"</p>
-      <span style={{color:"#007aff",fontSize:10,fontWeight:600}}>— {quote[1]}</span>
+    <div style={{borderLeft:"3px solid #1D6CF6",background:"#FFFFFF",borderRadius:"0 14px 14px 0",padding:"14px 16px",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",marginTop:0,marginBottom:12}}>
+      <p style={{color:"#6B7280",fontSize:13,lineHeight:1.7,margin:"0 0 8px",fontStyle:"italic",letterSpacing:0.1}}>"{quote[0]}"</p>
+      <span style={{color:"#1D6CF6",fontSize:11,fontWeight:600,letterSpacing:0.2}}>— {quote[1]}</span>
     </div>
-    {history!==null&&history.length===0&&<div style={{background:"rgba(0,122,255,0.08)",borderRadius:16,padding:"14px 16px",marginBottom:12,borderLeft:"3px solid #007aff"}}>
-      <div style={{fontSize:12,fontWeight:700,color:"#007aff",marginBottom:4}}>🧠 Les 21 premiers jours sont décisifs</div>
-      <p style={{fontSize:12,color:"#8e8e93",lineHeight:1.6,margin:0}}>Les neurosciences montrent que les habitudes se câblent dans le cerveau pendant les 3 premières semaines. La discipline que tu construis maintenant se multiplie sur tout le sprint.</p>
+    {history!==null&&history.length===0&&<div style={{background:"rgba(29,108,246,0.06)",borderRadius:18,padding:"16px",marginBottom:12,borderLeft:"3px solid #1D6CF6",border:"1px solid rgba(29,108,246,0.12)"}}>
+      <div style={{fontSize:12,fontWeight:700,color:"#1D6CF6",marginBottom:4}}>🧠 Les 21 premiers jours sont décisifs</div>
+      <p style={{fontSize:12,color:"#6B7280",lineHeight:1.6,margin:0}}>Les neurosciences montrent que les habitudes se câblent dans le cerveau pendant les 3 premières semaines. La discipline que tu construis maintenant se multiplie sur tout le sprint.</p>
     </div>}
     {/* 3 rings */}
     <Card style={{marginBottom:12,padding:"18px 20px"}}>
@@ -544,104 +562,104 @@ function HomeView({sprint,weekLogs,quote,userId}){
         {[{label:"Cette semaine",score:wkScore,color:wkColor},{label:"Tendance",score:trendScore!==null?trendScore:wkScore,color:scoreColor(trendScore||wkScore)},{label:"Moy. sprint",score:spAvg,color:spColor}].map(({label,score,color})=>(
           <div key={label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
             <Ring score={score} size={72} color={color}/>
-            <span style={{fontSize:10,fontWeight:600,color:"#8e8e93",textTransform:"uppercase",letterSpacing:0.5,textAlign:"center"}}>{label}</span>
+            <span style={{fontSize:10,fontWeight:600,color:"#6B7280",textTransform:"uppercase",letterSpacing:0.5,textAlign:"center"}}>{label}</span>
           </div>
         ))}
       </div>
       <div style={{marginBottom:8}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-          <span style={{fontSize:11,color:"#8e8e93"}}>Semaine {wk} · {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"][dow-1]}</span>
-          <span style={{fontSize:11,fontWeight:700,color:"#30d158"}}>{weekPct}%</span>
+          <span style={{fontSize:11,color:"#6B7280"}}>Semaine {wk} · {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"][dow-1]}</span>
+          <span style={{fontSize:11,fontWeight:700,color:"#16A34A"}}>{weekPct}%</span>
         </div>
-        <div style={{height:6,background:"rgba(0,0,0,0.07)",borderRadius:3}}><div style={{height:"100%",borderRadius:3,background:"#30d158",width:`${weekPct}%`,transition:"width 0.6s"}}/></div>
+        <div style={{height:7,background:"rgba(0,0,0,0.06)",borderRadius:4}}><div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#16A34A,#22C55E)",width:`${weekPct}%`,transition:"width 0.6s"}}/></div>
       </div>
       <div>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-          <span style={{fontSize:11,color:"#8e8e93"}}>Sprint · S{wk} sur 12</span>
-          <span style={{fontSize:11,fontWeight:700,color:"#30d158"}}>{sprintPct}%</span>
+          <span style={{fontSize:11,color:"#6B7280"}}>Sprint · S{wk} sur 12</span>
+          <span style={{fontSize:11,fontWeight:700,color:"#16A34A"}}>{sprintPct}%</span>
         </div>
-        <div style={{height:6,background:"rgba(0,0,0,0.07)",borderRadius:3,position:"relative"}}>
-          <div style={{height:"100%",borderRadius:3,background:"#30d158",width:`${sprintPct}%`,transition:"width 0.6s"}}/>
-          {Array.from({length:11},(_,i)=><div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:"#f2f2f7",opacity:0.8}}/>)}
+        <div style={{height:7,background:"rgba(0,0,0,0.06)",borderRadius:4,position:"relative"}}>
+          <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#1D6CF6,#3B82F6)",width:`${sprintPct}%`,transition:"width 0.6s"}}/>
+          {Array.from({length:11},(_,i)=><div key={i} style={{position:"absolute",left:`${((i+1)/12)*100}%`,top:0,width:1,height:"100%",background:"#F0F0F5",opacity:0.8}}/>)}
         </div>
       </div>
     </Card>
     {/* PR badge */}
-    {pr&&pr.overall&&wkScore>=pr.overall&&<div style={{background:"rgba(255,149,0,0.10)",border:"1px solid rgba(255,149,0,0.3)",borderRadius:16,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+    {pr&&pr.overall&&wkScore>=pr.overall&&<div style={{background:"linear-gradient(135deg,rgba(217,119,6,0.08),rgba(217,119,6,0.04))",border:"1px solid rgba(217,119,6,0.2)",borderRadius:18,padding:"14px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
       <span style={{fontSize:24}}>🏆</span>
       <div>
-        <div style={{fontSize:13,fontWeight:700,color:"#ff9500"}}>Personal Record !</div>
-        <div style={{fontSize:12,color:"#8e8e93",marginTop:2}}>Nouveau meilleur score global — {pr.overall}% battu cette semaine</div>
+        <div style={{fontSize:14,fontWeight:800,color:"#D97706",letterSpacing:-0.2}}>Personal Record !</div>
+        <div style={{fontSize:12,color:"#6B7280",marginTop:2}}>Nouveau meilleur score global — {pr.overall}% battu cette semaine</div>
       </div>
     </div>}
     {/* AI insight */}
-    {insight&&<Card style={{marginBottom:12,padding:"14px 16px",borderLeft:"3px solid #007aff",borderRadius:"0 16px 16px 0"}}>
+    {insight&&<Card style={{marginBottom:12,padding:"14px 16px",borderLeft:"3px solid #1D6CF6",borderRadius:"0 18px 18px 0"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
         <span style={{fontSize:14}}>💡</span>
-        <span style={{fontSize:11,fontWeight:700,color:"#007aff",textTransform:"uppercase",letterSpacing:0.5}}>Analyse IA · Semaine {insight.week}</span>
-        <span style={{fontSize:11,color:"#8e8e93",marginLeft:"auto",fontWeight:600}}>{insight.score}%</span>
+        <span style={{fontSize:11,fontWeight:700,color:"#1D6CF6",textTransform:"uppercase",letterSpacing:0.5}}>Analyse IA · Semaine {insight.week}</span>
+        <span style={{fontSize:11,color:"#6B7280",marginLeft:"auto",fontWeight:600}}>{insight.score}%</span>
       </div>
-      <p style={{fontSize:13,color:"#1c1c1e",lineHeight:1.65,margin:0}}>{insight.text}</p>
+      <p style={{fontSize:13,color:"#0F0F14",lineHeight:1.65,margin:0}}>{insight.text}</p>
     </Card>}
     {/* Streak checkmarks */}
     <Card style={{marginBottom:12,padding:"14px 16px"}}>
-      <div style={{fontSize:10,fontWeight:600,color:"#8e8e93",textTransform:"uppercase",letterSpacing:0.5,marginBottom:10}}>Semaines du sprint</div>
+      <div style={{fontSize:10,fontWeight:600,color:"#6B7280",textTransform:"uppercase",letterSpacing:0.5,marginBottom:10}}>Semaines du sprint</div>
       <div style={{display:"flex",gap:3}}>
         {weekData.map(({w,score,paused:isPaused,logged:isLogged})=>{
           const isCur=w===wk;
           return <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-            <div style={{width:"100%",aspectRatio:"1",borderRadius:6,background:isPaused?"rgba(255,149,0,0.12)":isLogged?scoreColor(score)+"18":isCur?"rgba(0,122,255,0.08)":"rgba(0,0,0,0.04)",border:`1.5px solid ${isPaused?"#ff9500":isLogged?scoreColor(score):isCur?"#007aff":"rgba(0,0,0,0.1)"}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}>
-              {isPaused&&<span style={{fontSize:7,color:"#ff9500",fontWeight:700}}>OFF</span>}
+            <div style={{width:"100%",aspectRatio:"1",borderRadius:8,background:isPaused?"rgba(255,149,0,0.12)":isLogged?scoreColor(score)+"18":isCur?"rgba(0,122,255,0.08)":"rgba(0,0,0,0.04)",border:`1.5px solid ${isPaused?"#D97706":isLogged?scoreColor(score):isCur?"#1D6CF6":"rgba(0,0,0,0.1)"}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}>
+              {isPaused&&<span style={{fontSize:7,color:"#D97706",fontWeight:700}}>OFF</span>}
               {!isPaused&&isLogged&&<span style={{fontSize:9,color:scoreColor(score),fontWeight:900}}>✓</span>}
-              {!isPaused&&!isLogged&&isCur&&<span style={{fontSize:7,color:"#007aff",fontWeight:700}}>•</span>}
+              {!isPaused&&!isLogged&&isCur&&<span style={{fontSize:7,color:"#1D6CF6",fontWeight:700}}>•</span>}
             </div>
-            <span style={{fontSize:6.5,color:isCur?"#1c1c1e":"#d1d1d6",fontWeight:isCur?700:400}}>S{w}</span>
+            <span style={{fontSize:6.5,color:isCur?"#0F0F14":"#C4C4CC",fontWeight:isCur?700:400}}>S{w}</span>
           </div>;
         })}
       </div>
       {loggedWeeks.length>0&&<div style={{marginTop:8,display:"flex",gap:8}}>
-        <span style={{fontSize:11,color:"#8e8e93"}}>{loggedWeeks.length} sem. saisies</span>
-        <span style={{fontSize:11,color:"#30d158",fontWeight:600}}>{loggedWeeks.filter(w=>w.score>=75).length} au-dessus de 75%</span>
+        <span style={{fontSize:11,color:"#6B7280"}}>{loggedWeeks.length} sem. saisies</span>
+        <span style={{fontSize:11,color:"#16A34A",fontWeight:600}}>{loggedWeeks.filter(w=>w.score>=75).length} au-dessus de 75%</span>
       </div>}
     </Card>
     {/* Bar/line chart */}
     <Card style={{marginBottom:12,padding:"18px 18px 14px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <span style={{fontSize:12,fontWeight:600,color:"#1c1c1e"}}>Performance hebdomadaire</span>
+        <span style={{fontSize:12,fontWeight:600,color:"#0F0F14"}}>Performance hebdomadaire</span>
         <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:8,padding:2}}>
           {[["bars","▦"],["line","╱"]].map(([m,icon])=>(
-            <button key={m} onClick={()=>setChartMode(m)} style={{width:28,height:24,border:"none",borderRadius:6,cursor:"pointer",background:chartMode===m?"#ffffff":"transparent",color:chartMode===m?"#1c1c1e":"#8e8e93",fontSize:12,fontWeight:700,boxShadow:chartMode===m?"0 2px 14px rgba(0,0,0,0.07)":"none"}}>{icon}</button>
+            <button key={m} onClick={()=>setChartMode(m)} style={{width:28,height:24,border:"none",borderRadius:6,cursor:"pointer",background:chartMode===m?"#ffffff":"transparent",color:chartMode===m?"#0F0F14":"#6B7280",fontSize:12,fontWeight:700,boxShadow:chartMode===m?"0 2px 14px rgba(0,0,0,0.07)":"none"}}>{icon}</button>
           ))}
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
         {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["rgba(0,122,255,0.70)","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
-          <div key={l} style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:7,height:7,borderRadius:2,background:c}}/><span style={{fontSize:8,color:"#8e8e93"}}>{l}</span></div>
+          <div key={l} style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:3,background:c}}/><span style={{fontSize:8,color:"#6B7280"}}>{l}</span></div>
         ))}
       </div>
       <div style={{position:"relative",paddingBottom:20}}>
-        <div style={{position:"absolute",left:0,right:0,bottom:20+(benchScore/100)*chartH,borderTop:`1.5px ${!prevSprint?"dashed":"solid"} #ff9500`,pointerEvents:"none",zIndex:1}}>
-          <span style={{position:"absolute",right:0,top:-16,fontSize:8,fontWeight:600,color:"#ff9500",background:"#ffffff",padding:"1px 5px",borderRadius:4}}>{benchLabel}</span>
+        <div style={{position:"absolute",left:0,right:0,bottom:20+(benchScore/100)*chartH,borderTop:`1.5px ${!prevSprint?"dashed":"solid"} #D97706`,pointerEvents:"none",zIndex:1}}>
+          <span style={{position:"absolute",right:0,top:-16,fontSize:8,fontWeight:600,color:"#D97706",background:"#ffffff",padding:"1px 5px",borderRadius:4}}>{benchLabel}</span>
         </div>
         {chartMode==="bars"
           ?<div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
               {weekData.map(({w,score,paused:isPaused,logged:isLogged})=>{
                 const isCur=w===wk;const h=isLogged&&score!==null?(score/100)*chartH+4:4;const bg=isLogged&&score!==null?barColor(score):"rgba(0,0,0,0.06)";const showLbl=isLogged&&score!==null&&h>18;
                 return <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
-                  <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,boxShadow:isCur&&isLogged?"0 0 0 1.5px #007aff":"none",transition:"height 0.4s",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:2}}>
+                  <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,boxShadow:isCur&&isLogged?"0 0 0 1.5px #1D6CF6":"none",transition:"height 0.4s",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:2}}>
                     {showLbl&&<span style={{fontSize:6,fontWeight:700,color:"#fff",lineHeight:1}}>{score}</span>}
                   </div>
-                  <span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:isCur?700:400,color:isCur?"#1c1c1e":"#8e8e93"}}>{isPaused?"OFF":`W${w}`}</span>
+                  <span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:isCur?700:400,color:isCur?"#0F0F14":"#6B7280"}}>{isPaused?"OFF":`W${w}`}</span>
                 </div>;
               })}
             </div>
           :<div style={{height:`${chartH+4}px`,position:"relative"}}>
               {loggedWeeks.length>=2&&<svg width="100%" height={chartH+4} style={{position:"absolute",inset:0}} preserveAspectRatio="none" viewBox={`0 0 100 ${chartH+4}`}>
-                <polyline points={loggedWeeks.map(d=>`${((d.w-1)/11)*100},${chartH+4-(d.score/100)*chartH}`).join(" ")} fill="none" stroke="#007aff" strokeWidth="1.5" strokeLinejoin="round"/>
-                {loggedWeeks.map(d=><circle key={d.w} cx={((d.w-1)/11)*100} cy={chartH+4-(d.score/100)*chartH} r="3" fill={barColor(d.score)} stroke="#007aff" strokeWidth="1"/>)}
+                <polyline points={loggedWeeks.map(d=>`${((d.w-1)/11)*100},${chartH+4-(d.score/100)*chartH}`).join(" ")} fill="none" stroke="#1D6CF6" strokeWidth="1.5" strokeLinejoin="round"/>
+                {loggedWeeks.map(d=><circle key={d.w} cx={((d.w-1)/11)*100} cy={chartH+4-(d.score/100)*chartH} r="3" fill={barColor(d.score)} stroke="#1D6CF6" strokeWidth="1"/>)}
               </svg>}
               <div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
-                {weekData.map(({w,paused:isPaused})=><div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}><span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:w===wk?700:400,color:w===wk?"#1c1c1e":"#8e8e93"}}>{isPaused?"OFF":`W${w}`}</span></div>)}
+                {weekData.map(({w,paused:isPaused})=><div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}><span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:w===wk?700:400,color:w===wk?"#0F0F14":"#6B7280"}}>{isPaused?"OFF":`W${w}`}</span></div>)}
               </div>
             </div>
         }
@@ -650,34 +668,34 @@ function HomeView({sprint,weekLogs,quote,userId}){
     {/* Radar charts */}
     {activeCats.length>=3&&<>
       <Card style={{marginBottom:12,padding:"16px 18px",overflow:"visible"}}>
-        <div style={{fontSize:11,fontWeight:600,color:"#1c1c1e",marginBottom:12}}>Semaine {wk} vs moyenne sprint</div>
+        <div style={{fontSize:11,fontWeight:600,color:"#0F0F14",marginBottom:12}}>Semaine {wk} vs moyenne sprint</div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,overflow:"visible"}}>
-          <RadarChart cats={activeCats} datasets={[{label:`S${wk}`,color:"#007aff",values:activeCats.map(c=>wkByCat[c.id]??0)},{label:"Moy.",color:"#30d158",values:activeCats.map(c=>spByCat[c.id]??0)}]}/>
-          <div style={{display:"flex",gap:16}}>{[{l:`S${wk}`,c:"#007aff"},{l:"Moy. sprint",c:"#30d158"}].map(({l,c})=><div key={l} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:"#8e8e93"}}>{l}</span></div>)}</div>
+          <RadarChart cats={activeCats} datasets={[{label:`S${wk}`,color:"#1D6CF6",values:activeCats.map(c=>wkByCat[c.id]??0)},{label:"Moy.",color:"#16A34A",values:activeCats.map(c=>spByCat[c.id]??0)}]}/>
+          <div style={{display:"flex",gap:16}}>{[{l:`S${wk}`,c:"#1D6CF6"},{l:"Moy. sprint",c:"#16A34A"}].map(({l,c})=><div key={l} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:"#6B7280"}}>{l}</span></div>)}</div>
         </div>
       </Card>
       {prevSprint&&prevSprint.catAvgs&&<Card style={{marginBottom:12,padding:"16px 18px",overflow:"visible"}}>
-        <div style={{fontSize:11,fontWeight:600,color:"#1c1c1e",marginBottom:12}}>Sprint actuel vs Q1-26</div>
+        <div style={{fontSize:11,fontWeight:600,color:"#0F0F14",marginBottom:12}}>Sprint actuel vs Q1-26</div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,overflow:"visible"}}>
-          <RadarChart cats={activeCats} datasets={[{label:"Ce sprint",color:"#007aff",values:activeCats.map(c=>spByCat[c.id]??0)},{label:"Q1-26",color:"#ff9500",values:activeCats.map(c=>prevSprint.catAvgs[c.id]??0)}]}/>
-          <div style={{display:"flex",gap:16}}>{[{l:"Ce sprint",c:"#007aff"},{l:"Q1-26",c:"#ff9500"}].map(({l,c})=><div key={l} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:"#8e8e93"}}>{l}</span></div>)}</div>
+          <RadarChart cats={activeCats} datasets={[{label:"Ce sprint",color:"#1D6CF6",values:activeCats.map(c=>spByCat[c.id]??0)},{label:"Q1-26",color:"#D97706",values:activeCats.map(c=>prevSprint.catAvgs[c.id]??0)}]}/>
+          <div style={{display:"flex",gap:16}}>{[{l:"Ce sprint",c:"#1D6CF6"},{l:"Q1-26",c:"#D97706"}].map(({l,c})=><div key={l} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:8,height:8,borderRadius:2,background:c}}/><span style={{fontSize:10,color:"#6B7280"}}>{l}</span></div>)}</div>
         </div>
       </Card>}
     </>}
 
 
     {/* Detail toggle */}
-    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:12}}>
+    <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:4,marginBottom:12}}>
       {[["%","% Score"],["#","Valeurs"]].map(([m,l])=>(
-        <button key={m} onClick={()=>setDetailMode(m)} style={{flex:1,padding:"8px 0",border:"none",borderRadius:10,cursor:"pointer",background:detailMode===m?"#ffffff":"transparent",color:detailMode===m?"#1c1c1e":"#8e8e93",fontSize:13,fontWeight:600,boxShadow:detailMode===m?"0 2px 14px rgba(0,0,0,0.07)":"none"}}>{l}</button>
+        <button key={m} onClick={()=>setDetailMode(m)} style={{flex:1,padding:"8px 0",border:"none",borderRadius:10,cursor:"pointer",background:detailMode===m?"#ffffff":"transparent",color:detailMode===m?"#0F0F14":"#6B7280",fontSize:13,fontWeight:600,boxShadow:detailMode===m?"0 2px 14px rgba(0,0,0,0.07)":"none"}}>{l}</button>
       ))}
     </div>
     {detailMode==="%"
       ?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
           {activeCats.map(cat=><div key={cat.id} style={{background:"#ffffff",borderRadius:16,boxShadow:"0 2px 14px rgba(0,0,0,0.07)",padding:"14px 10px",textAlign:"center"}}>
-            <div style={{fontSize:9,fontWeight:700,color:cat.color,textTransform:"uppercase",letterSpacing:0.5,marginBottom:10}}>{cat.name}</div>
+            <div style={{fontSize:9,fontWeight:700,color:cat.color,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>{cat.name}</div>
             <Ring score={wkByCat[cat.id]??0} size={52} color={cat.color}/>
-            <div style={{color:"#8e8e93",fontSize:9,marginTop:5}}>{(sprint.catWeights||{})[cat.id]||0}%</div>
+            <div style={{color:"#6B7280",fontSize:9,marginTop:5}}>{(sprint.catWeights||{})[cat.id]||0}%</div>
           </div>)}
         </div>
       :<div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -686,14 +704,14 @@ function HomeView({sprint,weekLogs,quote,userId}){
             return <Card key={cat.id} style={{padding:"14px 16px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                 <div style={{width:7,height:7,borderRadius:50,background:cat.color}}/>
-                <span style={{color:"#1c1c1e",fontSize:12,fontWeight:600,flex:1}}>{cat.name}</span>
-                <span style={{color:"#8e8e93",fontSize:11}}>{wkByCat[cat.id]??0}%</span>
+                <span style={{color:"#0F0F14",fontSize:12,fontWeight:600,flex:1}}>{cat.name}</span>
+                <span style={{color:"#6B7280",fontSize:11}}>{wkByCat[cat.id]??0}%</span>
               </div>
               {catHabits.map(h=>{
                 const val=logs[h.id];const hasVal=val!==undefined&&val!==null&&val!=="";const s=scoreOne(h.type==="boolean"?(val?1:0):val,h);
                 return <div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid rgba(0,0,0,0.09)"}}>
-                  <span style={{flex:1,color:"#1c1c1e",fontSize:12}}>{h.name}</span>
-                  <span style={{color:"#8e8e93",fontSize:11}}>{hasVal?(h.type==="boolean"?(val?"✓":"✗"):`${val}${h.unit?` ${h.unit}`:""} / ${h.target}`):"—"}</span>
+                  <span style={{flex:1,color:"#0F0F14",fontSize:12}}>{h.name}</span>
+                  <span style={{color:"#6B7280",fontSize:11}}>{hasVal?(h.type==="boolean"?(val?"✓":"✗"):`${val}${h.unit?` ${h.unit}`:""} / ${h.target}`):"—"}</span>
                   {hasVal&&<span style={{color:barColor(Math.round(s*100)),fontSize:11,fontWeight:700,minWidth:32,textAlign:"right"}}>{Math.round(s*100)}%</span>}
                 </div>;
               })}
@@ -765,14 +783,14 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
   return <Scroll>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
       <div>
-        <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:"0 0 2px"}}>Journal</h2>
-        <p style={{color:"#8e8e93",fontSize:13,margin:0}}>
-          {isPaused?<span style={{color:"#ff9500",fontWeight:600}}>Semaine {selWk} — OFF</span>
-            :<><strong style={{color:scoreColor(overall)}}>{overall}%</strong>{bonusScore>0&&<span style={{color:"#ff9500",marginLeft:6,fontSize:11}}>+{bonusScore}%</span>}{selWk!==currentWk&&<span style={{color:"#ff9500",marginLeft:8,fontSize:11}}>← passé</span>}</>}
+        <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:"0 0 3px",letterSpacing:-0.5}}>Journal</h2>
+        <p style={{color:"#6B7280",fontSize:13,margin:0}}>
+          {isPaused?<span style={{color:"#D97706",fontWeight:600}}>Semaine {selWk} — OFF</span>
+            :<><strong style={{color:scoreColor(overall)}}>{overall}%</strong>{bonusScore>0&&<span style={{color:"#D97706",marginLeft:6,fontSize:11}}>+{bonusScore}%</span>}{selWk!==currentWk&&<span style={{color:"#D97706",marginLeft:8,fontSize:11}}>← passé</span>}</>}
         </p>
       </div>
       <div style={{display:"flex",gap:6}}>
-        <button onClick={togglePause} style={{background:isPaused?"rgba(255,149,0,0.12)":"transparent",border:`1px solid ${isPaused?"#ff9500":"#d1d1d6"}`,color:isPaused?"#ff9500":"#8e8e93",borderRadius:10,padding:"8px 12px",fontSize:12,cursor:"pointer",fontWeight:600,minHeight:36}}>{isPaused?"▶ Reprendre":"⏸ Jours off"}</button>
+        <button onClick={togglePause} style={{background:isPaused?"rgba(255,149,0,0.12)":"transparent",border:`1px solid ${isPaused?"#D97706":"#C4C4CC"}`,color:isPaused?"#D97706":"#6B7280",borderRadius:10,padding:"8px 12px",fontSize:12,cursor:"pointer",fontWeight:600,minHeight:36}}>{isPaused?"▶ Reprendre":"⏸ Jours off"}</button>
         {!isPaused&&<Btn onClick={save} variant={saved?"success":"primary"}>{saved?"Enregistré ✓":"Enregistrer"}</Btn>}
       </div>
     </div>
@@ -781,16 +799,16 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
         const w=i+1;const ll=weekLogs[w]||{};const isOff=paused.includes(w);
         const hasLog=!isOff&&regHabits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
         const{overall:ws}=calcScores(sprint.habits,ll);const isSel=selWk===w;
-        return <button key={w} onClick={()=>setSelWk(w)} style={{flexShrink:0,padding:"8px 10px",borderRadius:10,border:`1px solid ${isSel?(isOff?"#ff9500":"#007aff"):"#d1d1d6"}`,background:isSel?(isOff?"rgba(255,149,0,0.1)":"rgba(0,122,255,0.1)"):"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:44,minHeight:44,justifyContent:"center"}}>
-          <span style={{fontSize:10,fontWeight:isSel?700:400,color:isSel?(isOff?"#ff9500":"#007aff"):"#8e8e93"}}>S{w}</span>
-          {isOff?<span style={{fontSize:7,color:"#ff9500",fontWeight:700}}>OFF</span>:<div style={{width:6,height:6,borderRadius:3,background:hasLog?scoreColor(ws):"rgba(0,0,0,0.1)"}}/>}
+        return <button key={w} onClick={()=>setSelWk(w)} style={{flexShrink:0,padding:"8px 10px",borderRadius:10,border:`1px solid ${isSel?(isOff?"#D97706":"#1D6CF6"):"#C4C4CC"}`,background:isSel?(isOff?"rgba(255,149,0,0.1)":"rgba(0,122,255,0.1)"):"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:44,minHeight:44,justifyContent:"center"}}>
+          <span style={{fontSize:10,fontWeight:isSel?700:400,color:isSel?(isOff?"#D97706":"#1D6CF6"):"#6B7280"}}>S{w}</span>
+          {isOff?<span style={{fontSize:7,color:"#D97706",fontWeight:700}}>OFF</span>:<div style={{width:6,height:6,borderRadius:3,background:hasLog?scoreColor(ws):"rgba(0,0,0,0.1)"}}/>}
         </button>;
       })}
     </div>
-    {isPaused&&<Card style={{textAlign:"center",marginBottom:14,padding:"20px 16px"}}>
+    {isPaused&&<Card style={{textAlign:"center",marginBottom:14,padding:"28px 20px",borderRadius:20}}>
       <div style={{fontSize:28,marginBottom:8}}>🏖️</div>
-      <p style={{color:"#ff9500",fontSize:14,fontWeight:600,margin:"0 0 4px"}}>Semaine marquée OFF</p>
-      <p style={{color:"#8e8e93",fontSize:12,margin:0}}>Congés ou maladie — cette semaine ne compte pas dans ta moyenne.</p>
+      <p style={{color:"#D97706",fontSize:14,fontWeight:600,margin:"0 0 4px"}}>Semaine marquée OFF</p>
+      <p style={{color:"#6B7280",fontSize:12,margin:0}}>Congés ou maladie — cette semaine ne compte pas dans ta moyenne.</p>
     </Card>}
     {catGroups.map(cat=>{
       const reg=cat.habits.filter(h=>!h.isBonus);const bon=cat.habits.filter(h=>h.isBonus);
@@ -821,18 +839,18 @@ function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated,history=[]}){
   const catGroups=CATS.map(c=>({...c,habits:sprint.habits.filter(h=>h.catId===c.id),weight:(sprint.catWeights||{})[c.id]||0})).filter(c=>c.habits.length>0);
   return <Scroll>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-      <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:0}}>Sprint en cours</h2>
+      <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:0,letterSpacing:-0.5}}>Sprint en cours</h2>
       <Btn small variant="secondary" onClick={()=>setReconfigure(true)}>Nouveau sprint</Btn>
     </div>
-    <p style={{color:"#8e8e93",fontSize:13,margin:"4px 0 14px"}}>Semaine {wk} sur 12 · démarré le {fmtDate(sprint.startDate)}</p>
-    <Notice color="#007aff">Appuie sur Modifier pour mettre à jour une habitude.</Notice>
+    <p style={{color:"#6B7280",fontSize:13,margin:"4px 0 14px"}}>Semaine {wk} sur 12 · démarré le {fmtDate(sprint.startDate)}</p>
+    <Notice color="#1D6CF6">Appuie sur Modifier pour mettre à jour une habitude.</Notice>
     {catGroups.map(cat=>{
       const reg=cat.habits.filter(h=>!h.isBonus);const bon=cat.habits.filter(h=>h.isBonus);
       const totW=reg.reduce((a,h)=>a+(parseFloat(h.weight)||0),0);
       return <Card key={cat.id} style={{marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
           <div style={{width:8,height:8,borderRadius:2,background:cat.color}}/><span style={{color:cat.color,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>{cat.name}</span>
-          <span style={{color:"#8e8e93",fontSize:11,marginLeft:"auto"}}>{totW.toFixed(0)}% / {cat.weight}%</span>
+          <span style={{color:"#6B7280",fontSize:11,marginLeft:"auto"}}>{totW.toFixed(0)}% / {cat.weight}%</span>
         </div>
         {[...reg,...bon].map(h=>{
           const isBonus=h.isBonus;
@@ -842,10 +860,10 @@ function SprintTab({user,sprint,onSprintCreated,onHabitsUpdated,history=[]}){
           }
           return <div key={h.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isBonus?"rgba(255,149,0,0.07)":"rgba(0,0,0,0.03)",borderRadius:10,marginBottom:6}}>
             <div style={{flex:1}}>
-              <div style={{color:isBonus?"#ff9500":"#1c1c1e",fontSize:13,fontWeight:500}}>{isBonus?"⭐ ":""}{h.name}{h.subCat&&<span style={{color:"#8e8e93",fontSize:11}}> · {h.subCat}</span>}</div>
-              <div style={{color:"#8e8e93",fontSize:11,marginTop:3}}>{h.type!=="boolean"&&`${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""} · `}<strong style={{color:isBonus?"#ff9500":cat.color}}>{isBonus?"+5% bonus":`${h.weight}%`}</strong></div>
+              <div style={{color:isBonus?"#D97706":"#0F0F14",fontSize:13,fontWeight:500}}>{isBonus?"⭐ ":""}{h.name}{h.subCat&&<span style={{color:"#6B7280",fontSize:11}}> · {h.subCat}</span>}</div>
+              <div style={{color:"#6B7280",fontSize:11,marginTop:3}}>{h.type!=="boolean"&&`${h.targetType==="min"?"≥":"≤"} ${h.target}${h.unit?` ${h.unit}`:""} · `}<strong style={{color:isBonus?"#D97706":cat.color}}>{isBonus?"+5% bonus":`${h.weight}%`}</strong></div>
             </div>
-            <button onClick={()=>{setEditingId(h.id);setEditDraft({...h});}} style={{background:"none",border:"1px solid #d1d1d6",color:"#8e8e93",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Modifier</button>
+            <button onClick={()=>{setEditingId(h.id);setEditDraft({...h});}} style={{background:"none",border:"1px solid rgba(0,0,0,0.1)",color:"#6B7280",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",minHeight:36}}>Modifier</button>
             <button onClick={()=>delHabit(h.id)} style={{background:"none",border:"none",color:"rgba(255,59,48,0.6)",fontSize:18,cursor:"pointer",padding:"0 2px"}}>×</button>
           </div>;
         })}
@@ -895,11 +913,11 @@ function SocialView({user,sprint}){
     return{id:u.id,name:u.name,email:u.email,weekScore:wkEntry?.overall??null,sprintScore:spEntry?.sprintAvg??null,byCat:wkEntry?.byCat||null,weeksLogged:spEntry?.weeksLogged||0,weekScores:spEntry?.weekScores||null};
   }).sort((a,b)=>{const sa=tab==="week"?a.weekScore:a.sprintScore;const sb=tab==="week"?b.weekScore:b.sprintScore;if(sa===null&&sb===null)return 0;if(sa===null)return 1;if(sb===null)return-1;return sb-sa;});
   return <Scroll>
-    <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:"0 0 2px"}}>Communauté</h2>
-    <p style={{color:"#8e8e93",fontSize:13,margin:"0 0 14px"}}>Semaine {wk} · {allUsers.length} membre{allUsers.length!==1?"s":""}</p>
-    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:16}}>
+    <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:"0 0 3px",letterSpacing:-0.5}}>Communauté</h2>
+    <p style={{color:"#6B7280",fontSize:13,margin:"0 0 16px",lineHeight:1.4}}>Semaine {wk} · {allUsers.length} membre{allUsers.length!==1?"s":""}</p>
+    <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:4,marginBottom:16}}>
       {[["week","Cette semaine"],["sprint","Sprint"]].map(([t,l])=>(
-        <button key={t} onClick={()=>{setTab(t);setExpanded(null);}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:tab===t?"#ffffff":"transparent",color:tab===t?"#1c1c1e":"#8e8e93",fontSize:13,fontWeight:600,boxShadow:tab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
+        <button key={t} onClick={()=>{setTab(t);setExpanded(null);}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:tab===t?"#ffffff":"transparent",color:tab===t?"#0F0F14":"#6B7280",fontSize:13,fontWeight:600,boxShadow:tab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
       ))}
     </div>
     {/* Weekly recap card */}
@@ -912,43 +930,43 @@ function SocialView({user,sprint}){
         if(best.score>=85)catStars[cat.id]=best;
       });
       const healthStar=catStars["health"];
-      return <div style={{background:"linear-gradient(135deg,rgba(0,122,255,0.08),rgba(48,209,88,0.08))",border:"1px solid rgba(0,122,255,0.15)",borderRadius:18,padding:"16px",marginBottom:16}}>
+      return <div style={{background:"linear-gradient(135deg,rgba(29,108,246,0.07),rgba(22,163,74,0.05))",border:"1px solid rgba(29,108,246,0.12)",borderRadius:18,padding:"16px",marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
           <span style={{fontSize:16}}>📊</span>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:"#1c1c1e"}}>Récap de la semaine passée</div>
-            <div style={{fontSize:11,color:"#8e8e93"}}>Voici comment le groupe s'en est sorti 💪</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F0F14"}}>Récap de la semaine passée</div>
+            <div style={{fontSize:11,color:"#6B7280"}}>Voici comment le groupe s'en est sorti 💪</div>
           </div>
         </div>
         {/* Podium line */}
-        {p1&&<div style={{background:"rgba(255,255,255,0.7)",borderRadius:12,padding:"10px 12px",marginBottom:10}}>
-          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#8e8e93",marginBottom:8}}>Podium</div>
+        {p1&&<div style={{background:"rgba(255,255,255,0.85)",borderRadius:14,padding:"12px 14px",marginBottom:10,border:"1px solid rgba(0,0,0,0.055)"}}>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF",marginBottom:8}}>Podium</div>
           <div style={{display:"flex",gap:6}}>
             {[p1,p2,p3].filter(Boolean).map((e,i)=><div key={e.userId} style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
               <span style={{fontSize:14}}>{i===0?"🥇":i===1?"🥈":"🥉"}</span>
               <div>
-                <div style={{fontSize:12,fontWeight:700,color:"#1c1c1e"}}>{e.name.split(" ")[0]}</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#0F0F14"}}>{e.name.split(" ")[0]}</div>
                 <div style={{fontSize:11,fontWeight:600,color:scoreColor(e.overall)}}>{e.overall}%</div>
               </div>
             </div>)}
           </div>
         </div>}
         {/* Health spotlight */}
-        {healthStar&&<div style={{background:"rgba(255,59,48,0.07)",borderRadius:12,padding:"10px 12px",marginBottom:10}}>
-          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#ff3b30",marginBottom:6}}>❤️ Spotlight Santé</div>
-          <div style={{fontSize:12,color:"#1c1c1e"}}>
-            <strong>{healthStar.name.split(" ")[0]}</strong> a dominé la catégorie Santé avec <strong style={{color:"#ff3b30"}}>{healthStar.score}%</strong> — respect 🙌
+        {healthStar&&<div style={{background:"rgba(220,38,38,0.06)",borderRadius:14,padding:"12px 14px",marginBottom:10,border:"1px solid rgba(220,38,38,0.1)"}}>
+          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#DC2626",marginBottom:6}}>❤️ Spotlight Santé</div>
+          <div style={{fontSize:12,color:"#0F0F14"}}>
+            <strong>{healthStar.name.split(" ")[0]}</strong> a dominé la catégorie Santé avec <strong style={{color:"#DC2626"}}>{healthStar.score}%</strong> — respect 🙌
           </div>
         </div>}
         {/* Category stars */}
         {Object.keys(catStars).filter(id=>id!=="health").length>0&&<div style={{background:"rgba(255,255,255,0.7)",borderRadius:12,padding:"10px 12px"}}>
-          <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"#8e8e93",marginBottom:8}}>⭐ Meilleurs par catégorie</div>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF",marginBottom:8}}>⭐ Meilleurs par catégorie</div>
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
             {Object.entries(catStars).filter(([id])=>id!=="health").map(([catId,star])=>{
               const cat=CATS.find(c=>c.id===catId);
               return <div key={catId} style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{width:6,height:6,borderRadius:3,background:cat.color,flexShrink:0}}/>
-                <span style={{fontSize:11,color:"#8e8e93",flex:1}}>{cat.name}</span>
+                <span style={{fontSize:11,color:"#6B7280",flex:1}}>{cat.name}</span>
                 <span style={{fontSize:11,fontWeight:600,color:cat.color}}>{star.name.split(" ")[0]} · {star.score}%</span>
               </div>;
             })}
@@ -957,14 +975,14 @@ function SocialView({user,sprint}){
       </div>;
     })()}
     <Card style={{marginBottom:16,padding:"13px 16px"}}>
-      <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Inviter des amis</p>
-      <p style={{color:"#1c1c1e",fontSize:12,lineHeight:1.6,margin:"0 0 10px"}}>Envoie ce lien — il mène directement à la création de compte :</p>
+      <p style={{color:"#6B7280",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Inviter des amis</p>
+      <p style={{color:"#0F0F14",fontSize:12,lineHeight:1.6,margin:"0 0 10px"}}>Envoie ce lien — il mène directement à la création de compte :</p>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <div style={{flex:1,background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:"#007aff",wordBreak:"break-all"}}>manumanubens-bvmc.github.io/momentum-app</div>
-        <button onClick={()=>{navigator.clipboard.writeText("https://manumanubens-bvmc.github.io/momentum-app").then(()=>{const btn=document.getElementById("copy-btn");if(btn){btn.textContent="Copié ✓";btn.style.color="#30d158";setTimeout(()=>{btn.textContent="Copier";btn.style.color="#007aff";},2000);}}).catch(()=>{});}} id="copy-btn" style={{background:"rgba(0,122,255,0.1)",border:"none",borderRadius:10,padding:"10px 14px",color:"#007aff",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Copier</button>
+        <div style={{flex:1,background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:"#1D6CF6",wordBreak:"break-all"}}>manumanubens-bvmc.github.io/momentum-app</div>
+        <button onClick={()=>{navigator.clipboard.writeText("https://manumanubens-bvmc.github.io/momentum-app").then(()=>{const btn=document.getElementById("copy-btn");if(btn){btn.textContent="Copié ✓";btn.style.color="#16A34A";setTimeout(()=>{btn.textContent="Copier";btn.style.color="#1D6CF6";},2000);}}).catch(()=>{});}} id="copy-btn" style={{background:"rgba(0,122,255,0.1)",border:"none",borderRadius:10,padding:"10px 14px",color:"#1D6CF6",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Copier</button>
       </div>
     </Card>
-    {loading&&<div style={{textAlign:"center",padding:40,color:"#8e8e93"}}>Chargement…</div>}
+    {loading&&<div style={{textAlign:"center",padding:"40px 20px",color:"#9CA3AF",fontSize:14}}>Chargement…</div>}
     {!loading&&top3.length>=2&&<div style={{marginBottom:16,marginTop:8}}>
       <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:8,marginBottom:14,height:130,paddingTop:20}}>
         {[1,0,2].map(rank=>{
@@ -973,16 +991,16 @@ function SocialView({user,sprint}){
           return <div key={rank} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
             {isFirst&&<div style={{fontSize:18}}>🥇</div>}
             <Avatar name={e.name} userId={e.userId} email={e.email} size={isFirst?40:34}/>
-            <span style={{fontSize:10,fontWeight:isFirst?700:500,color:"#1c1c1e",maxWidth:64,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{e.name.split(" ")[0]}</span>
-            <div style={{width:"100%",background:isFirst?"#007aff":"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:heights[rank],display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":"#8e8e93"}}>{tab==="week"?e.overall:e.sprintAvg}%</span>
+            <span style={{fontSize:10,fontWeight:isFirst?700:500,color:"#0F0F14",maxWidth:64,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{e.name.split(" ")[0]}</span>
+            <div style={{width:"100%",background:isFirst?"#1D6CF6":"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:heights[rank],display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":"#6B7280"}}>{tab==="week"?e.overall:e.sprintAvg}%</span>
             </div>
           </div>;
         })}
       </div>
     </div>}
     {!loading&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-      <div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:"#8e8e93",marginBottom:4}}>Tous les membres · {membersList.length}</div>
+      <div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF",marginBottom:4}}>Tous les membres · {membersList.length}</div>
       {membersList.map((member,i)=>{
         const score=tab==="week"?member.weekScore:member.sprintScore;
         const isMe=member.id===user.id;const isExp=expanded===member.id;
@@ -992,51 +1010,51 @@ function SocialView({user,sprint}){
         return <div key={member.id} onClick={()=>setExpanded(isExp?null:member.id)} style={{background:isMe?"rgba(0,122,255,0.06)":"#ffffff",borderRadius:16,border:isMe?"1.5px solid rgba(0,122,255,0.25)":"none",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",overflow:"hidden",cursor:"pointer"}}>
           <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:26,height:26,borderRadius:8,background:i<3?"rgba(0,122,255,0.1)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <span style={{fontSize:i<3?14:11,fontWeight:700,color:i===0?"#007aff":i===1?"#8e8e93":i===2?"#ff9500":"#d1d1d6"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span>
+              <span style={{fontSize:i<3?14:11,fontWeight:700,color:i===0?"#1D6CF6":i===1?"#6B7280":i===2?"#D97706":"#C4C4CC"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span>
             </div>
             <Avatar name={member.name} userId={member.id} email={member.email} size={34}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:14,fontWeight:600,color:"#1c1c1e"}}>{member.name}</span>
-                {isMe&&<span style={{fontSize:9,color:"#007aff",background:"rgba(0,122,255,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>toi</span>}
-                {streak>=3&&<span style={{fontSize:9,color:"#30d158",background:"rgba(48,209,88,0.1)",padding:"2px 7px",borderRadius:10,fontWeight:700}}>🔥 {streak} sem.</span>}
-                {(()=>{const prevSorted=toArr(prevWkData).sort((a,b)=>b.overall-a.overall);const prevRank=prevSorted.findIndex(e=>e.userId===member.id);return prevRank>=0&&prevRank<3?<span style={{fontSize:9,fontWeight:700,color:prevRank===0?"#007aff":prevRank===1?"#8e8e93":"#ff9500",background:prevRank===0?"rgba(0,122,255,0.1)":prevRank===1?"rgba(0,0,0,0.06)":"rgba(255,149,0,0.1)",padding:"2px 7px",borderRadius:10}}>{prevRank===0?"🥇 S-1":prevRank===1?"🥈 S-1":"🥉 S-1"}</span>:null;})()}
+                <span style={{fontSize:14,fontWeight:600,color:"#0F0F14"}}>{member.name}</span>
+                {isMe&&<span style={{fontSize:9,color:"#1D6CF6",background:"rgba(29,108,246,0.1)",padding:"2px 8px",borderRadius:6,fontWeight:700,letterSpacing:0.2}}>toi</span>}
+                {streak>=3&&<span style={{fontSize:9,color:"#16A34A",background:"rgba(22,163,74,0.1)",padding:"2px 8px",borderRadius:6,fontWeight:700}}>🔥 {streak} sem.</span>}
+                {(()=>{const prevSorted=toArr(prevWkData).sort((a,b)=>b.overall-a.overall);const prevRank=prevSorted.findIndex(e=>e.userId===member.id);return prevRank>=0&&prevRank<3?<span style={{fontSize:9,fontWeight:700,color:prevRank===0?"#1D6CF6":prevRank===1?"#6B7280":"#D97706",background:prevRank===0?"rgba(0,122,255,0.1)":prevRank===1?"rgba(0,0,0,0.06)":"rgba(255,149,0,0.1)",padding:"2px 7px",borderRadius:10}}>{prevRank===0?"🥇 S-1":prevRank===1?"🥈 S-1":"🥉 S-1"}</span>:null;})()}
               </div>
-              <div style={{fontSize:11,color:"#8e8e93",marginTop:2}}>{tab==="sprint"?`${member.weeksLogged||0} sem. saisies`:`S${wk}`}</div>
+              <div style={{fontSize:11,color:"#6B7280",marginTop:2}}>{tab==="sprint"?`${member.weeksLogged||0} sem. saisies`:`S${wk}`}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-              {score!==null&&score!==undefined?<span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>:<span style={{fontSize:13,color:"#d1d1d6",fontWeight:500}}>—</span>}
+              {score!==null&&score!==undefined?<span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>:<span style={{fontSize:13,color:"#C4C4CC",fontWeight:500}}>—</span>}
               {tab==="week"&&rankDelta&&(
                 rankDelta.type==="new"
-                  ?<span style={{fontSize:9,fontWeight:700,color:"#007aff",background:"rgba(0,122,255,0.12)",padding:"2px 6px",borderRadius:6}}>NEW</span>
-                  :rankDelta.delta!==0&&<span style={{fontSize:10,fontWeight:700,color:rankDelta.delta>0?"#30d158":"#ff3b30"}}>
+                  ?<span style={{fontSize:9,fontWeight:700,color:"#1D6CF6",background:"rgba(0,122,255,0.12)",padding:"2px 6px",borderRadius:6}}>NEW</span>
+                  :rankDelta.delta!==0&&<span style={{fontSize:10,fontWeight:700,color:rankDelta.delta>0?"#16A34A":"#DC2626"}}>
                       {rankDelta.delta>0?`↑${rankDelta.delta}`:`↓${Math.abs(rankDelta.delta)}`}
                     </span>
               )}
             </div>
-            <div style={{color:"#8e8e93",fontSize:14,transform:isExp?"rotate(180deg)":"rotate(0)",transition:"transform 0.2s",marginLeft:4}}>⌄</div>
+            <div style={{color:"#6B7280",fontSize:14,transform:isExp?"rotate(180deg)":"rotate(0)",transition:"transform 0.2s",marginLeft:4}}>⌄</div>
           </div>
           {isExp&&<div style={{padding:"0 16px 14px",borderTop:"1px solid rgba(0,0,0,0.09)"}}>
             <div style={{paddingTop:10,display:"flex",flexDirection:"column",gap:8}}>
               {tab==="week"&&member.byCat&&<>
-                <div style={{fontSize:9,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",color:"#8e8e93"}}>Score par catégorie</div>
+                <div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF"}}>Score par catégorie</div>
                 {activeCats.map(cat=>{
                   const catScore=member.byCat[cat.id];const catW=(sprint.catWeights||{})[cat.id]||0;
                   if(catScore===null||catScore===undefined)return null;
                   return <div key={cat.id}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                       <div style={{width:6,height:6,borderRadius:3,background:cat.color,flexShrink:0}}/>
-                      <span style={{fontSize:12,color:"#1c1c1e",fontWeight:500,flex:1}}>{cat.name}</span>
-                      <span style={{fontSize:10,color:"#8e8e93"}}>{catW}%</span>
+                      <span style={{fontSize:12,color:"#0F0F14",fontWeight:500,flex:1}}>{cat.name}</span>
+                      <span style={{fontSize:10,color:"#6B7280"}}>{catW}%</span>
                       <span style={{fontSize:12,fontWeight:700,color:scoreColor(catScore),minWidth:36,textAlign:"right"}}>{catScore}%</span>
                     </div>
-                    <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:2,marginLeft:14}}>
+                    <div style={{height:5,background:"rgba(0,0,0,0.05)",borderRadius:3,marginLeft:14}}>
                       <div style={{height:"100%",borderRadius:2,background:barColor(catScore),width:`${catScore}%`,transition:"width 0.5s"}}/>
                     </div>
                   </div>;
                 })}
               </>}
-              {score===null&&<p style={{fontSize:12,color:"#8e8e93",margin:0}}>Pas encore de données cette {tab==="week"?"semaine":"période"}.</p>}
+              {score===null&&<p style={{fontSize:12,color:"#6B7280",margin:0}}>Pas encore de données cette {tab==="week"?"semaine":"période"}.</p>}
             </div>
           </div>}
         </div>;
@@ -1083,36 +1101,36 @@ function DuelsView({user,sprint,onPendingCount}){
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
         <div style={{fontSize:20}}>{duel.type==="category"?"🎯":"⚔️"}</div>
         <div style={{flex:1}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#1c1c1e"}}>{isChallenger?"Tu as défié":"Défi reçu de"} <span style={{color:"#007aff"}}>{opponent}</span></div>
-          <div style={{fontSize:11,color:"#8e8e93",marginTop:2}}>{duel.type==="category"?`Catégorie : ${cat?.name||duel.catId}`:"Score global"} · Semaine {duel.week}</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#0F0F14"}}>{isChallenger?"Tu as défié":"Défi reçu de"} <span style={{color:"#1D6CF6"}}>{opponent}</span></div>
+          <div style={{fontSize:11,color:"#6B7280",marginTop:2}}>{duel.type==="category"?`Catégorie : ${cat?.name||duel.catId}`:"Score global"} · Semaine {duel.week}</div>
         </div>
       </div>
-      {duel.status==="active"&&<div style={{background:"rgba(0,122,255,0.07)",borderRadius:10,padding:"9px 12px"}}><span style={{fontSize:12,color:"#007aff"}}>⚡ En cours — résultat à la fin de la semaine</span></div>}
+      {duel.status==="active"&&<div style={{background:"rgba(0,122,255,0.07)",borderRadius:10,padding:"9px 12px"}}><span style={{fontSize:12,color:"#1D6CF6"}}>⚡ En cours — résultat à la fin de la semaine</span></div>}
       {duel.status==="pending"&&duel.opponentId===user.id&&<div style={{display:"flex",gap:8,marginTop:4}}>
-        <button onClick={()=>respond(duel.id,false)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"rgba(255,59,48,0.1)",color:"#ff3b30",fontWeight:600,fontSize:13,cursor:"pointer"}}>Refuser</button>
-        <button onClick={()=>respond(duel.id,true)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"#007aff",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer"}}>Accepter 🔥</button>
+        <button onClick={()=>respond(duel.id,false)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"rgba(255,59,48,0.1)",color:"#DC2626",fontWeight:600,fontSize:13,cursor:"pointer"}}>Refuser</button>
+        <button onClick={()=>respond(duel.id,true)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"#1D6CF6",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer"}}>Accepter 🔥</button>
       </div>}
-      {duel.status==="pending"&&duel.challengerId===user.id&&<div style={{background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"9px 12px"}}><span style={{fontSize:12,color:"#8e8e93"}}>⏳ En attente d'acceptation…</span></div>}
-      {duel.status==="declined"&&<div style={{background:"rgba(255,59,48,0.07)",borderRadius:10,padding:"9px 12px"}}><span style={{fontSize:12,color:"#ff3b30"}}>Défi refusé</span></div>}
+      {duel.status==="pending"&&duel.challengerId===user.id&&<div style={{background:"rgba(0,0,0,0.04)",borderRadius:10,padding:"9px 12px"}}><span style={{fontSize:12,color:"#6B7280"}}>⏳ En attente d'acceptation…</span></div>}
+      {duel.status==="declined"&&<div style={{background:"rgba(255,59,48,0.07)",borderRadius:10,padding:"9px 12px"}}><span style={{fontSize:12,color:"#DC2626"}}>Défi refusé</span></div>}
     </Card>;
   }
   return <Scroll>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <div><h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:"0 0 2px"}}>Duels</h2><p style={{color:"#8e8e93",fontSize:13,margin:0}}>Défie tes amis cette semaine</p></div>
-      {!creating&&<button onClick={()=>setCreating(true)} style={{background:"#007aff",color:"#fff",border:"none",borderRadius:12,padding:"9px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>+ Nouveau défi</button>}
+      <div><h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:"0 0 3px",letterSpacing:-0.5}}>Duels</h2><p style={{color:"#6B7280",fontSize:13,margin:0}}>Défie tes amis cette semaine</p></div>
+      {!creating&&<button onClick={()=>setCreating(true)} style={{background:"#1D6CF6",color:"#fff",border:"none",borderRadius:12,padding:"9px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>+ Nouveau défi</button>}
     </div>
-    {msg&&<Notice color="#30d158">{msg}</Notice>}
+    {msg&&<Notice color="#16A34A">{msg}</Notice>}
     {creating&&<Card style={{marginBottom:16}}>
-      <div style={{fontSize:13,fontWeight:700,color:"#1c1c1e",marginBottom:14}}>Nouveau défi</div>
+      <div style={{fontSize:13,fontWeight:700,color:"#0F0F14",marginBottom:14}}>Nouveau défi</div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         <Sel label="Adversaire" value={form.opponentId} onChange={e=>setForm(p=>({...p,opponentId:e.target.value}))} options={[{value:"",label:"Choisir…"},...users.map(u=>({value:u.id,label:u.name}))]}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
           {[["overall","⚔️ Score global"],["category","🎯 Catégorie"]].map(([t,l])=>(
-            <button key={t} onClick={()=>setForm(p=>({...p,type:t}))} style={{padding:"11px 8px",border:"none",borderRadius:12,cursor:"pointer",background:form.type===t?"#007aff":"rgba(0,0,0,0.05)",color:form.type===t?"#fff":"#1c1c1e",fontWeight:600,fontSize:13}}>{l}</button>
+            <button key={t} onClick={()=>setForm(p=>({...p,type:t}))} style={{padding:"11px 8px",border:"none",borderRadius:12,cursor:"pointer",background:form.type===t?"#1D6CF6":"rgba(0,0,0,0.05)",color:form.type===t?"#fff":"#0F0F14",fontWeight:600,fontSize:13}}>{l}</button>
           ))}
         </div>
         {form.type==="category"&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {activeCats.map(cat=><button key={cat.id} onClick={()=>setForm(p=>({...p,catId:cat.id}))} style={{padding:"7px 12px",border:"none",borderRadius:10,cursor:"pointer",background:form.catId===cat.id?cat.color:"rgba(0,0,0,0.05)",color:form.catId===cat.id?"#fff":"#1c1c1e",fontWeight:600,fontSize:12}}>{cat.name}</button>)}
+          {activeCats.map(cat=><button key={cat.id} onClick={()=>setForm(p=>({...p,catId:cat.id}))} style={{padding:"7px 12px",border:"none",borderRadius:10,cursor:"pointer",background:form.catId===cat.id?cat.color:"rgba(0,0,0,0.05)",color:form.catId===cat.id?"#fff":"#0F0F14",fontWeight:600,fontSize:12}}>{cat.name}</button>)}
         </div>}
         <div style={{display:"flex",gap:8}}>
           <Btn variant="secondary" small onClick={()=>setCreating(false)}>Annuler</Btn>
@@ -1120,13 +1138,13 @@ function DuelsView({user,sprint,onPendingCount}){
         </div>
       </div>
     </Card>}
-    {pending.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:"#ff3b30",marginBottom:8}}>🔔 {pending.length} défi{pending.length>1?"s":""} à accepter</div>{pending.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
-    {active.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:"#007aff",marginBottom:8}}>⚔️ En cours — semaine {wk}</div>{active.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
-    {past.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:"#8e8e93",marginBottom:8}}>Historique</div>{past.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
+    {pending.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:"#DC2626",marginBottom:8}}>🔔 {pending.length} défi{pending.length>1?"s":""} à accepter</div>{pending.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
+    {active.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:"#1D6CF6",marginBottom:8}}>⚔️ En cours — semaine {wk}</div>{active.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
+    {past.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF",marginBottom:8}}>Historique</div>{past.map(d=><DuelCard key={d.id} duel={d}/>)}</div>}
     {!loading&&myDuels.length===0&&!creating&&<div style={{textAlign:"center",padding:"40px 20px"}}>
-      <div style={{fontSize:40,marginBottom:10}}>⚔️</div>
-      <p style={{color:"#1c1c1e",fontSize:15,fontWeight:600,marginBottom:4}}>Aucun défi en cours</p>
-      <p style={{color:"#8e8e93",fontSize:13}}>Lance le premier défi de la semaine !</p>
+      <div style={{fontSize:44,marginBottom:12}}>⚔️</div>
+      <p style={{color:"#0F0F14",fontSize:16,fontWeight:700,marginBottom:6,letterSpacing:-0.3}}>Aucun défi en cours</p>
+      <p style={{color:"#9CA3AF",fontSize:13,lineHeight:1.5}}>Lance le premier défi de la semaine !</p>
     </div>}
   </Scroll>;
 }
@@ -1142,24 +1160,24 @@ function ProfileView({user,sprint,weekLogs,onLogout}){
   return <Scroll>
     <Card style={{textAlign:"center",marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"center",marginBottom:14}}><Avatar name={user.name} userId={user.id} email={user.email} size={72}/></div>
-      <h2 style={{color:"#1c1c1e",fontSize:20,fontWeight:800,margin:"0 0 4px"}}>{user.name}</h2>
-      <p style={{color:"#8e8e93",fontSize:13,margin:0}}>{user.email}</p>
-      <p style={{color:"#d1d1d6",fontSize:12,marginTop:6}}>Membre depuis {new Date(user.createdAt).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</p>
+      <h2 style={{color:"#0F0F14",fontSize:20,fontWeight:800,margin:"0 0 4px"}}>{user.name}</h2>
+      <p style={{color:"#6B7280",fontSize:13,margin:0}}>{user.email}</p>
+      <p style={{color:"#C4C4CC",fontSize:12,marginTop:6}}>Membre depuis {new Date(user.createdAt).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</p>
     </Card>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
       {[{l:"Sprints",v:history.length},{l:"Moy. globale",v:lifetimeAvg!==null?`${lifetimeAvg}%`:"—"},{l:"Sem. saisies",v:history.reduce((a,s)=>a+(s.weeksLogged||0),0)}].map(({l,v})=>(
-        <Card key={l} style={{textAlign:"center",padding:"12px 8px"}}>
-          <div style={{color:"#8e8e93",fontSize:9,textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>{l}</div>
-          <div style={{color:"#1c1c1e",fontSize:20,fontWeight:800}}>{v}</div>
+        <Card key={l} style={{textAlign:"center",padding:"16px 10px",borderRadius:18,border:"1px solid rgba(0,0,0,0.055)"}}>
+          <div style={{color:"#6B7280",fontSize:9,textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>{l}</div>
+          <div style={{color:"#0F0F14",fontSize:22,fontWeight:800,letterSpacing:-0.5}}>{v}</div>
         </Card>
       ))}
     </div>
-    {sprint&&<Card style={{marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:16}}><Ring score={overall} size={60}/><div><div style={{color:"#1c1c1e",fontSize:14,fontWeight:600}}>Semaine {wk} sur 12</div><div style={{color:"#8e8e93",fontSize:12,marginTop:4}}>Démarré le {fmtDate(sprint.startDate)}</div></div></div></Card>}
+    {sprint&&<Card style={{marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:16}}><Ring score={overall} size={60}/><div><div style={{color:"#0F0F14",fontSize:14,fontWeight:600}}>Semaine {wk} sur 12</div><div style={{color:"#6B7280",fontSize:12,marginTop:4}}>Démarré le {fmtDate(sprint.startDate)}</div></div></div></Card>}
     {history.length>0&&<Card style={{marginBottom:14}}>
-      <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px",fontWeight:600}}>Historique des sprints</p>
+      <p style={{color:"#6B7280",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 12px",fontWeight:600}}>Historique des sprints</p>
       {history.map((sp,i)=>(
         <div key={sp.sprintId} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderTop:i>0?"1px solid rgba(0,0,0,0.09)":"none"}}>
-          <div style={{flex:1}}><div style={{color:"#1c1c1e",fontSize:13,fontWeight:500}}>Sprint {history.length-i}</div><div style={{color:"#8e8e93",fontSize:11,marginTop:2}}>{fmtDate(sp.startDate)} · {sp.weeksLogged} sem.</div></div>
+          <div style={{flex:1}}><div style={{color:"#0F0F14",fontSize:13,fontWeight:500}}>Sprint {history.length-i}</div><div style={{color:"#6B7280",fontSize:11,marginTop:2}}>{fmtDate(sp.startDate)} · {sp.weeksLogged} sem.</div></div>
           <div style={{fontSize:16,fontWeight:800,color:scoreColor(sp.avgScore)}}>{sp.avgScore}%</div>
         </div>
       ))}
@@ -1214,53 +1232,53 @@ function AnalyticsView({users}){
   const uniqueWeekly=new Set(last7.flatMap(d=>(pings[d.key]||[]).map(p=>p.userId))).size;
 
   return <div>
-    <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:"#ff9500",marginBottom:16}}>📊 Analytics</div>
+    <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:"#D97706",marginBottom:16}}>📊 Analytics</div>
 
-    {loading&&<div style={{textAlign:"center",padding:20,color:"#8e8e93"}}>Chargement…</div>}
+    {loading&&<div style={{textAlign:"center",padding:20,color:"#6B7280"}}>Chargement…</div>}
     {!loading&&<>
       {/* KPI grid */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
         {[
-          {label:"Membres total",value:totalUsers,icon:"👥",color:"#007aff"},
-          {label:"Actifs ce sprint",value:activeThisSprint,icon:"⚡",color:"#30d158"},
-          {label:"Score moy. groupe",value:avgScore?avgScore+"%":"—",icon:"🏆",color:"#ff9500"},
+          {label:"Membres total",value:totalUsers,icon:"👥",color:"#1D6CF6"},
+          {label:"Actifs ce sprint",value:activeThisSprint,icon:"⚡",color:"#16A34A"},
+          {label:"Score moy. groupe",value:avgScore?avgScore+"%":"—",icon:"🏆",color:"#D97706"},
           {label:"Connexions auj.",value:todayPings,icon:"📱",color:"#5856d6"},
-          {label:"Actifs 7 jours",value:uniqueWeekly,icon:"🔥",color:"#ff3b30"},
-          {label:"Meilleur contributeur",value:topContributor?topContributor.name.split(" ")[0]+" ("+topContributor.weeksLogged+"sem.)":"—",icon:"⭐",color:"#ff9500"},
+          {label:"Actifs 7 jours",value:uniqueWeekly,icon:"🔥",color:"#DC2626"},
+          {label:"Meilleur contributeur",value:topContributor?topContributor.name.split(" ")[0]+" ("+topContributor.weeksLogged+"sem.)":"—",icon:"⭐",color:"#D97706"},
         ].map(({label,value,icon,color})=>(
-          <div key={label} style={{background:"rgba(0,0,0,0.03)",borderRadius:14,padding:"12px 14px"}}>
+          <div key={label} style={{background:"#FFFFFF",borderRadius:16,padding:"14px 16px",boxShadow:SH,border:"1px solid rgba(0,0,0,0.055)"}}>
             <div style={{fontSize:18,marginBottom:6}}>{icon}</div>
             <div style={{fontSize:20,fontWeight:800,color,letterSpacing:-0.5}}>{value}</div>
-            <div style={{fontSize:10,color:"#8e8e93",marginTop:3,lineHeight:1.3}}>{label}</div>
+            <div style={{fontSize:10,color:"#6B7280",marginTop:3,lineHeight:1.3}}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* Connections bar chart */}
-      <div style={{background:"rgba(0,0,0,0.03)",borderRadius:14,padding:"14px"}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#1c1c1e",marginBottom:14}}>Connexions · 14 derniers jours</div>
+      <div style={{background:"#FFFFFF",borderRadius:20,padding:"16px",boxShadow:SH,border:"1px solid rgba(0,0,0,0.055)"}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#0F0F14",marginBottom:14}}>Connexions · 14 derniers jours</div>
         <div style={{display:"flex",alignItems:"flex-end",gap:4,height:80}}>
           {days.map(({key,label,count,isToday})=>{
             const h=count>0?Math.max((count/maxPings)*68,8):3;
             return <div key={key} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
               <div style={{position:"relative",width:"100%",display:"flex",justifyContent:"center"}}>
-                {count>0&&<span style={{position:"absolute",top:-16,fontSize:8,fontWeight:700,color:isToday?"#007aff":"#8e8e93"}}>{count}</span>}
-                <div style={{width:"100%",height:h,borderRadius:"3px 3px 0 0",background:isToday?"#007aff":count>0?"rgba(0,122,255,0.45)":"rgba(0,0,0,0.08)",transition:"height 0.4s"}}/>
+                {count>0&&<span style={{position:"absolute",top:-16,fontSize:8,fontWeight:700,color:isToday?"#1D6CF6":"#6B7280"}}>{count}</span>}
+                <div style={{width:"100%",height:h,borderRadius:"3px 3px 0 0",background:isToday?"#1D6CF6":count>0?"rgba(0,122,255,0.45)":"rgba(0,0,0,0.08)",transition:"height 0.4s"}}/>
               </div>
-              <span style={{fontSize:7,color:isToday?"#007aff":"#8e8e93",fontWeight:isToday?700:400,textAlign:"center",lineHeight:1.2}}>{label}</span>
+              <span style={{fontSize:7,color:isToday?"#1D6CF6":"#6B7280",fontWeight:isToday?700:400,textAlign:"center",lineHeight:1.2}}>{label}</span>
             </div>;
           })}
         </div>
       </div>
 
       {/* Group score trend */}
-      {socialData.length>0&&<div style={{background:"rgba(0,0,0,0.03)",borderRadius:14,padding:"14px",marginTop:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#1c1c1e",marginBottom:10}}>Scores du groupe · sprint en cours</div>
+      {socialData.length>0&&<div style={{background:"#FFFFFF",borderRadius:20,padding:"16px",boxShadow:SH,border:"1px solid rgba(0,0,0,0.055)",marginTop:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#0F0F14",marginBottom:10}}>Scores du groupe · sprint en cours</div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {[...socialData].sort((a,b)=>(b.sprintAvg||0)-(a.sprintAvg||0)).map(e=>(
             <div key={e.userId}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                <span style={{fontSize:12,color:"#1c1c1e",fontWeight:500}}>{e.name}</span>
+                <span style={{fontSize:12,color:"#0F0F14",fontWeight:500}}>{e.name}</span>
                 <span style={{fontSize:12,fontWeight:700,color:scoreColor(e.sprintAvg||0)}}>{e.sprintAvg||0}%</span>
               </div>
               <div style={{height:4,background:"rgba(0,0,0,0.06)",borderRadius:2}}>
@@ -1318,43 +1336,43 @@ function AdminView({currentUser,onHistoryUpdated}){
   }
   return <Scroll>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-      <div style={{width:8,height:8,borderRadius:2,background:"#ff9500"}}/>
-      <h2 style={{fontSize:20,fontWeight:800,color:"#1c1c1e",margin:0}}>Admin</h2>
+      <div style={{width:8,height:8,borderRadius:2,background:"#D97706"}}/>
+      <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:0,letterSpacing:-0.5}}>Admin</h2>
     </div>
     {/* Tab toggle */}
-    <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:12,padding:3,marginBottom:20}}>
+    <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:4,marginBottom:20}}>
       {[["analytics","📊 Analytics"],["users","👥 Utilisateurs"],["import","⬇️ Import"]].map(([t,l])=>(
-        <button key={t} onClick={()=>setAdminTab(t)} style={{flex:1,padding:"8px 4px",border:"none",borderRadius:10,cursor:"pointer",background:adminTab===t?"#ffffff":"transparent",color:adminTab===t?"#1c1c1e":"#8e8e93",fontSize:12,fontWeight:600,boxShadow:adminTab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
+        <button key={t} onClick={()=>setAdminTab(t)} style={{flex:1,padding:"8px 4px",border:"none",borderRadius:10,cursor:"pointer",background:adminTab===t?"#ffffff":"transparent",color:adminTab===t?"#0F0F14":"#6B7280",fontSize:12,fontWeight:600,boxShadow:adminTab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
       ))}
     </div>
-    {msg&&<Notice color="#30d158">{msg}</Notice>}
+    {msg&&<Notice color="#16A34A">{msg}</Notice>}
 
     {/* Analytics tab */}
     {adminTab==="analytics"&&<AnalyticsView users={users}/>}
 
     {/* Users tab */}
     {adminTab==="users"&&<Card style={{overflow:"hidden",padding:0}}>
-      {loading&&<div style={{padding:20,textAlign:"center",color:"#8e8e93"}}>Chargement…</div>}
+      {loading&&<div style={{padding:20,textAlign:"center",color:"#6B7280"}}>Chargement…</div>}
       {users.map((u,i)=>{
         const det=details[u.id];const isOpen=expanded===u.id;
         return <div key={u.id}>
           <div onClick={()=>loadDetails(u.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderTop:i>0?"1px solid rgba(0,0,0,0.09)":"none",cursor:"pointer",background:isOpen?"rgba(0,0,0,0.03)":"transparent"}}>
             <Avatar name={u.name} userId={u.id} email={u.email} size={28}/>
-            <div style={{flex:1}}><div style={{color:"#1c1c1e",fontSize:13,fontWeight:500}}>{u.name}</div><div style={{color:"#8e8e93",fontSize:11}}>{u.email}</div></div>
-            {ADMIN_EMAILS.includes(u.email)&&<span style={{fontSize:9,color:"#ff9500",background:"rgba(255,149,0,0.15)",padding:"2px 6px",borderRadius:4,fontWeight:700}}>ADMIN</span>}
-            <span style={{color:"#8e8e93",fontSize:18,transform:isOpen?"rotate(90deg)":"rotate(0)",transition:"transform 0.2s",display:"inline-block"}}>›</span>
+            <div style={{flex:1}}><div style={{color:"#0F0F14",fontSize:13,fontWeight:500}}>{u.name}</div><div style={{color:"#6B7280",fontSize:11}}>{u.email}</div></div>
+            {ADMIN_EMAILS.includes(u.email)&&<span style={{fontSize:9,color:"#D97706",background:"rgba(255,149,0,0.15)",padding:"2px 6px",borderRadius:4,fontWeight:700}}>ADMIN</span>}
+            <span style={{color:"#6B7280",fontSize:18,transform:isOpen?"rotate(90deg)":"rotate(0)",transition:"transform 0.2s",display:"inline-block"}}>›</span>
           </div>
           {isOpen&&det&&<div style={{background:"rgba(0,0,0,0.03)",borderTop:"1px solid rgba(0,0,0,0.09)",padding:"14px 16px"}}>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
               {[{l:"Sprints",v:det.history.length},{l:"Score actuel",v:det.sprint&&det.cs!==null?`${det.cs}%`:"—"},{l:"Sem. saisies",v:det.history.reduce((a,s)=>a+(s.weeksLogged||0),0)}].map(({l,v})=>(
                 <div key={l} style={{background:"#ffffff",borderRadius:10,padding:"10px",textAlign:"center"}}>
-                  <div style={{color:"#8e8e93",fontSize:9,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div>
-                  <div style={{color:"#1c1c1e",fontSize:16,fontWeight:700}}>{v}</div>
+                  <div style={{color:"#6B7280",fontSize:9,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>{l}</div>
+                  <div style={{color:"#0F0F14",fontSize:16,fontWeight:700}}>{v}</div>
                 </div>
               ))}
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {det.sprint&&<div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:"#8e8e93",fontSize:12,flex:1}}>Effacer le sprint actif</span><Btn small variant="danger" onClick={()=>clearSprint(u.id)}>Effacer</Btn></div>}
+              {det.sprint&&<div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:"#6B7280",fontSize:12,flex:1}}>Effacer le sprint actif</span><Btn small variant="danger" onClick={()=>clearSprint(u.id)}>Effacer</Btn></div>}
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <input placeholder="Nouveau mot de passe" type="password" value={newPwds[u.id]||""} onChange={e=>setNewPwds(p=>({...p,[u.id]:e.target.value}))} style={{...ISX,flex:1,fontSize:13,padding:"8px 10px"}}/>
                 <Btn small variant="amber" disabled={!newPwds[u.id]} onClick={()=>resetPwd(u.id,newPwds[u.id])}>Réinit.</Btn>
@@ -1368,13 +1386,13 @@ function AdminView({currentUser,onHistoryUpdated}){
     {/* Import tab */}
     {adminTab==="import"&&currentUser.email==="manu.manubens@gmail.com"&&<>
       <Card style={{marginBottom:14,border:"1px solid rgba(0,122,255,0.2)"}}>
-        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer le sprint en cours</p>
-        <p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Recrée ton sprint Q2-26 (30 mars 2026) avec 9 habitudes + bonus.</p>
+        <p style={{color:"#6B7280",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer le sprint en cours</p>
+        <p style={{color:"#0F0F14",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Recrée ton sprint Q2-26 (30 mars 2026) avec 9 habitudes + bonus.</p>
         <Btn full variant="secondary" disabled={importing} onClick={importSprint}>Importer le sprint en cours →</Btn>
       </Card>
       <Card style={{marginBottom:14,border:"1px solid rgba(255,149,0,0.3)"}}>
-        <p style={{color:"#8e8e93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer mon historique</p>
-        <p style={{color:"#1c1c1e",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Importe tes sprints Q3-25 (80%), Q4-25 (79%) et Q1-26 (73%).</p>
+        <p style={{color:"#6B7280",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 8px",fontWeight:600}}>Importer mon historique</p>
+        <p style={{color:"#0F0F14",fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Importe tes sprints Q3-25 (80%), Q4-25 (79%) et Q1-26 (73%).</p>
         <Btn full variant="amber" disabled={importing} onClick={importHistory}>{importing?"Importation…":"Importer mon historique →"}</Btn>
       </Card>
     </>}
@@ -1396,10 +1414,10 @@ function RecapView({user,sprint,weekLogs,onArchive}){
     await ss(`sprint_${user.id}`,null);setArchiving(false);onArchive();
   }
   return <Scroll>
-    <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:40,marginBottom:8}}>🏁</div><h2 style={{color:"#1c1c1e",fontSize:24,fontWeight:800,margin:0}}>Sprint terminé !</h2></div>
+    <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:52,marginBottom:10}}>🏁</div><h2 style={{color:"#0F0F14",fontSize:28,fontWeight:800,margin:0,letterSpacing:-0.8}}>Sprint terminé !</h2></div>
     <Card style={{marginBottom:14,display:"flex",flexDirection:"column",alignItems:"center",gap:14,padding:"24px 20px"}}>
       <Ring score={avg} size={110}/>
-      <div style={{textAlign:"center"}}><div style={{color:"#1c1c1e",fontSize:18,fontWeight:800}}>{avg>=80?"Excellent sprint":avg>=60?"Bel effort":"Peut mieux faire"}</div><div style={{color:"#8e8e93",fontSize:13,marginTop:4}}>{lw.length} / 12 semaines · moy. {avg}%</div></div>
+      <div style={{textAlign:"center"}}><div style={{color:"#0F0F14",fontSize:18,fontWeight:800}}>{avg>=80?"Excellent sprint":avg>=60?"Bel effort":"Peut mieux faire"}</div><div style={{color:"#6B7280",fontSize:13,marginTop:4}}>{lw.length} / 12 semaines · moy. {avg}%</div></div>
     </Card>
     <Btn full disabled={archiving} onClick={doArchive}>{archiving?"Archivage…":"Archiver et démarrer un nouveau sprint →"}</Btn>
   </Scroll>;
@@ -1448,45 +1466,45 @@ function App(){
   function onSprintCreated(sp){setSprint(sp);setWL({});setView("home");setShowRecap(false);}
   function onSaveLogs(w,logs){setWL(p=>({...p,[w]:logs}));}
   async function onArchive(){setSprint(null);setWL({});setShowRecap(false);setView("sprint");if(user)await loadHistory(user.id);}
-  if(booting)return <div style={{minHeight:"100vh",background:"#f2f2f7",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#8e8e93"}}>Chargement…</span></div>;
+  if(booting)return <div style={{minHeight:"100vh",background:"#F0F0F5",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#6B7280"}}>Chargement…</span></div>;
   if(!user)return <AuthView onAuth={onAuth}/>;
   if(showOnboarding)return <OnboardingView name={user.name} onDone={()=>{setShowOnboarding(false);setView("sprint");}}/>;
-  if(showRecap&&sprint)return <div style={{minHeight:"100vh",background:"#f2f2f7"}}>
+  if(showRecap&&sprint)return <div style={{minHeight:"100vh",background:"#F0F0F5"}}>
     <div style={{background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:"1px solid rgba(0,0,0,0.1)",padding:"11px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <div style={{display:"flex",alignItems:"center",gap:9}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#1c1c1e"/><polyline points="4,22 11,10 16,16 19,12 24,22" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/></svg><span style={{fontWeight:800,fontSize:15}}>Momentum</span></div>
-      <span style={{color:"#ff9500",fontSize:12,fontWeight:600}}>Sprint terminé</span>
+      <div style={{display:"flex",alignItems:"center",gap:9}}><svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="9" fill="#0F0F14"/><polyline points="4,24 11,11 16,17 20,13 26,24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/></svg><span style={{fontWeight:800,fontSize:16,letterSpacing:-0.4,color:"#0F0F14"}}>Momentum</span></div>
+      <span style={{color:"#D97706",fontSize:12,fontWeight:600}}>Sprint terminé</span>
     </div>
     <RecapView user={user} sprint={sprint} weekLogs={weekLogs} onArchive={onArchive}/>
   </div>;
-  return <div style={{minHeight:"100vh",background:"#f2f2f7",color:"#1c1c1e"}}>
-    <div style={{background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:"1px solid rgba(0,0,0,0.1)",padding:"11px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-      <div style={{display:"flex",alignItems:"center",gap:9}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#1c1c1e"/><polyline points="4,22 11,10 16,16 19,12 24,22" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/></svg><span style={{fontWeight:800,fontSize:15}}>Momentum</span></div>
+  return <div style={{minHeight:"100vh",background:"#F0F0F5",color:"#0F0F14"}}>
+    <div style={{background:"rgba(240,240,245,0.92)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderBottom:"1px solid rgba(0,0,0,0.07)",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+      <div style={{display:"flex",alignItems:"center",gap:9}}><svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="9" fill="#0F0F14"/><polyline points="4,24 11,11 16,17 20,13 26,24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/></svg><span style={{fontWeight:800,fontSize:16,letterSpacing:-0.4,color:"#0F0F14"}}>Momentum</span></div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        {sprint&&<span style={{color:"#8e8e93",fontSize:11}}>S{wk}/12</span>}
-        {isAdmin&&<span style={{fontSize:9,color:"#ff9500",background:"rgba(255,149,0,0.15)",padding:"2px 7px",borderRadius:4,fontWeight:700}}>ADMIN</span>}
+        {sprint&&<span style={{color:"#6B7280",fontSize:11,fontWeight:600,background:"rgba(0,0,0,0.05)",padding:"3px 8px",borderRadius:6,letterSpacing:0.2}}>S{wk}/12</span>}
+        {isAdmin&&<span style={{fontSize:9,color:"#D97706",background:"rgba(217,119,6,0.12)",padding:"2px 8px",borderRadius:6,fontWeight:700,letterSpacing:0.3}}>ADMIN</span>}
         <Avatar name={user.name} userId={user.id} email={user.email} size={28}/>
       </div>
     </div>
-    {!sprint&&view!=="sprint"&&<div style={{background:"rgba(0,122,255,0.08)",borderBottom:"1px solid rgba(0,122,255,0.15)",padding:"10px 20px",textAlign:"center"}}>
-      <span style={{color:"#1c1c1e",fontSize:13}}>Aucun sprint actif.{" "}<button onClick={()=>setView("sprint")} style={{background:"none",border:"none",color:"#007aff",fontWeight:700,fontSize:13,cursor:"pointer",padding:0}}>En créer un →</button></span>
+    {!sprint&&view!=="sprint"&&<div style={{background:"rgba(29,108,246,0.07)",borderBottom:"1px solid rgba(29,108,246,0.12)",padding:"10px 20px",textAlign:"center"}}>
+      <span style={{color:"#0F0F14",fontSize:13}}>Aucun sprint actif.{" "}<button onClick={()=>setView("sprint")} style={{background:"none",border:"none",color:"#1D6CF6",fontWeight:700,fontSize:13,cursor:"pointer",padding:0}}>En créer un →</button></span>
     </div>}
     <div style={{paddingTop:4,paddingBottom:80}}>
-      {view==="home"&&(sprint?<HomeView sprint={sprint} weekLogs={weekLogs} quote={quote} userId={user.id}/>:<div style={{textAlign:"center",padding:64}}><p style={{color:"#8e8e93",fontSize:15,marginBottom:20}}>Configure un sprint pour commencer.</p><Btn onClick={()=>setView("sprint")}>Configurer un sprint →</Btn></div>)}
-      {view==="log"&&(sprint?<LogView sprint={sprint} weekLogs={weekLogs} onSave={onSaveLogs} userId={user.id} onUpdateSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:"#8e8e93"}}>Configure d'abord un sprint.</div>)}
+      {view==="home"&&(sprint?<HomeView sprint={sprint} weekLogs={weekLogs} quote={quote} userId={user.id}/>:<div style={{textAlign:"center",padding:64}}><p style={{color:"#6B7280",fontSize:15,marginBottom:20}}>Configure un sprint pour commencer.</p><Btn onClick={()=>setView("sprint")}>Configurer un sprint →</Btn></div>)}
+      {view==="log"&&(sprint?<LogView sprint={sprint} weekLogs={weekLogs} onSave={onSaveLogs} userId={user.id} onUpdateSprint={sp=>setSprint(sp)}/>:<div style={{textAlign:"center",padding:64,color:"#6B7280"}}>Configure d'abord un sprint.</div>)}
       {view==="sprint"&&<SprintTab user={user} sprint={sprint} onSprintCreated={onSprintCreated} onHabitsUpdated={sp=>setSprint(sp)} history={history}/>}
-      {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:"#8e8e93"}}>Configure d'abord un sprint.</div>)}
-      {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint} onPendingCount={setPendingDuels}/>:<div style={{textAlign:"center",padding:64,color:"#8e8e93"}}>Configure d'abord un sprint.</div>)}
+      {view==="social"&&(sprint?<SocialView user={user} sprint={sprint}/>:<div style={{textAlign:"center",padding:64,color:"#6B7280"}}>Configure d'abord un sprint.</div>)}
+      {view==="duels"&&(sprint?<DuelsView user={user} sprint={sprint} onPendingCount={setPendingDuels}/>:<div style={{textAlign:"center",padding:64,color:"#6B7280"}}>Configure d'abord un sprint.</div>)}
       {view==="profile"&&<ProfileView user={user} sprint={sprint} weekLogs={weekLogs} onLogout={onLogout}/>}
       {view==="admin"&&isAdmin&&<AdminView currentUser={user} onHistoryUpdated={loadHistory}/>}
     </div>
-    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(242,242,247,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(0,0,0,0.1)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(240,240,245,0.94)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:"1px solid rgba(0,0,0,0.07)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,8px)",zIndex:100}}>
       {NAV.map(item=>(
-        <button key={item.id} onClick={()=>setView(item.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"8px 4px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minHeight:56}}>
-          <div style={{position:"relative",display:"inline-flex"}}>
-            <span style={{color:view===item.id?(item.id==="admin"?"#ff9500":"#007aff"):"#8e8e93",transition:"color 0.2s"}}>{NAV_ICONS[item.id]}</span>
-            {item.id==="duels"&&pendingDuels>0&&<div style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:7,background:"#ff3b30",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:8,fontWeight:800,color:"#fff"}}>{pendingDuels}</span></div>}
+        <button key={item.id} onClick={()=>setView(item.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"6px 4px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minHeight:54}}>
+          <div style={{position:"relative",display:"inline-flex",background:view===item.id?"rgba(29,108,246,0.10)":"transparent",borderRadius:10,padding:"5px 10px",transition:"background 0.2s"}}>
+            <span style={{color:view===item.id?(item.id==="admin"?"#D97706":"#1D6CF6"):"#9CA3AF",transition:"color 0.2s"}}>{NAV_ICONS[item.id]}</span>
+            {item.id==="duels"&&pendingDuels>0&&<div style={{position:"absolute",top:-2,right:-2,width:14,height:14,borderRadius:7,background:"#DC2626",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:8,fontWeight:800,color:"#fff"}}>{pendingDuels}</span></div>}
           </div>
-          <span style={{fontSize:10,fontWeight:view===item.id?700:500,color:view===item.id?(item.id==="admin"?"#ff9500":"#1c1c1e"):"#8e8e93",transition:"color 0.2s",letterSpacing:-0.1}}>{item.label}</span>
+          <span style={{fontSize:10,fontWeight:view===item.id?700:500,color:view===item.id?(item.id==="admin"?"#D97706":"#1D6CF6"):"#9CA3AF",transition:"color 0.2s",letterSpacing:-0.1}}>{item.label}</span>
         </button>
       ))}
     </div>
