@@ -792,7 +792,7 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
       }).filter(Boolean);
       const spAvgVal=entries.length?Math.round(entries.reduce((a,e)=>a+e.sc,0)/entries.length):0;
       const ssk=globalSprintKey();
-      sg(ssk).then(se=>{ss(ssk,[...toArr(se).filter(e=>e.userId!==userId),{userId,name:uname,email,sprintAvg:spAvgVal,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.sc]))}]);});
+      sg(ssk).then(se=>{sg(`user_${userId}`).then(uu=>{ss(ssk,[...toArr(se).filter(e=>e.userId!==userId),{userId,name:uname,email,sprintAvg:spAvgVal,weeksLogged:entries.length,weekScores:Object.fromEntries(entries.map(e=>[e.w,e.sc])),avatarId:uu?.avatarId||null}]);});});
       generateInsight(userId,sprint.id,selWk,ov,byCat);
       // Update personal records
       sg(`pr_${userId}`).then(pr=>{
@@ -1036,7 +1036,7 @@ function SocialView({user,sprint}){
           const heights=[68,50,38];const isFirst=rank===0;
           return <div key={rank} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
             {isFirst&&<div style={{fontSize:18}}>🥇</div>}
-            <Avatar name={e.name} userId={e.userId} email={e.email} size={isFirst?40:34}/>
+            <Avatar name={e.name} userId={e.userId} email={e.email} size={isFirst?40:34} avatarId={e.avatarId}/>
             <span style={{fontSize:10,fontWeight:isFirst?700:500,color:"#0F0F14",maxWidth:64,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{e.name.split(" ")[0]}</span>
             <div style={{width:"100%",background:isFirst?"#1D6CF6":"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:heights[rank],display:"flex",alignItems:"center",justifyContent:"center"}}>
               <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":"#6B7280"}}>{tab==="week"?e.overall:e.sprintAvg}%</span>
@@ -1429,7 +1429,7 @@ function AdminView({currentUser,onHistoryUpdated}){
         const det=details[u.id];const isOpen=expanded===u.id;
         return <div key={u.id}>
           <div onClick={()=>loadDetails(u.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderTop:i>0?"1px solid rgba(0,0,0,0.09)":"none",cursor:"pointer",background:isOpen?"rgba(0,0,0,0.03)":"transparent"}}>
-            <Avatar name={u.name} userId={u.id} email={u.email} size={28}/>
+            <Avatar name={u.name} userId={u.id} email={u.email} size={28} avatarId={details[u.id]?.user?.avatarId}/>
             <div style={{flex:1}}><div style={{color:"#0F0F14",fontSize:13,fontWeight:500}}>{u.name}</div><div style={{color:"#6B7280",fontSize:11}}>{u.email}</div></div>
             {ADMIN_EMAILS.includes(u.email)&&<span style={{fontSize:9,color:"#D97706",background:"rgba(255,149,0,0.15)",padding:"2px 6px",borderRadius:4,fontWeight:700}}>ADMIN</span>}
             <span style={{color:"#6B7280",fontSize:18,transform:isOpen?"rotate(90deg)":"rotate(0)",transition:"transform 0.2s",display:"inline-block"}}>›</span>
