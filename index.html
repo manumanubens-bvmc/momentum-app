@@ -931,7 +931,8 @@ function SocialView({user,sprint}){
       setPrevWkData(toArr(pwd));setAllUsers(idx||[]);setLoading(false);
     })();
   },[sprint,wk]);
-  const entries=tab==="week"?wkData:spData;const top3=entries.slice(0,3);
+  const prevWkSorted=useMemo(()=>toArr(prevWkData).sort((a,b)=>b.overall-a.overall),[prevWkData]);
+  const entries=tab==="week"?wkData:tab==="prev"?prevWkSorted:spData;const top3=entries.slice(0,3);
   function getStreak(entry){if(!entry.weekScores)return 0;let s=0;for(let w=wk;w>=1;w--){const sc=entry.weekScores[w];if(sc===undefined||sc===null)break;if(sc>=75)s++;else break;}return s;}
   // Compute rank delta: positive = moved up (improved position)
   function getRankDelta(userId){
@@ -949,12 +950,16 @@ function SocialView({user,sprint}){
   const membersList=allUsers.map(u=>{
     const wkEntry=wkData.find(e=>e.userId===u.id);const spEntry=spData.find(e=>e.userId===u.id);
     return{id:u.id,name:u.name,email:u.email,weekScore:wkEntry?.overall??null,sprintScore:spEntry?.sprintAvg??null,byCat:wkEntry?.byCat||null,weeksLogged:spEntry?.weeksLogged||0,weekScores:spEntry?.weekScores||null};
-  }).sort((a,b)=>{const sa=tab==="week"?a.weekScore:a.sprintScore;const sb=tab==="week"?b.weekScore:b.sprintScore;if(sa===null&&sb===null)return 0;if(sa===null)return 1;if(sb===null)return-1;return sb-sa;});
+  }).sort((a,b)=>{
+    const getScore=m=>tab==="week"?m.weekScore:tab==="prev"?(prevWkSorted.find(e=>e.userId===m.id)?.overall??null):m.sprintScore;
+    const sa=getScore(a),sb=getScore(b);
+    if(sa===null&&sb===null)return 0;if(sa===null)return 1;if(sb===null)return -1;return sb-sa;
+  });
   return <Scroll>
     <h2 style={{fontSize:22,fontWeight:800,color:"#0F0F14",margin:"0 0 3px",letterSpacing:-0.5}}>Communauté</h2>
-    <p style={{color:"#6B7280",fontSize:13,margin:"0 0 16px",lineHeight:1.4}}>Semaine {wk} · {allUsers.length} membre{allUsers.length!==1?"s":""}</p>
+    <p style={{color:"#6B7280",fontSize:13,margin:"0 0 16px",lineHeight:1.4}}>{tab==="prev"?`Semaine ${wk-1} (précédente)`:`Semaine ${wk}`} · {allUsers.length} membre{allUsers.length!==1?"s":""}</p>
     <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:4,marginBottom:16}}>
-      {[["week","Cette semaine"],["sprint","Sprint"]].map(([t,l])=>(
+      {[["week","Cette semaine"],["prev","Sem. précédente"],["sprint","Sprint"]].map(([t,l])=>(
         <button key={t} onClick={()=>{setTab(t);setExpanded(null);}} style={{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",background:tab===t?"#ffffff":"transparent",color:tab===t?"#0F0F14":"#6B7280",fontSize:13,fontWeight:600,boxShadow:tab===t?"0 2px 14px rgba(0,0,0,0.07)":"none",transition:"all 0.2s"}}>{l}</button>
       ))}
     </div>
@@ -1039,7 +1044,7 @@ function SocialView({user,sprint}){
             <Avatar name={e.name} userId={e.userId} email={e.email} size={isFirst?40:34} avatarId={e.avatarId}/>
             <span style={{fontSize:10,fontWeight:isFirst?700:500,color:"#0F0F14",maxWidth:64,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{e.name.split(" ")[0]}</span>
             <div style={{width:"100%",background:isFirst?"#1D6CF6":"rgba(0,0,0,0.06)",borderRadius:"8px 8px 0 0",height:heights[rank],display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":"#6B7280"}}>{tab==="week"?e.overall:e.sprintAvg}%</span>
+              <span style={{fontSize:isFirst?16:13,fontWeight:800,color:isFirst?"#fff":"#6B7280"}}>{tab==="week"||tab==="prev"?e.overall:e.sprintAvg}%</span>
             </div>
           </div>;
         })}
@@ -1048,7 +1053,7 @@ function SocialView({user,sprint}){
     {!loading&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
       <div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF",marginBottom:4}}>Tous les membres · {membersList.length}</div>
       {membersList.map((member,i)=>{
-        const score=tab==="week"?member.weekScore:member.sprintScore;
+        const score=tab==="week"?member.weekScore:tab==="prev"?(prevWkSorted.find(e=>e.userId===member.id)?.overall??null):member.sprintScore;
         const isMe=member.id===user.id;const isExp=expanded===member.id;
         const wkEntry=wkData.find(e=>e.userId===member.id);
         const streak=getStreak(wkEntry||{});
@@ -1066,7 +1071,7 @@ function SocialView({user,sprint}){
                 {streak>=3&&<span style={{fontSize:9,color:"#16A34A",background:"rgba(22,163,74,0.1)",padding:"2px 8px",borderRadius:6,fontWeight:700}}>🔥 {streak} sem.</span>}
                 {(()=>{const prevSorted=toArr(prevWkData).sort((a,b)=>b.overall-a.overall);const prevRank=prevSorted.findIndex(e=>e.userId===member.id);return prevRank>=0&&prevRank<3?<span style={{fontSize:9,fontWeight:700,color:prevRank===0?"#1D6CF6":prevRank===1?"#6B7280":"#D97706",background:prevRank===0?"rgba(0,122,255,0.1)":prevRank===1?"rgba(0,0,0,0.06)":"rgba(255,149,0,0.1)",padding:"2px 7px",borderRadius:10}}>{prevRank===0?"🥇 S-1":prevRank===1?"🥈 S-1":"🥉 S-1"}</span>:null;})()}
               </div>
-              <div style={{fontSize:11,color:"#6B7280",marginTop:2}}>{tab==="sprint"?`${member.weeksLogged||0} sem. saisies`:`S${wk}`}</div>
+              <div style={{fontSize:11,color:"#6B7280",marginTop:2}}>{tab==="sprint"?`${member.weeksLogged||0} sem. saisies`:tab==="prev"?`S${wk-1}`:`S${wk}`}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
               {score!==null&&score!==undefined?<span style={{fontSize:22,fontWeight:800,color:scoreColor(score),letterSpacing:-1}}>{score}%</span>:<span style={{fontSize:13,color:"#C4C4CC",fontWeight:500}}>—</span>}
@@ -1082,7 +1087,7 @@ function SocialView({user,sprint}){
           </div>
           {isExp&&<div style={{padding:"0 16px 14px",borderTop:"1px solid rgba(0,0,0,0.09)"}}>
             <div style={{paddingTop:10,display:"flex",flexDirection:"column",gap:8}}>
-              {tab==="week"&&member.byCat&&<>
+              {(tab==="week"||tab==="prev")&&(tab==="week"?member.byCat:prevWkSorted.find(e=>e.userId===member.id)?.byCat)&&<>
                 <div style={{fontSize:9,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:"#9CA3AF"}}>Score par catégorie</div>
                 {activeCats.map(cat=>{
                   const catScore=member.byCat[cat.id];const catW=(sprint.catWeights||{})[cat.id]||0;
