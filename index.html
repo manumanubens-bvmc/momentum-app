@@ -858,6 +858,7 @@ function LogView({sprint,weekLogs,onSave,userId,onUpdateSprint}){
         </div>
       </div>;
     })}
+    {!isPaused&&<Btn full onClick={save} variant={saved?"success":"primary"} style={{marginTop:8}}>{saved?"Enregistré ✓":"Enregistrer"}</Btn>}
   </Scroll>;
 }
 
