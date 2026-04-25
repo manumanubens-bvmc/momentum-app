@@ -1531,6 +1531,19 @@ function App(){
   const [booting,setBooting]=useState(true);const [showOnboarding,setShowOnboarding]=useState(false);
   const [showRecap,setShowRecap]=useState(false);const [history,setHistory]=useState([]);
   const [pendingDuels,setPendingDuels]=useState(0);
+  async function checkPendingDuels(uid){
+    try{
+      const all=toArr(await sg("duels_"+globalSprintKey()));
+      const count=all.filter(d=>d.status==="pending"&&d.opponentId===uid).length;
+      setPendingDuels(count);
+    }catch(e){}
+  }
+  // Poll every 60s when app is open
+  useEffect(()=>{
+    if(!user)return;
+    const interval=setInterval(()=>checkPendingDuels(user.id),60000);
+    return()=>clearInterval(interval);
+  },[user]);
   const [quote]=useState(WISDOM[new Date().getDay()%WISDOM.length]);
   const wk=sprint?weekNum(sprint.startDate):0;
   const isAdmin=user&&ADMIN_EMAILS.includes(user.email);
@@ -1554,6 +1567,8 @@ function App(){
       setUser(u);recordPing(u.id);await loadHistory(u.id);
       const sp=await sg(`sprint_${u.id}`);if(sp){setSprint(sp);await loadLogs(u.id,sp);}
       setBooting(false);
+      // Check pending duels on boot
+      checkPendingDuels(u.id);
     })();
   },[]);
   useEffect(()=>{if(sprint&&weekNum(sprint.startDate)>=12)setShowRecap(true);},[sprint]);
@@ -1561,7 +1576,7 @@ function App(){
     localStorage.setItem("session",JSON.stringify({userId:u.id}));
     recordPing(u.id);
     if(u.isNew){const updated={...u,isNew:false};await ss(`user_${u.id}`,updated);setUser(updated);setShowOnboarding(true);return;}
-    setUser(u);await loadHistory(u.id);const sp=await sg(`sprint_${u.id}`);if(sp){setSprint(sp);await loadLogs(u.id,sp);}
+    setUser(u);await loadHistory(u.id);const sp=await sg(`sprint_${u.id}`);if(sp){setSprint(sp);await loadLogs(u.id,sp);}checkPendingDuels(u.id);
   }
   async function onLogout(){localStorage.removeItem("session");setUser(null);setSprint(null);setWL({});setHistory([]);setView("home");setShowOnboarding(false);setShowRecap(false);}
   function onSprintCreated(sp){setSprint(sp);setWL({});setView("home");setShowRecap(false);}
