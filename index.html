@@ -1124,7 +1124,7 @@ function DuelsView({user,sprint,onPendingCount}){
   const activeCats=CATS.filter(c=>sprint.habits.some(h=>h.catId===c.id&&!h.isBonus));
   async function load(){
     setLoading(true);
-    const [idx,duelsData]=await Promise.all([sg("userIndex"),sg(`duels_${sprint.id}`)]);
+    const [idx,duelsData]=await Promise.all([sg("userIndex"),sg("duels_"+globalSprintKey())]);
     setUsers((idx||[]).filter(u=>u.id!==user.id));
     const all=toArr(duelsData);const mine=all.filter(d=>d.challengerId===user.id||d.opponentId===user.id);
     setMyDuels(mine);
@@ -1135,12 +1135,12 @@ function DuelsView({user,sprint,onPendingCount}){
   async function createDuel(){
     if(!form.opponentId)return;
     const newDuel={id:uid(),challengerId:user.id,challengerName:user.name,opponentId:form.opponentId,opponentName:users.find(u=>u.id===form.opponentId)?.name||"",type:form.type,catId:form.type==="category"?form.catId:null,week:wk,status:"pending",createdAt:Date.now()};
-    const all=toArr(await sg(`duels_${sprint.id}`));await ss(`duels_${sprint.id}`,[...all,newDuel]);
+    const all=toArr(await sg("duels_"+globalSprintKey()));await ss("duels_"+globalSprintKey(),[...all,newDuel]);
     setCreating(false);setMsg("Défi envoyé ! 🔥");setTimeout(()=>setMsg(null),3000);load();
   }
   async function respond(duelId,accept){
-    const all=toArr(await sg(`duels_${sprint.id}`));
-    await ss(`duels_${sprint.id}`,all.map(d=>d.id===duelId?{...d,status:accept?"active":"declined"}:d));
+    const all=toArr(await sg("duels_"+globalSprintKey()));
+    await ss("duels_"+globalSprintKey(),all.map(d=>d.id===duelId?{...d,status:accept?"active":"declined"}:d));
     setMsg(accept?"Défi accepté ! C'est parti 🔥":"Défi refusé.");setTimeout(()=>setMsg(null),3000);load();
   }
   const pending=myDuels.filter(d=>d.status==="pending"&&d.opponentId===user.id);
@@ -1205,13 +1205,26 @@ function DuelsView({user,sprint,onPendingCount}){
 function ProfileView({user,sprint,weekLogs,onLogout,onUserUpdate}){
   const [history,setHistory]=useState([]);
   const [showAvatarPicker,setShowAvatarPicker]=useState(false);
+  const [editingName,setEditingName]=useState(false);
+  const [nameVal,setNameVal]=useState(user.name);
+  const [nameSaving,setNameSaving]=useState(false);
   useEffect(()=>{sg(`sprint_history_${user.id}`).then(h=>setHistory((toArr(h)).slice().reverse()));},[user.id]);
   async function pickAvatar(avatarId){
     const updated={...user,avatarId};
     await ss(`user_${user.id}`,updated);
-    // Update userIndex name stays same
     if(onUserUpdate)onUserUpdate(updated);
     setShowAvatarPicker(false);
+  }
+  async function saveName(){
+    if(!nameVal.trim()||nameVal.trim()===user.name){setEditingName(false);return;}
+    setNameSaving(true);
+    const updated={...user,name:nameVal.trim()};
+    await ss(`user_${user.id}`,updated);
+    // Update userIndex
+    const idx=toArr(await sg("userIndex"));
+    await ss("userIndex",idx.map(u=>u.id===user.id?{...u,name:nameVal.trim()}:u));
+    if(onUserUpdate)onUserUpdate(updated);
+    setNameSaving(false);setEditingName(false);
   }
   const wk=sprint?weekNum(sprint.startDate):0;
   const {overall}=sprint?calcScores(sprint.habits,weekLogs[wk]||{}):{overall:0};
@@ -1226,7 +1239,17 @@ function ProfileView({user,sprint,weekLogs,onLogout,onUserUpdate}){
           <span style={{fontSize:12}}>✏️</span>
         </button>
       </div>
-      <h2 style={{color:"#0F0F14",fontSize:20,fontWeight:800,margin:"0 0 4px"}}>{user.name}</h2>
+      {editingName
+        ?<div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6,justifyContent:"center"}}>
+            <input value={nameVal} onChange={e=>setNameVal(e.target.value)} onFocus={e=>e.target.select()} autoFocus style={{...ISX,width:180,textAlign:"center",fontWeight:700,fontSize:16,padding:"8px 12px"}}/>
+            <Btn small onClick={saveName} disabled={nameSaving}>{nameSaving?"…":"✓"}</Btn>
+            <Btn small variant="ghost" onClick={()=>{setEditingName(false);setNameVal(user.name);}}>✕</Btn>
+          </div>
+        :<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:4}}>
+            <h2 style={{color:"#0F0F14",fontSize:20,fontWeight:800,margin:0}}>{user.name}</h2>
+            <button onClick={()=>setEditingName(true)} style={{background:"none",border:"none",cursor:"pointer",color:"#9CA3AF",fontSize:13,padding:0}}>✏️</button>
+          </div>
+      }
       <p style={{color:"#6B7280",fontSize:13,margin:0}}>{user.email}</p>
       <p style={{color:"#C4C4CC",fontSize:12,marginTop:6}}>Membre depuis {new Date(user.createdAt).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</p>
       {showAvatarPicker&&<div style={{marginTop:16,borderTop:"1px solid rgba(0,0,0,0.07)",paddingTop:14}}>
