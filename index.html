@@ -513,6 +513,7 @@ function HomeView({sprint,weekLogs,quote,userId}){
   const {overall:wkScore,byCat:wkByCat,bonusScore}=calcScores(sprint.habits,logs);
   const [detailMode,setDetailMode]=useState("%");
   const [chartMode,setChartMode]=useState("bars");
+  const [chartCat,setChartCat]=useState("overall"); // "overall" or catId
   const [history,setHistory]=useState(null);
   const [insight,setInsight]=useState(null);
   const [pr,setPr]=useState(null);
@@ -660,46 +661,80 @@ function HomeView({sprint,weekLogs,quote,userId}){
     </Card>
     {/* Bar/line chart */}
     <Card style={{marginBottom:12,padding:"18px 18px 14px"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <span style={{fontSize:12,fontWeight:600,color:"#0F0F14"}}>Performance hebdomadaire</span>
-        <div style={{display:"flex",background:"rgba(0,0,0,0.06)",borderRadius:8,padding:2}}>
+      {/* Header row */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <span style={{fontSize:12,fontWeight:600,color:"#0F0F14"}}>
+          {chartCat==="overall"?"Performance globale":CATS.find(c=>c.id===chartCat)?.name||""}
+        </span>
+        <div style={{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:8,padding:2}}>
           {[["bars","▦"],["line","╱"]].map(([m,icon])=>(
-            <button key={m} onClick={()=>setChartMode(m)} style={{width:28,height:24,border:"none",borderRadius:6,cursor:"pointer",background:chartMode===m?"#ffffff":"transparent",color:chartMode===m?"#0F0F14":"#6B7280",fontSize:12,fontWeight:700,boxShadow:chartMode===m?"0 2px 14px rgba(0,0,0,0.07)":"none"}}>{icon}</button>
+            <button key={m} onClick={()=>setChartMode(m)} style={{width:28,height:24,border:"none",borderRadius:6,cursor:"pointer",background:chartMode===m?"#ffffff":"transparent",color:chartMode===m?"#0F0F14":"#6B7280",fontSize:12,fontWeight:700,boxShadow:chartMode===m?SH:"none"}}>{icon}</button>
           ))}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
-        {[["rgba(0,122,255,0.22)","<60"],["rgba(0,122,255,0.45)","60+"],["rgba(0,122,255,0.70)","75+"],["rgba(0,122,255,1.0)","85+"]].map(([c,l])=>(
-          <div key={l} style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:3,background:c}}/><span style={{fontSize:8,color:"#6B7280"}}>{l}</span></div>
+      {/* Category selector */}
+      <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+        <button onClick={()=>setChartCat("overall")} style={{padding:"4px 10px",borderRadius:8,border:"none",cursor:"pointer",fontSize:10,fontWeight:700,background:chartCat==="overall"?"#0F0F14":"rgba(0,0,0,0.05)",color:chartCat==="overall"?"#fff":"#6B7280",transition:"all 0.15s"}}>Global</button>
+        {activeCats.map(cat=>(
+          <button key={cat.id} onClick={()=>setChartCat(cat.id)} style={{padding:"4px 10px",borderRadius:8,border:"none",cursor:"pointer",fontSize:10,fontWeight:700,background:chartCat===cat.id?cat.color:"rgba(0,0,0,0.05)",color:chartCat===cat.id?"#fff":"#6B7280",transition:"all 0.15s"}}>{cat.radar}</button>
         ))}
       </div>
-      <div style={{position:"relative",paddingBottom:20}}>
-        <div style={{position:"absolute",left:0,right:0,bottom:20+(benchScore/100)*chartH,borderTop:`1.5px ${!prevSprint?"dashed":"solid"} #D97706`,pointerEvents:"none",zIndex:1}}>
-          <span style={{position:"absolute",right:0,top:-16,fontSize:8,fontWeight:600,color:"#D97706",background:"#ffffff",padding:"1px 5px",borderRadius:4}}>{benchLabel}</span>
-        </div>
-        {chartMode==="bars"
-          ?<div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
-              {weekData.map(({w,score,paused:isPaused,logged:isLogged})=>{
-                const isCur=w===wk;const h=isLogged&&score!==null?(score/100)*chartH+4:4;const bg=isLogged&&score!==null?barColor(score):"rgba(0,0,0,0.06)";const showLbl=isLogged&&score!==null&&h>18;
-                return <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
-                  <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bg,boxShadow:isCur&&isLogged?"0 0 0 1.5px #1D6CF6":"none",transition:"height 0.4s",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:2}}>
-                    {showLbl&&<span style={{fontSize:6,fontWeight:700,color:"#fff",lineHeight:1}}>{score}</span>}
-                  </div>
-                  <span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:isCur?700:400,color:isCur?"#0F0F14":"#6B7280"}}>{isPaused?"OFF":`W${w}`}</span>
-                </div>;
-              })}
-            </div>
-          :<div style={{height:`${chartH+4}px`,position:"relative"}}>
-              {loggedWeeks.length>=2&&<svg width="100%" height={chartH+4} style={{position:"absolute",inset:0}} preserveAspectRatio="none" viewBox={`0 0 100 ${chartH+4}`}>
-                <polyline points={loggedWeeks.map(d=>`${((d.w-1)/11)*100},${chartH+4-(d.score/100)*chartH}`).join(" ")} fill="none" stroke="#1D6CF6" strokeWidth="1.5" strokeLinejoin="round"/>
-                {loggedWeeks.map(d=><circle key={d.w} cx={((d.w-1)/11)*100} cy={chartH+4-(d.score/100)*chartH} r="3" fill={barColor(d.score)} stroke="#1D6CF6" strokeWidth="1"/>)}
-              </svg>}
-              <div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
-                {weekData.map(({w,paused:isPaused})=><div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}><span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:w===wk?700:400,color:w===wk?"#0F0F14":"#6B7280"}}>{isPaused?"OFF":`W${w}`}</span></div>)}
+      {/* Legend (only for overall bars) */}
+      {chartCat==="overall"&&chartMode==="bars"&&<div style={{display:"flex",gap:8,marginBottom:10}}>
+        {[["rgba(29,108,246,0.18)","<60"],["rgba(29,108,246,0.40)","60+"],["rgba(29,108,246,0.65)","75+"],["#1D6CF6","85+"]].map(([c,l])=>(
+          <div key={l} style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:3,background:c}}/><span style={{fontSize:8,color:"#6B7280"}}>{l}</span></div>
+        ))}
+      </div>}
+      {/* Chart area */}
+      {(()=>{
+        const catColor=chartCat==="overall"?null:CATS.find(c=>c.id===chartCat)?.color||"#1D6CF6";
+        // Build per-week data for selected cat
+        const chartData=Array.from({length:12},(_,i)=>{
+          const w=i+1;
+          if((sprint.pausedWeeks||[]).includes(w))return{w,score:null,paused:true,logged:false};
+          if(w>wk)return{w,score:null,paused:false,logged:false};
+          const ll=weekLogs[w]||{};
+          const hasLog=sprint.habits.some(h=>ll[h.id]!==undefined&&ll[h.id]!==null&&ll[h.id]!=="");
+          if(!hasLog)return{w,score:null,paused:false,logged:false};
+          if(chartCat==="overall")return{w,score:calcScores(sprint.habits,ll).overall,paused:false,logged:true};
+          const cs=calcScores(sprint.habits,ll).byCat[chartCat];
+          return{w,score:cs??null,paused:false,logged:cs!==null&&cs!==undefined};
+        });
+        const loggedPts=chartData.filter(d=>d.logged&&d.score!==null);
+        const maxVal=Math.max(...loggedPts.map(d=>d.score),1);
+        const bench=chartCat==="overall"?benchScore:null;
+        return <div style={{position:"relative",paddingBottom:20}}>
+          {bench!==null&&<div style={{position:"absolute",left:0,right:0,bottom:20+(bench/100)*chartH,borderTop:`1.5px ${!prevSprint?"dashed":"solid"} #D97706`,pointerEvents:"none",zIndex:1}}>
+            <span style={{position:"absolute",right:0,top:-16,fontSize:8,fontWeight:600,color:"#D97706",background:"#fff",padding:"1px 5px",borderRadius:4}}>{benchLabel}</span>
+          </div>}
+          {chartMode==="bars"
+            ?<div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
+                {chartData.map(({w,score,paused:isPaused,logged:isLogged})=>{
+                  const isCur=w===wk;
+                  const h=isLogged&&score!==null?(score/100)*chartH+4:4;
+                  const bg=isLogged&&score!==null?(catColor||barColor(score)):"rgba(0,0,0,0.06)";
+                  const bgOp=isLogged&&score!==null&&catColor?(score>=75?catColor:catColor+"99"):bg;
+                  const showLbl=isLogged&&score!==null&&h>18;
+                  return <div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}>
+                    <div style={{width:"100%",height:`${h}px`,borderRadius:"4px 4px 0 0",background:bgOp,boxShadow:isCur&&isLogged?`0 0 0 1.5px ${catColor||"#1D6CF6"}`:"none",transition:"height 0.4s",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:2}}>
+                      {showLbl&&<span style={{fontSize:6,fontWeight:700,color:"#fff",lineHeight:1}}>{score}</span>}
+                    </div>
+                    <span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:isCur?700:400,color:isCur?"#0F0F14":"#6B7280"}}>{isPaused?"OFF":`W${w}`}</span>
+                  </div>;
+                })}
               </div>
-            </div>
-        }
-      </div>
+            :<div style={{height:`${chartH+4}px`,position:"relative"}}>
+                {loggedPts.length>=2&&<svg width="100%" height={chartH+4} style={{position:"absolute",inset:0}} preserveAspectRatio="none" viewBox={`0 0 100 ${chartH+4}`}>
+                  <polyline points={loggedPts.map(d=>`${((d.w-1)/11)*100},${chartH+4-(d.score/100)*chartH}`).join(" ")} fill="none" stroke={catColor||"#1D6CF6"} strokeWidth="1.5" strokeLinejoin="round"/>
+                  {loggedPts.map(d=><circle key={d.w} cx={((d.w-1)/11)*100} cy={chartH+4-(d.score/100)*chartH} r="3" fill={catColor||barColor(d.score)} stroke={catColor||"#1D6CF6"} strokeWidth="1"/>)}
+                </svg>}
+                <div style={{display:"flex",alignItems:"flex-end",gap:3,height:`${chartH+4}px`}}>
+                  {chartData.map(({w,paused:isPaused})=><div key={w} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative"}}><span style={{position:"absolute",bottom:-16,fontSize:7.5,fontWeight:w===wk?700:400,color:w===wk?"#0F0F14":"#6B7280"}}>{isPaused?"OFF":`W${w}`}</span></div>)}
+                </div>
+              </div>
+          }
+        </div>;
+      })()}
     </Card>
     {/* Radar charts */}
     {activeCats.length>=3&&<>
